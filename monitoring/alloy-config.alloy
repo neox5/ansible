@@ -1,0 +1,65 @@
+// System metrics
+prometheus.exporter.unix "system" {
+  procfs_path = "/host/proc"
+  sysfs_path  = "/host/sys"
+  rootfs_path = "/rootfs"
+  
+  set_collectors = ["systemd"]
+}
+
+prometheus.scrape "system" {
+  targets    = prometheus.exporter.unix.system.targets
+  forward_to = [prometheus.remote_write.victoriametrics.receiver]
+  scrape_interval = "30s"
+}
+
+// PostgreSQL metrics
+prometheus.exporter.postgres "n8n_db" {
+  data_source_names = [env("POSTGRES_CONNECTION")]
+  autodiscovery {
+    enabled = true
+  }
+}
+
+prometheus.scrape "postgres" {
+  targets    = prometheus.exporter.postgres.n8n_db.targets
+  forward_to = [prometheus.remote_write.victoriametrics.receiver]
+  scrape_interval = "30s"
+}
+
+// n8n application metrics
+prometheus.scrape "n8n" {
+  targets = [{
+    __address__ = "n8n:5678",
+  }]
+  metrics_path = "/metrics"
+  forward_to = [prometheus.remote_write.victoriametrics.receiver]
+  scrape_interval = "30s"
+}
+
+// VictoriaMetrics self-monitoring
+prometheus.scrape "victoriametrics" {
+  targets = [{
+    __address__ = "victoriametrics:8428",
+  }]
+  metrics_path = "/metrics"
+  forward_to = [prometheus.remote_write.victoriametrics.receiver]
+  scrape_interval = "30s"
+}
+
+// Grafana self-monitoring
+prometheus.scrape "grafana" {
+  targets = [{
+    __address__ = "grafana:3000",
+  }]
+  metrics_path = "/metrics"
+  forward_to = [prometheus.remote_write.victoriametrics.receiver]
+  scrape_interval = "30s"
+}
+
+// Remote write to VictoriaMetrics
+prometheus.remote_write "victoriametrics" {
+  endpoint {
+    url = "http://victoriametrics:8428/api/v1/write"
+  }
+}

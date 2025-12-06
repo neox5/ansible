@@ -1,0 +1,35 @@
+version: "3.9"
+
+networks:
+  n8n-net:
+    name: n8n-net
+    external: true
+
+name: n8n
+services:
+  n8n:
+    container_name: n8n
+    image: docker.io/n8nio/n8n:latest
+    restart: unless-stopped
+    env_file:
+      - n8n.conf
+      - n8n.env
+    ports:
+      - "5678:5678"
+    volumes:
+      - ./data/n8n:/home/node/.n8n:U
+    networks:
+      - n8n-net
+    depends_on:
+      - postgres
+
+  postgres:
+    container_name: n8n-postgres
+    image: docker.io/postgres:16-alpine
+    restart: unless-stopped
+    env_file:
+      - n8n.env
+    volumes:
+      - ./data/postgres/data:/var/lib/postgresql/data:U
+    networks:
+      - n8n-net

@@ -1,9 +1,10 @@
 # Real secrets
 .env
-restic/restic.env
+*.env
 
 # Runtime state (never commit)
 data/
+monitoring-data/
 backup-src/
 restic-repo/
 
@@ -13,4 +14,3 @@ logs/
 
 # snap file
 snap.txt
-
