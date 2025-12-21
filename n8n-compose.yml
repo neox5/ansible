@@ -2,7 +2,7 @@ version: "3.9"
 
 networks:
   n8n-net:
-    name: n8n-net
+    name: n150-net
     external: true
 
 name: n8n
