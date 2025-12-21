@@ -1,0 +1,13 @@
+[Unit]
+Description=Create Podman network n150-net
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/podman network exists n150-net || /usr/bin/podman network create n150-net
+ExecStop=/usr/bin/podman network rm n150-net
+
+[Install]
+WantedBy=multi-user.target
