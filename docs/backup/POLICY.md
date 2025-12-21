@@ -1,9 +1,9 @@
-# Backup Policy – n8n Appliance
+# Backup Policy — n8n Appliance
 
 ## Critical Data
 - PostgreSQL database (n8n state)
-- n8n file storage (`binaryData`) in `/root/n8n-n150/data/n8n`
-- `.env` (must include N8N_ENCRYPTION_KEY)
+- n8n file storage (`binaryData`) in `/opt/n8n/data/n8n`
+- `n8n.env` (must include N8N_ENCRYPTION_KEY)
 
 ## Non-Critical / Rebuildable
 - OS
@@ -24,4 +24,4 @@
 - 1 hour
 
 ## Default Repository Location (on target)
-- `/root/n8n-n150/restic-repo`
+- `/opt/n8n/backup-data/restic-repo`

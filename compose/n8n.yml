@@ -12,12 +12,12 @@ services:
     image: docker.io/n8nio/n8n:latest
     restart: unless-stopped
     env_file:
-      - n8n.conf
-      - n8n.env
+      - ../config/n8n/n8n.conf
+      - ../config/n8n/n8n.env
     ports:
       - "5678:5678"
     volumes:
-      - ./data/n8n:/home/node/.n8n:U
+      - ../data/n8n:/home/node/.n8n:U
     networks:
       - n8n-net
     depends_on:
@@ -28,8 +28,8 @@ services:
     image: docker.io/postgres:16-alpine
     restart: unless-stopped
     env_file:
-      - n8n.env
+      - ../config/n8n/n8n.env
     volumes:
-      - ./data/postgres/data:/var/lib/postgresql/data:U
+      - ../data/postgres/data:/var/lib/postgresql/data:U
     networks:
       - n8n-net

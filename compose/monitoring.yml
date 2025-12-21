@@ -18,7 +18,7 @@ services:
     ports:
       - "8428:8428"
     volumes:
-      - ./monitoring-data/victoriametrics:/storage:U
+      - ../data/monitoring/victoriametrics:/storage:U
     networks:
       - n8n-net
 
@@ -27,13 +27,13 @@ services:
     container_name: grafana
     restart: unless-stopped
     env_file:
-      - monitoring.conf
-      - monitoring.env
+      - ../config/monitoring/monitoring.conf
+      - ../config/monitoring/monitoring.env
     ports:
       - "3000:3000"
     volumes:
-      - ./monitoring-data/grafana:/var/lib/grafana:U
-      - ./monitoring/grafana-provisioning:/etc/grafana/provisioning:ro
+      - ../data/monitoring/grafana:/var/lib/grafana:U
+      - ../config/monitoring/grafana-provisioning:/etc/grafana/provisioning:ro
     networks:
       - n8n-net
     depends_on:
@@ -49,10 +49,10 @@ services:
       - --storage.path=/var/lib/alloy/data
       - /etc/alloy/config.alloy
     env_file:
-      - monitoring.conf
-      - n8n.env
+      - ../config/monitoring/monitoring.conf
+      - ../config/n8n/n8n.env
     volumes:
-      - ./monitoring/alloy-config.alloy:/etc/alloy/config.alloy:ro
+      - ../config/monitoring/alloy-config.alloy:/etc/alloy/config.alloy:ro
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro

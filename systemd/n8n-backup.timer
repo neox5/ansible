@@ -1,0 +1,11 @@
+[Unit]
+Description=n8n Hourly Backup Timer
+Requires=n8n-backup.service
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target

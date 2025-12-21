@@ -1,12 +1,9 @@
 # Real secrets
-.env
 *.env
 
-# Runtime state (never commit)
+# Runtime data (never commit)
 data/
-monitoring-data/
-backup-src/
-restic-repo/
+backup-data/
 
 # Logs
 logs/
