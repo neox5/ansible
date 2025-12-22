@@ -25,31 +25,6 @@ default_help() {
   done
 }
 
-handle_sys_component() {
-  case "$VERB" in
-    init)
-      ensure_dirs 0755 \
-        "${STATE_DIR}" \
-        "${ETC_ROOT}" \
-        "${SHARE_ROOT}"
-      ;;
-    cleanup)
-      if state_markers_exist; then
-        echo "error: cannot cleanup - components still deployed:" >&2
-        ls "${STATE_DIR}" | sed 's/\.lock$//' | sed 's/^/  - /' >&2
-        exit 1
-      fi
-      rm -rf -- \
-        "${VAR_ROOT}" \
-        "${ETC_ROOT}" \
-        "${SHARE_ROOT}"
-      ;;
-    *)
-      die "${VERB} is not implemented by ${COMPONENT}"
-      ;;
-  esac
-}
-
 dispatch() {
   if [[ "$VERB" == "help" ]]; then
     if has_fn c_help; then
@@ -65,11 +40,6 @@ dispatch() {
 
   check_base_prereqs
   check_component_prereqs
-
-  if [[ "${COMPONENT}" == "sys" ]]; then
-    handle_sys_component "$@"
-    return 0
-  fi
 
   local hook="c_${VERB//-/_}"
   if has_fn "$hook"; then
