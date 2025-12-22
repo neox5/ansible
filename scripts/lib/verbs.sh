@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+discover_components() {
+  local comp
+  for comp in "${ROOT_DIR}/scripts/components/"*.sh; do
+    [[ -f "$comp" ]] || continue
+    basename "$comp" .sh
+  done | sort
+}
+
 verb_supported_by_component() {
   local sv
   for sv in "${supported_verbs[@]:-}"; do
