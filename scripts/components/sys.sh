@@ -26,7 +26,8 @@ c_cleanup() {
     ls "${STATE_DIR}" | sed 's/\.lock$//' | sed 's/^/  - /' >&2
     exit 1
   fi
-  rm -rf -- \
+  
+  remove_dirs \
     "${VAR_ROOT}" \
     "${ETC_ROOT}" \
     "${SHARE_ROOT}"
@@ -35,19 +36,19 @@ c_cleanup() {
 c_tree() {
   [[ -d "${STATE_DIR}" ]] || die "system not initialized (run: ./run sys init)"
   
+  # Silent mode: no output
+  [[ "${SILENT:-false}" == "true" ]] && return 0
+  
   local tree_args=("$@")
   if [[ "${#tree_args[@]}" -eq 0 ]]; then
-    tree_args=(-C -L 3)
+    tree_args=(-C --noreport)
+  else
+    tree_args+=(--noreport)
   fi
   
-  echo "${SHARE_ROOT}/"
-  tree "${tree_args[@]}" "${SHARE_ROOT}"
-  echo ""
-  
-  echo "${ETC_ROOT}/"
-  tree "${tree_args[@]}" "${ETC_ROOT}"
-  echo ""
-  
-  echo "${VAR_ROOT}/"
-  tree "${tree_args[@]}" "${VAR_ROOT}"
+  for dir in "${SHARE_ROOT}" "${ETC_ROOT}" "${VAR_ROOT}"; do
+    echo "${dir}"
+    tree "${tree_args[@]}" "${dir}" 2>/dev/null || true
+    echo ""
+  done
 }

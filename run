@@ -13,6 +13,21 @@ if [[ -z "${BASH_VERSION:-}" ]]; then
   exit 1
 fi
 
+# Parse and strip --silent flag from arguments
+SILENT=false
+CLEANED_ARGS=()
+
+for arg in "$@"; do
+  if [[ "$arg" == "--silent" ]]; then
+    SILENT=true
+  else
+    CLEANED_ARGS+=("$arg")
+  fi
+done
+
+export SILENT
+set -- "${CLEANED_ARGS[@]}"
+
 source "${_root_dir}/scripts/lib/paths.sh"
 source "${_root_dir}/scripts/lib/common.sh"
 source "${_root_dir}/scripts/lib/verbs.sh"
