@@ -1,57 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Load project identity
+source "$(dirname -- "${BASH_SOURCE[0]}")/project.sh"
+
 # Repo root
-_paths_this_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd -- "${_paths_this_dir}/../.." && pwd)"
+ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-# Production deployment paths (FHS)
-: "${N150_SHARE_ROOT:=/usr/local/share/n8n-n150}"
-: "${N150_ETC_ROOT:=/etc/n8n-n150}"
-: "${N150_VAR_ROOT:=/var/lib/n8n-n150}"
+# Production deployment paths (environment overridable)
+: "${SHARE_ROOT:=/usr/local/share/${PROJECT_NAME}}"
+: "${ETC_ROOT:=/etc/${PROJECT_NAME}}"
+: "${VAR_ROOT:=/var/lib/${PROJECT_NAME}}"
 
-# Backwards-compatible aliases (existing scripts may still use these names)
-readonly INSTALL_PREFIX_SHARE="${N150_SHARE_ROOT}"
-readonly INSTALL_PREFIX_ETC="${N150_ETC_ROOT}"
-readonly INSTALL_PREFIX_VAR="${N150_VAR_ROOT}"
-
-readonly INSTALL_COMPOSE="${INSTALL_PREFIX_SHARE}/compose"
-readonly INSTALL_SCRIPTS="${INSTALL_PREFIX_SHARE}/scripts"
-readonly INSTALL_CONFIG="${INSTALL_PREFIX_ETC}"
-readonly INSTALL_DATA="${INSTALL_PREFIX_VAR}/data"
-readonly INSTALL_BACKUP="${INSTALL_PREFIX_VAR}/backup-data"
-
-# Repo paths
-REPO_COMPOSE_DIR="${ROOT_DIR}/compose"
-REPO_CONFIG_DIR="${ROOT_DIR}/config"
-REPO_SCRIPTS_DIR="${ROOT_DIR}/scripts"
-REPO_SYSTEMD_DIR="${ROOT_DIR}/systemd"
-
-# Install target paths
-SHARE_COMPOSE_DIR="${N150_SHARE_ROOT}/compose"
-SHARE_SCRIPTS_DIR="${N150_SHARE_ROOT}/scripts"
-ETC_COMPONENT_DIR="${N150_ETC_ROOT}"     # /etc/n8n-n150/<component>/...
-VAR_DATA_DIR="${N150_VAR_ROOT}/data"
-VAR_BACKUP_DIR="${N150_VAR_ROOT}/backup-data"
-
-# Common names
-N150_NETWORK_NAME="${N150_NETWORK_NAME:-n150-net}"
-SYSTEMD_UNIT_DIR="${SYSTEMD_UNIT_DIR:-/etc/systemd/system}"
-
-# Warn if non-standard paths detected
-if [[ "$N150_SHARE_ROOT" != /usr/local/share/* ]] || \
-   [[ "$N150_ETC_ROOT" != /etc/* ]] || \
-   [[ "$N150_VAR_ROOT" != /var/* ]]; then
-  
-  cat >&2 <<EOF
-WARNING: Non-standard installation paths detected
-
-  SHARE: ${N150_SHARE_ROOT}
-  ETC:   ${N150_ETC_ROOT}
-  VAR:   ${N150_VAR_ROOT}
-
-This is supported but may require additional setup.
-Ensure these paths are writable and persistent.
-
-EOF
-fi
+# State directory (always exists after sys init)
+STATE_DIR="${VAR_ROOT}/state"
