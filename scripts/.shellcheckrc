@@ -1,0 +1,3 @@
+# Repository-local shellcheck defaults.
+shell=bash
+exclude=SC1091

@@ -1,25 +1,28 @@
-SHELL := /usr/bin/bash
-.SHELLFLAGS := -euo pipefail -c
+SHELL := /usr/bin/env bash
 
 .DEFAULT_GOAL := help
 
-.PHONY: help
+# Only help should print descriptive text.
 help:
-	@echo "Available targets:"
-	@echo
-	@echo "  sanity            Check system assumptions (read-only)"
-	@echo "  generate-secrets  Generate .env files from templates (in repo folder)"
-	@echo "  deploy-secrets    Deploy .env files to /etc/n8n-n150 (requires root)"
-	@echo
+	@printf "%s\n" \
+		"Usage:" \
+		"  make <component>-<verb>" \
+		"" \
+		"Components:" \
+		"  net, app, monitoring, proxy, backup" \
+		"" \
+		"Verbs:" \
+		"  install, secrets, secrets-deploy, start, stop, restart, status, check, run" \
+		"" \
+		"Examples:" \
+		"  make net-install" \
+		"  make app-start" \
+		"  make monitoring-status" \
+		"  make backup-run"
 
-.PHONY: sanity
-sanity:
-	@bash ./scripts/sanity.sh
+.PHONY: help
 
-.PHONY: generate-secrets
-generate-secrets:
-	@bash ./scripts/generate-secrets.sh
-
-.PHONY: deploy-secrets
-deploy-secrets:
-	@bash ./scripts/deploy-secrets.sh
+# Generic noun-verb dispatcher.
+# Matches targets like "app-start", "proxy-install", "backup-run".
+%-%:
+	@./scripts/bin/ctl $(firstword $(subst -, ,$@)) $(word 2,$(subst -, ,$@))

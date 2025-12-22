@@ -1,13 +1,13 @@
-# Real secrets
+# Generated environment files (examples stay tracked)
 *.env
+*.env.local
+*.env.*
+!*.env.example
 
-# Runtime data (never commit)
-data/
-backup-data/
+# Temporary repository snapshot files 
+**/snp.txt
 
-# Logs
-logs/
-*.log
-
-# snp file
-snp.txt
+# Editor / OS noise
+.DS_Store
+.idea/
+.vscode/
