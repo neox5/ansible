@@ -54,3 +54,32 @@ log_operation() {
     printf "[%s] %-4s %10s %s\n" "$action" "$type" "" "$path"
   fi
 }
+
+log_unit_operation() {
+  local action="$1"    # enable, disable, start, stop
+  local unit_name="$2"
+  
+  # Respect silent mode
+  [[ "${SILENT:-false}" == "true" ]] && return 0
+  
+  local symbol
+  case "$action" in
+    enable)
+      symbol="+"
+      ;;
+    disable)
+      symbol="-"
+      ;;
+    start)
+      symbol="↑"
+      ;;
+    stop)
+      symbol="↓"
+      ;;
+    *)
+      symbol="?"
+      ;;
+  esac
+  
+  printf "[%s] %-4s (%s) %s\n" "$symbol" "unit" "$action" "$unit_name"
+}

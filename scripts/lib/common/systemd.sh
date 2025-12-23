@@ -6,6 +6,23 @@ is_unit_active() {
   systemctl is-active --quiet "$unit_name"
 }
 
+systemd_enable_unit() {
+  local unit_path="$1"
+  local unit_name=$(basename "$unit_path")
+  
+  systemctl daemon-reload >/dev/null 2>&1
+  systemctl enable "$unit_name" >/dev/null 2>&1
+  log_unit_operation "enable" "$unit_name"
+}
+
+systemd_disable_unit() {
+  local unit_path="$1"
+  local unit_name=$(basename "$unit_path")
+  
+  systemctl disable "$unit_name" >/dev/null 2>&1
+  log_unit_operation "disable" "$unit_name"
+}
+
 systemd_start_unit() {
   local unit_path="$1"
   local unit_name=$(basename "$unit_path")
@@ -17,12 +34,8 @@ systemd_start_unit() {
     return 0
   fi
   
-  systemctl daemon-reload
-  systemctl enable "$unit_name"
-  systemctl start "$unit_name"
-  
-  [[ "${SILENT:-false}" == "true" ]] && return 0
-  echo "[start] $unit_name"
+  systemctl start "$unit_name" >/dev/null 2>&1
+  log_unit_operation "start" "$unit_name"
 }
 
 systemd_stop_unit() {
@@ -36,9 +49,6 @@ systemd_stop_unit() {
     return 0
   fi
   
-  systemctl stop "$unit_name"
-  systemctl disable "$unit_name"
-  
-  [[ "${SILENT:-false}" == "true" ]] && return 0
-  echo "[stop] $unit_name"
+  systemctl stop "$unit_name" >/dev/null 2>&1
+  log_unit_operation "stop" "$unit_name"
 }
