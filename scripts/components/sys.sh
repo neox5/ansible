@@ -52,13 +52,18 @@ c_tree() {
   
   # Main directories
   for dir in "${SHARE_ROOT}" "${ETC_ROOT}" "${VAR_ROOT}"; do
-    echo "${dir}"
     tree "${tree_args[@]}" "${dir}" 2>/dev/null || true
     echo ""
   done
   
-  # Systemd units
-  echo "${SYSTEMD_UNIT_DIR}"
-  tree "${tree_args[@]}" -P "${PROJECT_NAME}*.service" "${SYSTEMD_UNIT_DIR}" 2>/dev/null || true
+  # Systemd units - Level 1 service files only
+  tree "${tree_args[@]}" -L 1 -P "*.service" --prune "${SYSTEMD_UNIT_DIR}"
   echo ""
+  
+  # multi-user.target.wants - all service files
+  local target_dir="${SYSTEMD_UNIT_DIR}/multi-user.target.wants"
+  if [[ -d "${target_dir}" ]]; then
+    tree "${tree_args[@]}" -P "*.service" "${target_dir}" 2>/dev/null || true
+    echo ""
+  fi
 }
