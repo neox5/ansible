@@ -1,29 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-create_lock() {
-  date +%s > "${STATE_DIR}/${COMPONENT}.lock"
-}
-
-remove_lock() {
-  rm -f "${STATE_DIR}/${COMPONENT}.lock"
-}
-
+# Installation state
 is_installed() {
   local component="${1:-${COMPONENT}}"
-  [[ -f "${STATE_DIR}/${component}.lock" ]]
+  [[ -f "${STATE_DIR}/${component}.registry/.lock" ]]
 }
 
-require_sys_init() {
-  [[ -f "${STATE_DIR}/sys.lock" ]] || die "system not initialized (run: ./run sys init)"
-}
-
-require_installed() {
+installed_timestamp() {
   local component="${1:-${COMPONENT}}"
-  is_installed "$component" || die "${component} not installed (run: ./run ${component} install)"
+  local lock_file="${STATE_DIR}/${component}.registry/.lock"
+  
+  if [[ -f "$lock_file" ]]; then
+    cat "$lock_file"
+  else
+    echo "unknown"
+  fi
 }
 
 installed_count() {
   [[ -d "${STATE_DIR}" ]] || { echo 0; return; }
-  find "${STATE_DIR}" -name "*.lock" 2>/dev/null | wc -l
+  find "${STATE_DIR}" -type f -name ".lock" 2>/dev/null | wc -l
+}
+
+# Requirements
+require_sys_init() {
+  is_installed "sys" || die "system not initialized (run: ./run sys init)"
+}
+
+require_installed() {
+  local component="${1:-${COMPONENT}}"
+  is_installed "$component" || \
+    die "${component} not installed (run: ./run ${component} install)"
 }

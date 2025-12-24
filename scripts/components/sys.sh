@@ -12,12 +12,18 @@ required_cmds=(
 )
 
 c_init() {
-  ensure_dirs 0755 \
-    "${STATE_DIR}" \
-    "${ETC_ROOT}" \
-    "${SHARE_ROOT}"
+  # Bootstrap: create base directories
+  mkdir -p -m 0755 "${STATE_DIR}"
+  mkdir -p -m 0755 "${ETC_ROOT}"
+  mkdir -p -m 0755 "${SHARE_ROOT}"
   
-  create_lock
+  # Create registry
+  ensure_registry
+  
+  # Register base directories
+  registry_add dirs "${STATE_DIR}" 0755
+  registry_add dirs "${ETC_ROOT}" 0755
+  registry_add dirs "${SHARE_ROOT}" 0755
 }
 
 c_cleanup() {
@@ -26,15 +32,18 @@ c_cleanup() {
   
   if [[ "$lock_count" -ne 1 ]]; then
     echo "error: cannot cleanup - components still installed:" >&2
-    ls "${STATE_DIR}"/*.lock 2>/dev/null | \
-      grep -v 'sys.lock$' | \
-      sed 's|.*/||; s|\.lock$||' | \
+    find "${STATE_DIR}" -type d -name "*.registry" 2>/dev/null | \
+      grep -v 'sys\.registry$' | \
+      sed 's|.*/||; s|\.registry$||' | \
       sed 's/^/  - /' >&2
     exit 1
   fi
   
-  remove_lock
-  remove_dirs "${VAR_ROOT}" "${ETC_ROOT}" "${SHARE_ROOT}"
+  # Use standard uninstall
+  uninstall_from_registry
+  
+  # Remove registry (normally done by dispatch, but cleanup is not uninstall verb)
+  rm -rf "${STATE_DIR}/sys.registry"
 }
 
 c_tree() {

@@ -29,7 +29,32 @@ default_help() {
   done
 }
 
+default_uninstall() {
+  if ! is_installed; then
+    echo "not installed"
+    return 0
+  fi
+  
+  # Check for running units
+  local registry_dir="${STATE_DIR}/${COMPONENT}.registry"
+  while IFS=' ' read -r path mode; do
+    [[ -n "$path" ]] || continue
+    local unit_name=$(basename "$path")
+    
+    if systemctl is-active --quiet "$unit_name" 2>/dev/null; then
+      die "component is running - stop it first (run: ./run ${COMPONENT} stop)"
+    fi
+  done < "$registry_dir/units" || true
+  
+  # Uninstall from registry
+  uninstall_from_registry
+  
+  # Remove registry
+  rm -rf "${STATE_DIR}/${COMPONENT}.registry"
+}
+
 dispatch() {
+  # Help bypasses everything
   if [[ "$VERB" == "help" ]]; then
     if has_fn c_help; then
       c_help "$@"
@@ -39,16 +64,32 @@ dispatch() {
     return 0
   fi
 
+  # Validation
   verb_supported_by_component || \
     die "${VERB} is not supported by ${COMPONENT}"
 
   check_base_prereqs
   check_component_prereqs
 
+  # Resolve hook (default uninstall if not defined)
   local hook="c_${VERB//-/_}"
+  if [[ "$VERB" == "uninstall" ]] && ! has_fn "$hook"; then
+    hook="default_uninstall"
+  fi
+
   if has_fn "$hook"; then
+    # PRE-HOOK: Install only
+    if [[ "$VERB" == "install" ]]; then
+      if is_installed && [[ "${1:-}" != "--force" ]]; then
+        echo "already installed (use --force to overwrite)"
+        return 0
+      fi
+      ensure_registry
+    fi
+    
+    # COMPONENT OPERATION
     "$hook" "$@"
-    return 0
+    return $?
   fi
 
   die "${VERB} is not implemented by ${COMPONENT}"
