@@ -24,6 +24,12 @@ c_init() {
   registry_add dirs "${STATE_DIR}" 0755
   registry_add dirs "${ETC_ROOT}" 0755
   registry_add dirs "${SHARE_ROOT}" 0755
+  
+  # Log operations for transparency
+  log_operation "+" "dir" "0755" "${VAR_ROOT}"
+  log_operation "+" "dir" "0755" "${STATE_DIR}"
+  log_operation "+" "dir" "0755" "${ETC_ROOT}"
+  log_operation "+" "dir" "0755" "${SHARE_ROOT}"
 }
 
 c_cleanup() {
@@ -39,11 +45,24 @@ c_cleanup() {
     exit 1
   fi
   
-  # Use standard uninstall
-  uninstall_from_registry
-  
-  # Remove registry (normally done by dispatch, but cleanup is not uninstall verb)
+  # Remove registry first (allows state dir to become empty)
   rm -rf "${STATE_DIR}/sys.registry"
+  
+  # Remove directories in reverse order (deepest first)
+  local dirs=(
+    "${STATE_DIR}"
+    "${VAR_ROOT}"
+    "${ETC_ROOT}"
+    "${SHARE_ROOT}"
+  )
+  
+  for dir in "${dirs[@]}"; do
+    if [[ -d "$dir" ]]; then
+      if rmdir "$dir" 2>/dev/null; then
+        log_operation "-" "dir" "" "$dir"
+      fi
+    fi
+  done
 }
 
 print_systemd_table() {
@@ -119,3 +138,4 @@ c_tree() {
   # Systemd units table
   print_systemd_table
 }
+
