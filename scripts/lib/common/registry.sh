@@ -8,9 +8,30 @@ ensure_registry() {
   # Idempotent: create if doesn't exist
   if [[ ! -d "$registry_dir" ]]; then
     mkdir -p "$registry_dir"
-    touch "$registry_dir"/{dirs,files,units,links}
+    touch "$registry_dir"/{dirs,files,units,unit_enabled,links}
     echo "$(date +%s)" > "$registry_dir/.lock"
   fi
+}
+
+# Atomic write helper
+registry_write_atomic() {
+  local registry_file="$1"
+  shift
+  local entries=("$@")
+  
+  local temp_file
+  temp_file=$(mktemp "${registry_file}.XXXXXX")
+  
+  # Write entries if any exist
+  if [[ "${#entries[@]}" -gt 0 ]]; then
+    printf "%s\n" "${entries[@]}" > "$temp_file"
+  else
+    # Create empty file (0 bytes)
+    > "$temp_file"
+  fi
+  
+  # Atomic move
+  mv "$temp_file" "$registry_file"
 }
 
 # Registration
@@ -20,12 +41,15 @@ registry_add() {
   
   # Build entry
   local entry="$path"
-  [[ -n "$mode" && "$type" != "links" ]] && entry="$path $mode"
+  [[ -n "$mode" && "$type" != "unit_enabled" ]] && entry="$path $mode"
   
   # Idempotent check
-  grep -q "^${path}[[:space:]]" "$registry_file" 2>/dev/null && return 0
-  grep -qxF "$path" "$registry_file" 2>/dev/null && return 0
+  if grep -q "^${path}[[:space:]]" "$registry_file" 2>/dev/null || \
+     grep -qxF "$path" "$registry_file" 2>/dev/null; then
+    return 0
+  fi
   
+  # Append entry
   echo "$entry" >> "$registry_file"
 }
 
@@ -33,16 +57,25 @@ registry_remove() {
   local type="$1" path="$2"
   local registry_file="${STATE_DIR}/${COMPONENT}.registry/${type}"
   
-  # Read, filter, write back (idempotent - no error on "not found")
-  local content
-  content=$(grep -v "^${path}[[:space:]]" "$registry_file" 2>/dev/null | \
-            grep -vxF "$path" 2>/dev/null || true)
-  echo "$content" > "$registry_file"
+  # Read existing entries into array
+  local entries=()
+  while IFS= read -r line; do
+    # Skip lines matching the path to remove
+    if [[ "$line" =~ ^${path}[[:space:]] ]] || [[ "$line" == "$path" ]]; then
+      continue
+    fi
+    # Keep non-empty lines
+    [[ -n "$line" ]] && entries+=("$line")
+  done < "$registry_file" 2>/dev/null || true
+  
+  # Write back atomically
+  registry_write_atomic "$registry_file" "${entries[@]}"
 }
 
 registry_has() {
   local type="$1" path="$2"
-  local registry_file="${STATE_DIR}/${COMPONENT}.registry/${type}"
+  local component="${3:-${COMPONENT}}"
+  local registry_file="${STATE_DIR}/${component}.registry/${type}"
   
   grep -q "^${path}[[:space:]]" "$registry_file" 2>/dev/null || \
     grep -qxF "$path" "$registry_file" 2>/dev/null
@@ -92,14 +125,14 @@ registry_verify() {
     done < "${registry_dir}/${type}"
   done
   
-  # Verify links
+  # Verify unit_enabled
   while IFS= read -r path; do
     [[ -n "$path" ]] || continue
     [[ -L "$path" ]] || {
       echo "missing symlink: $path" >&2
       exit_code=1
     }
-  done < "${registry_dir}/links"
+  done < "${registry_dir}/unit_enabled"
   
   return "$exit_code"
 }
@@ -115,7 +148,7 @@ registry_validate() {
     return 1
   }
   
-  for type in dirs files units links; do
+  for type in dirs files units unit_enabled; do
     local file="${registry_dir}/${type}"
     [[ -f "$file" ]] || {
       echo "error: registry file missing: $file" >&2
@@ -123,8 +156,8 @@ registry_validate() {
       continue
     }
     
-    # Check format (skip for links - different format)
-    if [[ "$type" != "links" ]]; then
+    # Check format (skip for unit_enabled - different format)
+    if [[ "$type" != "unit_enabled" ]]; then
       local line_num=0
       while IFS=' ' read -r path mode; do
         ((line_num++))
@@ -151,7 +184,7 @@ registry_validate() {
         fi
       done < "$file"
     else
-      # Validate links (single column)
+      # Validate unit_enabled (single column)
       local line_num=0
       while IFS= read -r path; do
         ((line_num++))
@@ -160,6 +193,14 @@ registry_validate() {
           echo "error: relative path in ${file}:${line_num}: $path" >&2
           ((errors++))
         }
+        
+        # Check that enabled unit exists in units registry
+        local unit_name=$(basename "$path")
+        local unit_path="${SYSTEMD_UNIT_DIR}/${unit_name}"
+        if ! registry_has units "$unit_path" "$component"; then
+          echo "error: enabled unit not in units registry: $unit_name" >&2
+          ((errors++))
+        fi
       done < "$file"
     fi
     
@@ -167,7 +208,7 @@ registry_validate() {
     local unique_count
     unique_count=$(sort -u "$file" | wc -l)
     local total_count
-    total_count=$(wc -l < "$file")
+    total_count=$(grep -c . "$file" 2>/dev/null || echo 0)
     
     if [[ "$unique_count" -ne "$total_count" ]]; then
       echo "error: duplicate entries in $file" >&2
@@ -176,6 +217,82 @@ registry_validate() {
   done
   
   return "$errors"
+}
+
+# Reconciliation
+registry_reconcile() {
+  local component="${1:-${COMPONENT}}"
+  local registry_dir="${STATE_DIR}/${component}.registry"
+  local discrepancies=0
+  
+  [[ -d "$registry_dir" ]] || {
+    echo "error: component not installed: $component" >&2
+    return 1
+  }
+  
+  # Reconcile files
+  local files_to_keep=()
+  while IFS=' ' read -r path mode; do
+    [[ -n "$path" ]] || continue
+    
+    if [[ ! -f "$path" ]]; then
+      echo "removing missing file from registry: $path" >&2
+      ((discrepancies++))
+    else
+      files_to_keep+=("$path $mode")
+    fi
+  done < "${registry_dir}/files"
+  registry_write_atomic "${registry_dir}/files" "${files_to_keep[@]}"
+  
+  # Reconcile dirs
+  local dirs_to_keep=()
+  while IFS=' ' read -r path mode; do
+    [[ -n "$path" ]] || continue
+    
+    if [[ ! -d "$path" ]]; then
+      echo "removing missing directory from registry: $path" >&2
+      ((discrepancies++))
+    else
+      dirs_to_keep+=("$path $mode")
+    fi
+  done < "${registry_dir}/dirs"
+  registry_write_atomic "${registry_dir}/dirs" "${dirs_to_keep[@]}"
+  
+  # Reconcile units
+  local units_to_keep=()
+  while IFS=' ' read -r path mode; do
+    [[ -n "$path" ]] || continue
+    
+    if [[ ! -f "$path" ]]; then
+      echo "removing missing unit from registry: $path" >&2
+      ((discrepancies++))
+    else
+      units_to_keep+=("$path $mode")
+    fi
+  done < "${registry_dir}/units"
+  registry_write_atomic "${registry_dir}/units" "${units_to_keep[@]}"
+  
+  # Reconcile unit_enabled (check actual symlinks)
+  local enabled_to_keep=()
+  while IFS= read -r path; do
+    [[ -n "$path" ]] || continue
+    
+    if [[ ! -L "$path" ]]; then
+      echo "removing missing enablement link from registry: $path" >&2
+      ((discrepancies++))
+    else
+      enabled_to_keep+=("$path")
+    fi
+  done < "${registry_dir}/unit_enabled"
+  registry_write_atomic "${registry_dir}/unit_enabled" "${enabled_to_keep[@]}"
+  
+  if [[ "$discrepancies" -eq 0 ]]; then
+    echo "registry consistent with system state"
+  else
+    echo "reconciled $discrepancies discrepancies"
+  fi
+  
+  return 0
 }
 
 # Uninstall
@@ -189,19 +306,19 @@ uninstall_from_registry() {
   done < "$registry_dir/units"
   (( ${#units[@]} )) && remove_files "${units[@]}"
   
-  # Remove symlinks (may or may not exist on filesystem)
-  local links=()
-  while IFS= read -r path; do
-    [[ -n "$path" ]] && links+=("$path")
-  done < "$registry_dir/links"
-  (( ${#links[@]} )) && remove_links "${links[@]}"
-  
   # Remove files
   local files=()
   while IFS=' ' read -r path mode; do
     [[ -n "$path" ]] && files+=("$path")
   done < "$registry_dir/files"
   (( ${#files[@]} )) && remove_files "${files[@]}"
+  
+  # Remove links
+  local links=()
+  while IFS= read -r path; do
+    [[ -n "$path" ]] && links+=("$path")
+  done < "$registry_dir/links" 2>/dev/null || true
+  (( ${#links[@]} )) && remove_links "${links[@]}"
   
   # Remove directories (reverse order)
   local dirs=()

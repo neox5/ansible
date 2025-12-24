@@ -35,16 +35,14 @@ default_uninstall() {
     return 0
   fi
   
-  # Check for running units
-  local registry_dir="${STATE_DIR}/${COMPONENT}.registry"
-  while IFS=' ' read -r path mode; do
-    [[ -n "$path" ]] || continue
-    local unit_name=$(basename "$path")
-    
-    if systemctl is-active --quiet "$unit_name" 2>/dev/null; then
-      die "component is running - stop it first (run: ./run ${COMPONENT} stop)"
-    fi
-  done < "$registry_dir/units" || true
+  # Reconcile registry with actual state first
+  registry_reconcile >/dev/null 2>&1 || true
+  
+  # Validate no enabled units (check actual system state)
+  verify_no_enabled_units || return 1
+  
+  # Validate no active units (check actual system state)
+  verify_no_active_units || return 1
   
   # Uninstall from registry
   uninstall_from_registry

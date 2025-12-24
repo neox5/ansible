@@ -46,8 +46,54 @@ c_cleanup() {
   rm -rf "${STATE_DIR}/sys.registry"
 }
 
+print_systemd_table() {
+  echo "Systemd units:"
+  printf "%-15s %-35s %-10s %s\n" "COMPONENT" "UNIT" "STATUS" "STATE"
+  
+  local found_units=false
+  
+  # Iterate through all component registries (sorted)
+  for registry_dir in "${STATE_DIR}"/*.registry; do
+    [[ -d "$registry_dir" ]] || continue
+    
+    local component=$(basename "$registry_dir" .registry)
+    
+    # Read units for this component
+    while IFS=' ' read -r unit_path mode; do
+      [[ -n "$unit_path" ]] || continue
+      
+      found_units=true
+      local unit_name=$(basename "$unit_path")
+      local status="disabled"
+      local state="inactive"
+      
+      # Check if enabled (actual system state)
+      if systemd_is_enabled "$unit_path"; then
+        status="enabled"
+      fi
+      
+      # Check runtime state
+      if systemctl is-active --quiet "$unit_name" 2>/dev/null; then
+        state="active"
+      fi
+      
+      printf "%-15s %-35s %-10s %s\n" "$component" "$unit_name" "$status" "$state"
+    done < "${registry_dir}/units"
+  done
+  
+  if [[ "$found_units" == "false" ]]; then
+    echo "(no systemd unit files installed)"
+  fi
+  
+  echo ""
+}
+
 c_tree() {
-  [[ -d "${STATE_DIR}" ]] || die "system not initialized (run: ./run sys init)"
+  # Check if system is initialized
+  if [[ ! -d "${STATE_DIR}" ]]; then
+    echo "system not initialized (run: ./run sys init)"
+    return 0
+  fi
   
   # Silent mode: no output
   [[ "${SILENT:-false}" == "true" ]] && return 0
@@ -61,18 +107,15 @@ c_tree() {
   
   # Main directories
   for dir in "${SHARE_ROOT}" "${ETC_ROOT}" "${VAR_ROOT}"; do
-    tree "${tree_args[@]}" "${dir}" 2>/dev/null || true
-    echo ""
+    if [[ ! -d "$dir" ]]; then
+      echo "$dir (not created)"
+      echo ""
+    else
+      tree "${tree_args[@]}" "${dir}" 2>/dev/null || true
+      echo ""
+    fi
   done
   
-  # Systemd units - Level 1 service files only
-  tree "${tree_args[@]}" -L 1 -P "*.service" --prune "${SYSTEMD_UNIT_DIR}"
-  echo ""
-  
-  # multi-user.target.wants - all service files
-  local target_dir="${SYSTEMD_UNIT_DIR}/multi-user.target.wants"
-  if [[ -d "${target_dir}" ]]; then
-    tree "${tree_args[@]}" -P "*.service" "${target_dir}" 2>/dev/null || true
-    echo ""
-  fi
+  # Systemd units table
+  print_systemd_table
 }
