@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Framework-supported verbs
+readonly FRAMEWORK_VERBS=(
+  install
+  uninstall
+  start
+  stop
+  verify
+  help
+)
+
 discover_components() {
   local comp
   for comp in "${ROOT_DIR}/scripts/components/"*.sh; do
@@ -9,12 +19,43 @@ discover_components() {
   done | sort
 }
 
-verb_supported_by_component() {
-  local sv
-  for sv in "${supported_verbs[@]:-}"; do
-    [[ "$sv" == "$VERB" ]] && return 0
+is_valid_verb() {
+  local verb="$1"
+  local v
+  for v in "${FRAMEWORK_VERBS[@]}"; do
+    [[ "$v" == "$verb" ]] && return 0
   done
   return 1
+}
+
+get_verb_implementation_type() {
+  local verb="$1"
+  
+  # Check component-specific hook first
+  local hook="c_${verb//-/_}"
+  if has_fn "$hook"; then
+    echo "component"
+    return 0
+  fi
+  
+  # Check default implementation
+  local default_hook="default_${verb//-/_}"
+  if has_fn "$default_hook"; then
+    echo "default"
+    return 0
+  fi
+  
+  # Not implemented
+  echo "none"
+  return 1
+}
+
+component_implements_verb() {
+  local verb="$1"
+  local impl_type
+  
+  impl_type=$(get_verb_implementation_type "$verb")
+  [[ "$impl_type" != "none" ]]
 }
 
 has_fn() {
@@ -22,10 +63,25 @@ has_fn() {
 }
 
 default_help() {
-  echo "${COMPONENT} commands:"
-  local v
-  for v in "${supported_verbs[@]}"; do
-    printf "  %-12s\n" "${v}"
+  echo "${COMPONENT} verbs:"
+  
+  local verb impl_type label
+  for verb in "${FRAMEWORK_VERBS[@]}"; do
+    impl_type=$(get_verb_implementation_type "$verb")
+    
+    case "$impl_type" in
+      component)
+        label="component"
+        ;;
+      default)
+        label="default"
+        ;;
+      none)
+        continue  # Skip unimplemented verbs
+        ;;
+    esac
+    
+    printf "  %-12s (%s)\n" "$verb" "$label"
   done
 }
 
@@ -70,47 +126,43 @@ default_uninstall() {
 }
 
 dispatch() {
-  # Help bypasses everything
+  # Validate verb exists in framework
+  is_valid_verb "$VERB" || \
+    die "unknown verb: ${VERB}"
+  
+  # Validate component implements verb
+  component_implements_verb "$VERB" || \
+    die "${COMPONENT} does not implement '${VERB}'"
+  
+  # Help handling
   if [[ "$VERB" == "help" ]]; then
     if has_fn c_help; then
       c_help "$@"
-      return 0
+    else
+      default_help
     fi
-    default_help
     return 0
   fi
 
-  # Validation
-  verb_supported_by_component || \
-    die "${VERB} is not supported by ${COMPONENT}"
-
+  # Check base prerequisites
   check_base_prereqs
   check_component_prereqs
 
-  # Resolve hook (defaults for uninstall and verify)
+  # Resolve hook (component-specific or default)
   local hook="c_${VERB//-/_}"
-  if [[ "$VERB" == "uninstall" ]] && ! has_fn "$hook"; then
-    hook="default_uninstall"
+  if ! has_fn "$hook"; then
+    hook="default_${VERB//-/_}"
+  fi
+
+  # PRE-HOOK: Install only
+  if [[ "$VERB" == "install" ]]; then
+    if is_installed && [[ "${1:-}" != "--force" ]]; then
+      echo "already installed (use --force to overwrite)"
+      return 0
+    fi
+    ensure_registry
   fi
   
-  if [[ "$VERB" == "verify" ]] && ! has_fn "$hook"; then
-    hook="default_verify"
-  fi
-
-  if has_fn "$hook"; then
-    # PRE-HOOK: Install only
-    if [[ "$VERB" == "install" ]]; then
-      if is_installed && [[ "${1:-}" != "--force" ]]; then
-        echo "already installed (use --force to overwrite)"
-        return 0
-      fi
-      ensure_registry
-    fi
-    
-    # COMPONENT OPERATION
-    "$hook" "$@"
-    return $?
-  fi
-
-  die "${VERB} is not implemented by ${COMPONENT}"
+  # Execute operation
+  "$hook" "$@"
 }

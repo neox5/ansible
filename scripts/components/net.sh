@@ -1,13 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-supported_verbs=(
-  install
-  uninstall
-  start
-  stop
-)
-
 readonly NET_COMPOSE_SRC="${ROOT_DIR}/compose/network.yml"
 readonly NET_COMPOSE_DST="${SHARE_ROOT}/compose/network.yml"
 readonly NET_UNIT_SRC="${ROOT_DIR}/systemd/n150-net.service"
@@ -20,8 +13,6 @@ c_install() {
   install_file "${NET_COMPOSE_SRC}" "${NET_COMPOSE_DST}"
   install_systemd_unit "${NET_UNIT_SRC}" "${NET_UNIT_DST}"
 }
-
-# No c_uninstall - uses default_uninstall
 
 c_start() {
   systemd_enable_unit "${NET_UNIT_DST}"

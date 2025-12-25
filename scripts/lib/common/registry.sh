@@ -298,29 +298,42 @@ registry_reconcile() {
 # Uninstall
 uninstall_from_registry() {
   local registry_dir="${STATE_DIR}/${COMPONENT}.registry"
+  declare -A removed_paths  # Track already-removed paths
   
-  # Remove units (files only, no systemd operations)
+  # 1. Remove units (systemd unit files)
   local units=()
   while IFS=' ' read -r path mode; do
     [[ -n "$path" ]] && units+=("$path")
   done < "$registry_dir/units"
-  (( ${#units[@]} )) && remove_files "${units[@]}"
   
-  # Remove files
+  if (( ${#units[@]} )); then
+    remove_files "${units[@]}"
+    local path
+    for path in "${units[@]}"; do
+      removed_paths["$path"]=1
+    done
+  fi
+  
+  # 2. Remove files (skip if already removed as unit)
   local files=()
   while IFS=' ' read -r path mode; do
-    [[ -n "$path" ]] && files+=("$path")
+    [[ -n "$path" ]] || continue
+    # Skip if already processed in units
+    [[ -z "${removed_paths[$path]:-}" ]] && files+=("$path")
   done < "$registry_dir/files"
-  (( ${#files[@]} )) && remove_files "${files[@]}"
   
-  # Remove links
+  if (( ${#files[@]} )); then
+    remove_files "${files[@]}"
+  fi
+  
+  # 3. Remove links
   local links=()
   while IFS= read -r path; do
     [[ -n "$path" ]] && links+=("$path")
   done < "$registry_dir/links" 2>/dev/null || true
   (( ${#links[@]} )) && remove_links "${links[@]}"
   
-  # Remove directories (reverse order)
+  # 4. Remove directories (reverse order)
   local dirs=()
   while IFS=' ' read -r path mode; do
     [[ -n "$path" ]] && dirs+=("$path")

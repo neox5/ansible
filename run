@@ -56,9 +56,9 @@ case "${1:-}" in
       "  <component> <verb> [options]" \
       ""
     
-    components=$(discover_components | tr '\n' ', ' | sed 's/, $//')
+    components=$(discover_components | awk '{printf "%s%s", sep, $0; sep=", "} END {print ""}')
     echo "Available components: ${components}"
-    echo "Run './run <component> help' for component-specific commands"
+    echo "Run './run <component> help' for component-specific verbs"
     exit 0
     ;;
 esac
