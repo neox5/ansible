@@ -93,132 +93,6 @@ registry_list() {
   fi
 }
 
-# Validation
-registry_verify() {
-  local component="${1:-${COMPONENT}}"
-  local registry_dir="${STATE_DIR}/${component}.registry"
-  local exit_code=0
-  
-  for type in dirs files units; do
-    while IFS=' ' read -r path mode; do
-      [[ -n "$path" ]] || continue
-      
-      # Check existence
-      if [[ ! -e "$path" ]]; then
-        echo "missing: $path" >&2
-        exit_code=1
-        continue
-      fi
-      
-      # Check mode (if specified)
-      if [[ -n "$mode" ]]; then
-        local actual_mode
-        actual_mode=$(stat -c '%a' "$path" 2>/dev/null)
-        # Strip leading 0 from mode for comparison
-        local expected_mode="${mode#0}"
-        
-        if [[ "$actual_mode" != "$expected_mode" ]]; then
-          echo "mode mismatch: $path (expected: $mode, actual: $actual_mode)" >&2
-          exit_code=1
-        fi
-      fi
-    done < "${registry_dir}/${type}"
-  done
-  
-  # Verify unit_enabled
-  while IFS= read -r path; do
-    [[ -n "$path" ]] || continue
-    [[ -L "$path" ]] || {
-      echo "missing symlink: $path" >&2
-      exit_code=1
-    }
-  done < "${registry_dir}/unit_enabled"
-  
-  return "$exit_code"
-}
-
-registry_validate() {
-  local component="${1:-${COMPONENT}}"
-  local registry_dir="${STATE_DIR}/${component}.registry"
-  local errors=0
-  
-  # Check registry structure
-  [[ -d "$registry_dir" ]] || {
-    echo "error: registry directory missing: $registry_dir" >&2
-    return 1
-  }
-  
-  for type in dirs files units unit_enabled; do
-    local file="${registry_dir}/${type}"
-    [[ -f "$file" ]] || {
-      echo "error: registry file missing: $file" >&2
-      ((errors++))
-      continue
-    }
-    
-    # Check format (skip for unit_enabled - different format)
-    if [[ "$type" != "unit_enabled" ]]; then
-      local line_num=0
-      while IFS=' ' read -r path mode; do
-        ((line_num++))
-        
-        # Check empty path
-        [[ -z "$path" ]] && {
-          echo "error: empty path in ${file}:${line_num}" >&2
-          ((errors++))
-          continue
-        }
-        
-        # Check absolute path
-        [[ "$path" == /* ]] || {
-          echo "error: relative path in ${file}:${line_num}: $path" >&2
-          ((errors++))
-        }
-        
-        # Check mode format (4 octal digits)
-        if [[ -n "$mode" ]]; then
-          [[ "$mode" =~ ^[0-7]{4}$ ]] || {
-            echo "error: invalid mode in ${file}:${line_num}: $mode" >&2
-            ((errors++))
-          }
-        fi
-      done < "$file"
-    else
-      # Validate unit_enabled (single column)
-      local line_num=0
-      while IFS= read -r path; do
-        ((line_num++))
-        [[ -z "$path" ]] && continue
-        [[ "$path" == /* ]] || {
-          echo "error: relative path in ${file}:${line_num}: $path" >&2
-          ((errors++))
-        }
-        
-        # Check that enabled unit exists in units registry
-        local unit_name=$(basename "$path")
-        local unit_path="${SYSTEMD_UNIT_DIR}/${unit_name}"
-        if ! registry_has units "$unit_path" "$component"; then
-          echo "error: enabled unit not in units registry: $unit_name" >&2
-          ((errors++))
-        fi
-      done < "$file"
-    fi
-    
-    # Check duplicates
-    local unique_count
-    unique_count=$(sort -u "$file" | wc -l)
-    local total_count
-    total_count=$(grep -c . "$file" 2>/dev/null || echo 0)
-    
-    if [[ "$unique_count" -ne "$total_count" ]]; then
-      echo "error: duplicate entries in $file" >&2
-      ((errors++))
-    fi
-  done
-  
-  return "$errors"
-}
-
 # Reconciliation
 registry_reconcile() {
   local component="${1:-${COMPONENT}}"
@@ -233,6 +107,7 @@ registry_reconcile() {
   # Reconcile files
   local files_to_keep=()
   while IFS=' ' read -r path mode; do
+    # Skip empty lines
     [[ -n "$path" ]] || continue
     
     if [[ ! -f "$path" ]]; then
@@ -247,6 +122,7 @@ registry_reconcile() {
   # Reconcile dirs
   local dirs_to_keep=()
   while IFS=' ' read -r path mode; do
+    # Skip empty lines
     [[ -n "$path" ]] || continue
     
     if [[ ! -d "$path" ]]; then
@@ -261,6 +137,7 @@ registry_reconcile() {
   # Reconcile units
   local units_to_keep=()
   while IFS=' ' read -r path mode; do
+    # Skip empty lines
     [[ -n "$path" ]] || continue
     
     if [[ ! -f "$path" ]]; then
@@ -275,6 +152,7 @@ registry_reconcile() {
   # Reconcile unit_enabled (check actual symlinks)
   local enabled_to_keep=()
   while IFS= read -r path; do
+    # Skip empty lines
     [[ -n "$path" ]] || continue
     
     if [[ ! -L "$path" ]]; then
@@ -303,10 +181,12 @@ uninstall_from_registry() {
   # 1. Remove units (systemd unit files)
   local units=()
   while IFS=' ' read -r path mode; do
-    [[ -n "$path" ]] && units+=("$path")
+    # Skip empty lines
+    [[ -n "$path" ]] || continue
+    units+=("$path")
   done < "$registry_dir/units"
   
-  if (( ${#units[@]} )); then
+  if (( ${#units[@]} > 0 )); then
     remove_files "${units[@]}"
     local path
     for path in "${units[@]}"; do
@@ -317,26 +197,40 @@ uninstall_from_registry() {
   # 2. Remove files (skip if already removed as unit)
   local files=()
   while IFS=' ' read -r path mode; do
+    # Skip empty lines
     [[ -n "$path" ]] || continue
+    
     # Skip if already processed in units
-    [[ -z "${removed_paths[$path]:-}" ]] && files+=("$path")
+    if [[ -z "${removed_paths[$path]:-}" ]]; then
+      files+=("$path")
+    fi
   done < "$registry_dir/files"
   
-  if (( ${#files[@]} )); then
+  if (( ${#files[@]} > 0 )); then
     remove_files "${files[@]}"
   fi
   
   # 3. Remove links
   local links=()
   while IFS= read -r path; do
-    [[ -n "$path" ]] && links+=("$path")
+    # Skip empty lines
+    [[ -n "$path" ]] || continue
+    links+=("$path")
   done < "$registry_dir/links" 2>/dev/null || true
-  (( ${#links[@]} )) && remove_links "${links[@]}"
+  
+  if (( ${#links[@]} > 0 )); then
+    remove_links "${links[@]}"
+  fi
   
   # 4. Remove directories (reverse order)
   local dirs=()
   while IFS=' ' read -r path mode; do
-    [[ -n "$path" ]] && dirs+=("$path")
+    # Skip empty lines
+    [[ -n "$path" ]] || continue
+    dirs+=("$path")
   done < <(tac "$registry_dir/dirs")
-  (( ${#dirs[@]} )) && remove_dirs "${dirs[@]}"
+  
+  if (( ${#dirs[@]} > 0 )); then
+    remove_dirs "${dirs[@]}"
+  fi
 }

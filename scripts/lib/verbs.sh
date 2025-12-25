@@ -7,7 +7,6 @@ readonly FRAMEWORK_VERBS=(
   uninstall
   start
   stop
-  verify
   help
 )
 
@@ -83,24 +82,6 @@ default_help() {
     
     printf "  %-12s (%s)\n" "$verb" "$label"
   done
-}
-
-default_verify() {
-  require_installed
-  
-  # Validate registry structure
-  registry_validate || {
-    echo "error: registry validation failed" >&2
-    return 1
-  }
-  
-  # Verify disk state matches registry
-  registry_verify || {
-    echo "error: registry verification failed" >&2
-    return 1
-  }
-  
-  echo "base verification passed"
 }
 
 default_uninstall() {
