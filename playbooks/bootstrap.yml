@@ -69,26 +69,6 @@
         key: "{{ ansible_key_content['content'] | b64decode }}"
         state: present
 
-    - name: Remove temporary key file
-      file:
-        path: /tmp/ansible_key.pub
-        state: absent
-
-    - name: Configure passwordless sudo for ansible user
-      copy:
-        content: "{{ ansible_user_name }} ALL=(ALL) NOPASSWD:ALL\n"
-        dest: "/etc/sudoers.d/{{ ansible_user_name }}"
-        mode: '0440'
-        validate: 'visudo -cf %s'
-
-    - name: Create .ssh directory for root
-      file:
-        path: /root/.ssh
-        state: directory
-        owner: root
-        group: root
-        mode: '0700'
-
     - name: Fetch emergency SSH key
       get_url:
         url: "{{ emergency_key_url }}"
@@ -100,16 +80,27 @@
         src: /tmp/emergency_key.pub
       register: emergency_key_content
 
-    - name: Add emergency key to root user
+    - name: Add emergency key to ansible user
       authorized_key:
-        user: root
+        user: "{{ ansible_user_name }}"
         key: "{{ emergency_key_content['content'] | b64decode }}"
+        comment: "Emergency access key"
         state: present
 
-    - name: Remove temporary emergency key file
+    - name: Remove temporary key files
       file:
-        path: /tmp/emergency_key.pub
+        path: "{{ item }}"
         state: absent
+      loop:
+        - /tmp/ansible_key.pub
+        - /tmp/emergency_key.pub
+
+    - name: Configure passwordless sudo for ansible user
+      copy:
+        content: "{{ ansible_user_name }} ALL=(ALL) NOPASSWD:ALL\n"
+        dest: "/etc/sudoers.d/{{ ansible_user_name }}"
+        mode: '0440'
+        validate: 'visudo -cf %s'
 
     - name: Verify ansible user can sudo
       command: sudo -n -l
@@ -121,7 +112,14 @@
       debug:
         msg:
           - "Bootstrap complete!"
-          - "Test ansible user connection:"
+          - ""
+          - "Normal access:"
           - "  ssh -i ~/.ssh/id_ed25519_ansible ansible@{{ inventory_hostname }}"
-          - "Then run site.yml to complete deployment:"
-          - "  ansible-playbook -i inventory/prod playbooks/site.yml"
+          - ""
+          - "Emergency access:"
+          - "  ssh -i ~/.ssh/id_ed25519_emergency ansible@{{ inventory_hostname }}"
+          - ""
+          - "Root access prohibited (use sudo)"
+          - ""
+          - "Next: Apply security hardening"
+          - "  ansible-playbook -i inventory/prod site.yml --tags security_hardening"
