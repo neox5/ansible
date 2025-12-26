@@ -1,0 +1,45 @@
+---
+- name: Manual system updates
+  hosts: all
+  become: yes
+  
+  tasks:
+    - name: Update package cache
+      ansible.builtin.dnf:
+        update_cache: yes
+    
+    - name: Upgrade security packages
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+        update_only: yes
+      register: security_updates
+    
+    - name: Show updated packages
+      ansible.builtin.debug:
+        var: security_updates.results
+      when: security_updates.changed
+    
+    - name: Check if reboot required
+      ansible.builtin.command:
+        cmd: needs-restarting -r
+      register: reboot_check
+      failed_when: false
+      changed_when: false
+    
+    - name: Notify if reboot needed
+      ansible.builtin.debug:
+        msg: "⚠️  System reboot required for kernel updates"
+      when: reboot_check.rc == 1
+    
+    - name: Show processes requiring restart
+      ansible.builtin.command:
+        cmd: needs-restarting
+      register: reboot_pkgs
+      when: reboot_check.rc == 1
+      changed_when: false
+    
+    - name: Display processes requiring restart
+      ansible.builtin.debug:
+        var: reboot_pkgs.stdout_lines
+      when: reboot_check.rc == 1 and reboot_pkgs.stdout_lines | length > 0
