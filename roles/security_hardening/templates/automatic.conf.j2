@@ -1,0 +1,37 @@
+# DNF Automatic configuration - managed by Ansible
+# Role: security_hardening
+
+[commands]
+# What kind of upgrade to perform:
+# default = all available upgrades
+# security = only install security updates
+upgrade_type = {{ 'security' if security_unattended_upgrades_security_only else 'default' }}
+
+# Whether to download updates
+download_updates = yes
+
+# Whether to apply updates
+apply_updates = yes
+
+# When the system should reboot following upgrades
+# one of: never, when-changed, when-needed
+reboot = {{ 'never' if not security_unattended_upgrades_auto_reboot else 'when-needed' }}
+
+[emitters]
+# How to send notifications
+# stdio = log to journal
+# email = send email (requires MTA)
+# motd = update /etc/motd
+emit_via = stdio
+
+# System name in notifications
+system_name = {{ ansible_hostname }}
+
+[email]
+# Email configuration (used if emit_via includes email)
+email_from = root@{{ ansible_fqdn }}
+email_to = root
+
+[base]
+# DNF debugging level
+debuglevel = 1

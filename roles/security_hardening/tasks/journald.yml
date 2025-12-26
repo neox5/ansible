@@ -1,0 +1,11 @@
+---
+- name: Configure journald
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/journald.conf
+    regexp: "^#?{{ item.key }}="
+    line: "{{ item.key }}={{ item.value }}"
+    state: present
+  loop:
+    - { key: "Storage", value: "{{ security_journald_storage }}" }
+    - { key: "MaxRetentionSec", value: "{{ security_journald_max_retention_sec }}" }
+  notify: Restart journald

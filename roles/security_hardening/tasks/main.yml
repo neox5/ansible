@@ -1,0 +1,15 @@
+---
+- name: Harden SSH
+  import_tasks: ssh.yml
+
+- name: Configure firewall
+  import_tasks: firewall.yml
+
+- name: Setup automatic security updates
+  import_tasks: updates.yml
+
+- name: Configure fail2ban
+  import_tasks: fail2ban.yml
+
+- name: Configure journald
+  import_tasks: journald.yml

@@ -1,0 +1,13 @@
+# Fail2ban configuration - managed by Ansible
+# Role: security_hardening
+
+[DEFAULT]
+bantime  = {{ security_fail2ban_ssh_bantime }}
+findtime = {{ security_fail2ban_ssh_findtime }}
+maxretry = {{ security_fail2ban_ssh_maxretry }}
+backend = systemd
+
+[sshd]
+enabled = true
+port    = {{ security_ssh_port }}
+logpath = %(sshd_log)s

@@ -1,0 +1,26 @@
+---
+# SSH Hardening
+security_ssh_port: 22
+security_ssh_allowed_users:
+  - ansible
+
+# Firewall (restrictive baseline)
+security_firewall_enabled: yes
+security_firewall_default_policy: deny
+security_firewall_allowed_ports:
+  - { port: 22, proto: tcp, comment: "SSH" }
+
+# Automatic Security Updates
+security_unattended_upgrades: yes
+security_unattended_upgrades_security_only: yes
+security_unattended_upgrades_auto_reboot: no
+
+# Logging (journald only)
+security_journald_storage: persistent
+security_journald_max_retention_sec: 2592000  # 30 days
+
+# Fail2ban (SSH brute-force protection)
+security_fail2ban_enabled: yes
+security_fail2ban_ssh_maxretry: 5
+security_fail2ban_ssh_bantime: 3600
+security_fail2ban_ssh_findtime: 600
