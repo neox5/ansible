@@ -1,8 +1,12 @@
 ---
-- name: Apply all roles to production hosts
+- name: Apply baseline hardening to all hosts
   hosts: all
   become: yes
-
   roles:
     - security_hardening
+
+- name: Apply PostgreSQL only to database hosts
+  hosts: db
+  become: yes
+  roles:
     - geerlingguy.postgresql

@@ -1,0 +1,30 @@
+---
+# PostgreSQL defaults for all database hosts (functional group: db)
+
+# Security: Always use modern authentication
+postgresql_auth_method: "scram-sha-256"
+
+# Service Management: Prefer reload on config changes
+postgresql_restarted_state: "reloaded"
+
+# Baseline performance defaults (generic)
+postgresql_global_config_options:
+  # Required by geerlingguy.postgresql role
+  - option: unix_socket_directories
+    value: '{{ postgresql_unix_socket_directories | join(",") }}'
+  - option: log_directory
+    value: "log"
+
+  # Conservative baseline (override role defaults where justified)
+  - option: shared_buffers
+    value: "256MB"
+  - option: wal_buffers
+    value: "16MB"
+  - option: min_wal_size
+    value: "1GB"
+  - option: max_wal_size
+    value: "4GB"
+
+  # Generic I/O baseline (demoted from hardware-specific)
+  - option: effective_io_concurrency
+    value: "2"

@@ -1,0 +1,16 @@
+---
+# Application-level database objects for n8n (group: n8n)
+
+postgresql_databases:
+  - name: n8n
+    lc_collate: "en_US.UTF-8"
+    lc_ctype: "en_US.UTF-8"
+    encoding: "UTF-8"
+    template: "template0"
+
+postgresql_users:
+  - name: n8n
+    password: "{{ n8n_db_password }}"
+    db: n8n
+    priv: "ALL"
+    role_attr_flags: "NOCREATEDB,NOSUPERUSER"
