@@ -1,0 +1,51 @@
+---
+# PostgreSQL Configuration for N150 Hardware
+# Hardware: 12GB RAM, 512GB SSD
+
+# Hardware-Specific Performance Tuning
+postgresql_global_config_options:
+  # Required by role
+  - option: unix_socket_directories
+    value: '{{ postgresql_unix_socket_directories | join(",") }}'
+  - option: log_directory
+    value: "log"
+
+  # Memory Configuration (tuned for 12GB RAM)
+  - option: shared_buffers
+    value: "2GB" # ~25% of RAM (override all/ 256MB)
+  - option: effective_cache_size
+    value: "8GB" # ~67% of RAM (override PostgreSQL 4GB)
+  - option: work_mem
+    value: "20MB" # Per-operation memory (override PostgreSQL 4MB)
+  - option: maintenance_work_mem
+    value: "512MB" # For VACUUM, CREATE INDEX (override PostgreSQL 64MB)
+
+  # WAL Configuration (inherit from all/, increase for SSD)
+  - option: wal_buffers
+    value: "16MB"
+  - option: min_wal_size
+    value: "2GB" # Increase from all/ 1GB
+  - option: max_wal_size
+    value: "8GB" # Increase from all/ 4GB
+
+  # I/O Configuration (SSD optimizations)
+  - option: effective_io_concurrency
+    value: "200" # SSD (override all/ HDD setting of 2)
+  - option: random_page_cost
+    value: "1.1" # SSD (override PostgreSQL HDD default 4.0)
+
+# n8n Application Database
+postgresql_databases:
+  - name: n8n
+    lc_collate: "en_US.UTF-8"
+    lc_ctype: "en_US.UTF-8"
+    encoding: "UTF-8"
+    template: "template0"
+
+# n8n Database User
+postgresql_users:
+  - name: n8n
+    password: "{{ n8n_db_password }}"
+    db: n8n
+    priv: "ALL"
+    role_attr_flags: "NOCREATEDB,NOSUPERUSER"

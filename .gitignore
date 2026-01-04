@@ -8,6 +8,9 @@
 **/snp.txt
 **/snp_old.txt
 
+# Ansible Galaxy roles (managed by requirements.yml)
+roles/geerlingguy.*
+
 # Editor / OS noise
 .DS_Store
 .idea/
