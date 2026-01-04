@@ -13,3 +13,6 @@
 
 - name: Configure journald
   import_tasks: journald.yml
+
+- name: Configure sudo
+  import_tasks: sudo.yml

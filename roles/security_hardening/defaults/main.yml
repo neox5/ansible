@@ -15,10 +15,14 @@ security_unattended_upgrades_auto_reboot: no
 
 # Logging (journald only)
 security_journald_storage: persistent
-security_journald_max_retention_sec: 2592000  # 30 days
+security_journald_max_retention_sec: 2592000 # 30 days
 
 # Fail2ban (SSH brute-force protection)
 security_fail2ban_enabled: yes
 security_fail2ban_ssh_maxretry: 5
 security_fail2ban_ssh_bantime: 3600
 security_fail2ban_ssh_findtime: 600
+
+# Sudo Configuration
+security_sudo_passwordless_users:
+  - ansible

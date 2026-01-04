@@ -1,0 +1,30 @@
+---
+- name: Configure passwordless sudo for specified users
+  ansible.builtin.copy:
+    content: "{{ item }} ALL=(ALL) NOPASSWD:ALL\n"
+    dest: "/etc/sudoers.d/{{ item }}_nopasswd"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+  loop: "{{ security_sudo_passwordless_users }}"
+
+- name: Ensure sudoers file has secure defaults
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers
+    regexp: '^Defaults\s+{{ item.key }}'
+    line: "Defaults {{ item.key }}={{ item.value }}"
+    validate: "visudo -cf %s"
+  loop:
+    - { key: "env_reset", value: "" }
+    - {
+        key: "secure_path",
+        value: '"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"',
+      }
+
+- name: Remove insecure sudo configurations
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers
+    regexp: '^Defaults\s+!authenticate'
+    state: absent
+    validate: "visudo -cf %s"
