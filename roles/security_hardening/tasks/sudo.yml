@@ -1,30 +1,43 @@
 ---
-- name: Configure passwordless sudo for specified users
+# roles/security_hardening/tasks/sudo.yml
+#
+# Task:
+#   Configure sudo hardening and automation access.
+#
+# Result:
+#   Creates /etc/sudoers.d/99-security-hardening (replaces bootstrap config)
+#   Removes /etc/sudoers.d/00-ansible-bootstrap after new config is in place
+#
+
+- name: Configure sudo hardening and automation access
+  become: yes
   ansible.builtin.copy:
-    content: "{{ item }} ALL=(ALL) NOPASSWD:ALL\n"
-    dest: "/etc/sudoers.d/{{ item }}_nopasswd"
+    dest: /etc/sudoers.d/99-security-hardening
     owner: root
     group: root
     mode: "0440"
-    validate: "visudo -cf %s"
-  loop: "{{ security_sudo_passwordless_users }}"
+    content: |
+      # Reset environment variables for all sudo commands.
+      # Prevents privilege escalation via inherited environment.
+      Defaults env_reset
 
-- name: Ensure sudoers file has secure defaults
-  ansible.builtin.lineinfile:
-    path: /etc/sudoers
-    regexp: '^Defaults\s+{{ item.key }}'
-    line: "Defaults {{ item.key }}={{ item.value }}"
-    validate: "visudo -cf %s"
-  loop:
-    - { key: "env_reset", value: "" }
-    - {
-        key: "secure_path",
-        value: '"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"',
-      }
+      # Force a deterministic PATH for commands run via sudo.
+      # Prevents execution of unexpected binaries via PATH manipulation.
+      Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
-- name: Remove insecure sudo configurations
-  ansible.builtin.lineinfile:
-    path: /etc/sudoers
-    regexp: '^Defaults\s+!authenticate'
+      # Require sudo commands to run in a pseudo-terminal.
+      # Improves auditability and prevents some non-interactive abuse cases.
+      Defaults use_pty
+
+      # Grant passwordless sudo to automation users.
+      # Required for non-interactive configuration management.
+      {% for user in security_sudo_passwordless_users %}
+      {{ user }} ALL=(ALL) NOPASSWD:ALL
+      {% endfor %}
+    validate: /usr/sbin/visudo -cf %s
+
+- name: Remove bootstrap sudo configuration
+  become: yes
+  ansible.builtin.file:
+    path: /etc/sudoers.d/00-ansible-bootstrap
     state: absent
-    validate: "visudo -cf %s"

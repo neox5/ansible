@@ -3,7 +3,7 @@
   hosts: all
   gather_facts: no
   become: no
-  
+
   vars:
     ansible_user_name: ansible
     ansible_key_url: "{{ lookup('env', 'ANSIBLE_KEY_URL') | default('https://raw.githubusercontent.com/neox5/ssh-keys/main/automation/id_ed25519_ansible.pub', true) }}"
@@ -50,13 +50,13 @@
         state: directory
         owner: "{{ ansible_user_name }}"
         group: "{{ ansible_user_name }}"
-        mode: '0700'
+        mode: "0700"
 
     - name: Fetch automation SSH key
       get_url:
         url: "{{ ansible_key_url }}"
         dest: "/tmp/ansible_key.pub"
-        mode: '0644'
+        mode: "0644"
 
     - name: Read automation key content
       slurp:
@@ -73,7 +73,7 @@
       get_url:
         url: "{{ emergency_key_url }}"
         dest: /tmp/emergency_key.pub
-        mode: '0644'
+        mode: "0644"
 
     - name: Read emergency key content
       slurp:
@@ -95,12 +95,12 @@
         - /tmp/ansible_key.pub
         - /tmp/emergency_key.pub
 
-    - name: Configure passwordless sudo for ansible user
+    - name: Configure temporary passwordless sudo for ansible user
       copy:
         content: "{{ ansible_user_name }} ALL=(ALL) NOPASSWD:ALL\n"
-        dest: "/etc/sudoers.d/{{ ansible_user_name }}"
-        mode: '0440'
-        validate: 'visudo -cf %s'
+        dest: "/etc/sudoers.d/00-ansible-bootstrap"
+        mode: "0440"
+        validate: "visudo -cf %s"
 
     - name: Verify ansible user can sudo
       command: sudo -n -l
