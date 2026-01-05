@@ -11,6 +11,9 @@
 # Ansible Galaxy roles (managed by requirements.yml)
 roles/geerlingguy.*
 
+# VM disk images
+inventory/lab/vm/images/*.qcow2
+
 # Editor / OS noise
 .DS_Store
 .idea/
