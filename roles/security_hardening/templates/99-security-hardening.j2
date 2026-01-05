@@ -1,0 +1,16 @@
+# Sudo hardening configuration - managed by Ansible
+# Role: security_hardening
+
+# Reset environment variables for all sudo commands.
+Defaults env_reset
+
+# Force a deterministic PATH for commands run via sudo.
+Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+# Require sudo commands to run in a pseudo-terminal.
+Defaults use_pty
+
+# Grant passwordless sudo to automation users.
+{% for user in security_sudo_passwordless_users %}
+{{ user }} ALL=(ALL) NOPASSWD:ALL
+{% endfor %}

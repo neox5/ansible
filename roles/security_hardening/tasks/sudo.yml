@@ -5,35 +5,18 @@
 #   Configure sudo hardening and automation access.
 #
 # Result:
-#   Creates /etc/sudoers.d/99-security-hardening (replaces bootstrap config)
+#   Creates /etc/sudoers.d/99-security-hardening from template
 #   Removes /etc/sudoers.d/00-ansible-bootstrap after new config is in place
 #
 
 - name: Configure sudo hardening and automation access
   become: yes
-  ansible.builtin.copy:
+  ansible.builtin.template:
+    src: 99-security-hardening.j2
     dest: /etc/sudoers.d/99-security-hardening
     owner: root
     group: root
     mode: "0440"
-    content: |
-      # Reset environment variables for all sudo commands.
-      # Prevents privilege escalation via inherited environment.
-      Defaults env_reset
-
-      # Force a deterministic PATH for commands run via sudo.
-      # Prevents execution of unexpected binaries via PATH manipulation.
-      Defaults secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-
-      # Require sudo commands to run in a pseudo-terminal.
-      # Improves auditability and prevents some non-interactive abuse cases.
-      Defaults use_pty
-
-      # Grant passwordless sudo to automation users.
-      # Required for non-interactive configuration management.
-      {% for user in security_sudo_passwordless_users %}
-      {{ user }} ALL=(ALL) NOPASSWD:ALL
-      {% endfor %}
     validate: /usr/sbin/visudo -cf %s
 
 - name: Remove bootstrap sudo configuration
