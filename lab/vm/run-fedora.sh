@@ -16,6 +16,7 @@ Commands:
   (none)           Run current state
   save <name>      Create internal snapshot
   load <name>      Revert to internal snapshot
+  delete <name>    Delete internal snapshot
   reset            Delete working image (next run creates fresh copy)
   list             List all internal snapshots
   help, -h         Show this help
@@ -28,6 +29,7 @@ Examples:
   $0                    # Run current state
   $0 save bootstrap     # Create 'bootstrap' snapshot
   $0 load bootstrap     # Revert to 'bootstrap' snapshot
+  $0 delete bootstrap   # Delete 'bootstrap' snapshot
   $0 load base          # Revert to fresh OS install
   $0 reset              # Delete working image, start fresh
   $0 list               # Show available snapshots
@@ -77,6 +79,21 @@ save)
   check_base
   init_work_image
 
+  # Check for duplicates
+  if qemu-img snapshot -l "$WORK" 2>/dev/null | grep -q "^[0-9].*$SNAPSHOT_NAME"; then
+    echo "[vm] warning: snapshot '$SNAPSHOT_NAME' already exists" >&2
+    echo "[vm] this will create a duplicate" >&2
+    printf "Continue? [y/N]: " >&2
+    read -r response
+    case "$response" in
+    [yY] | [yY][eE][sS]) ;;
+    *)
+      echo "[vm] cancelled" >&2
+      exit 0
+      ;;
+    esac
+  fi
+
   echo "[vm] creating snapshot: $SNAPSHOT_NAME"
   qemu-img snapshot -c "$SNAPSHOT_NAME" "$WORK"
   echo "[vm] snapshot created: $SNAPSHOT_NAME"
@@ -109,6 +126,62 @@ load)
   echo "[vm] reverting to snapshot: $SNAPSHOT_NAME"
   qemu-img snapshot -a "$SNAPSHOT_NAME" "$WORK"
   echo "[vm] snapshot loaded: $SNAPSHOT_NAME"
+  exit 0
+  ;;
+
+delete)
+  SNAPSHOT_NAME="${2:-}"
+  if [ -z "$SNAPSHOT_NAME" ]; then
+    echo "[vm] error: snapshot name required" >&2
+    echo "[vm] usage: $0 delete <name>" >&2
+    exit 1
+  fi
+
+  check_base
+
+  if [ ! -f "$WORK" ]; then
+    echo "[vm] error: no working image found" >&2
+    echo "[vm] run without arguments to create it" >&2
+    exit 1
+  fi
+
+  # Protect 'base' snapshot
+  if [ "$SNAPSHOT_NAME" = "base" ]; then
+    echo "[vm] error: cannot delete 'base' snapshot (protected)" >&2
+    exit 1
+  fi
+
+  # Check if snapshot exists
+  if ! qemu-img snapshot -l "$WORK" 2>/dev/null | grep -q "^[0-9].*$SNAPSHOT_NAME"; then
+    echo "[vm] error: snapshot not found: $SNAPSHOT_NAME" >&2
+    echo "[vm] available snapshots:" >&2
+    qemu-img snapshot -l "$WORK" | tail -n +3 | awk '{print "  - " $2}' >&2
+    exit 1
+  fi
+
+  # Count occurrences of this snapshot name
+  SNAPSHOT_COUNT=$(qemu-img snapshot -l "$WORK" 2>/dev/null | grep -c "^[0-9].*$SNAPSHOT_NAME" || true)
+
+  if [ "$SNAPSHOT_COUNT" -gt 1 ]; then
+    echo "[vm] warning: found $SNAPSHOT_COUNT snapshots named '$SNAPSHOT_NAME'" >&2
+    echo "[vm] this will delete ALL of them" >&2
+    printf "Continue? [y/N]: " >&2
+    read -r response
+    case "$response" in
+    [yY] | [yY][eE][sS]) ;;
+    *)
+      echo "[vm] cancelled" >&2
+      exit 0
+      ;;
+    esac
+  fi
+
+  echo "[vm] deleting snapshot: $SNAPSHOT_NAME"
+  # Delete all snapshots with this name (handles duplicates)
+  while qemu-img snapshot -l "$WORK" 2>/dev/null | grep -q "^[0-9].*$SNAPSHOT_NAME"; do
+    qemu-img snapshot -d "$SNAPSHOT_NAME" "$WORK" 2>/dev/null
+  done
+  echo "[vm] snapshot deleted: $SNAPSHOT_NAME"
   exit 0
   ;;
 
