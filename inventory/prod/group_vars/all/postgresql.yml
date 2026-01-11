@@ -2,59 +2,40 @@
 # ============================================================================
 # PostgreSQL: Universal Defaults
 # File: group_vars/all/postgresql.yml
-# Role: geerlingguy.postgresql
+# Role: anxs.postgresql
 # ============================================================================
 #
 # This file contains:
-# - ROLE: geerlingguy.postgresql public API variables
-# - REPO: postgresql_defaults.* (our helper variables)
+# - REPO: postgresql_defaults.* (our helper variables/constants)
 #
 # Variable categories:
-# - ROLE variables: Set according to role documentation
-# - REPO variables: Our building blocks for database/config management
+# - ROLE variables: Set in db/ layer (service-level decisions)
+# - REPO variables: Universal constants referenced across layers
 #
 # Consult role documentation:
-# https://github.com/geerlingguy/ansible-role-postgresql
+# https://github.com/ANXS/postgresql
 #
 # Variable precedence:
 #   all (this file) → db → hw_* → app → host_vars
 # ============================================================================
 
-# --- ROLE: Service Configuration ---
-# Socket directory for client connections (required for service startup)
-postgresql_unix_socket_directories:
-  - /var/run/postgresql
-
-# Service management defaults
-postgresql_service_state: started
-postgresql_service_enabled: true
-
-# Python library for Ansible PostgreSQL modules
-postgresql_python_library: python3-psycopg2
-
-# PostgreSQL user and group
-postgresql_user: postgres
-postgresql_group: postgres
-
 # --- REPO: Universal Defaults ---
-# Repository-defined defaults used across all database operations
 postgresql_defaults:
+  # Server-wide defaults (referenced by db/ layer for ROLE variables)
+  server:
+    encoding: "UTF-8"
+    locale: "en_US.UTF-8"
+    ctype: "en_US.UTF-8"
+
   # Database creation defaults
   # Used by application-level configs (n8n, nextcloud, etc.)
   # Ensures consistent locale/encoding across all databases
   db:
-    lc_collate: "en_US.UTF-8" # Collation (sort order for strings)
-    lc_ctype: "en_US.UTF-8" # Character classification (UPPER/LOWER behavior)
-    encoding: "UTF-8" # Character encoding (universal support)
-    template: "template0" # Clean template (allows encoding override)
+    lc_collate: "en_US.UTF-8"
+    lc_ctype: "en_US.UTF-8"
+    encoding: "UTF-8"
+    template: "template0"
 
-  # Base configuration (merged with hardware/app-specific settings)
-  # These are required by the role and must be present in final config
-  config_base:
-    # Required: Socket location (PostgreSQL ≥ 9.3 uses plural form)
-    - option: unix_socket_directories
-      value: '{{ postgresql_unix_socket_directories | join(",") }}'
-
-    # Recommended: Explicit log directory (role creates with correct permissions)
-    - option: log_directory
-      value: "log"
+  # Path defaults (Fedora/RHEL pattern)
+  paths:
+    data_directory: "/var/lib/pgsql/{{ postgresql_version }}/data"
