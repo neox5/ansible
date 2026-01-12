@@ -5,4 +5,4 @@ collections:
 
 roles:
   - name: anxs.postgresql
-    version: "1.17.0"
+    version: "v1.17.0"

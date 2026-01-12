@@ -3,8 +3,8 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 IMAGES_DIR="$SCRIPT_DIR/images"
-BASE="$IMAGES_DIR/fedora43_base.qcow2"
-WORK="$IMAGES_DIR/fedora43.qcow2"
+BASE="$IMAGES_DIR/debian13_base.qcow2"
+WORK="$IMAGES_DIR/debian13.qcow2"
 
 mkdir -p "$IMAGES_DIR"
 

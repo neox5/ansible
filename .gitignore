@@ -9,7 +9,7 @@
 **/snp_old.txt
 
 # Ansible Galaxy roles (managed by requirements.yml)
-roles/geerlingguy.*
+roles/anxs.*
 
 # VM disk images
 lab/vm/images/*.qcow2
