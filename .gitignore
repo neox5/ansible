@@ -4,9 +4,8 @@
 *.env.*
 !*.env.example
 
-# Temporary repository snapshot files 
-**/snp.txt
-**/snp_old.txt
+# snapshot files
+**/*.snp
 
 # Ansible Galaxy roles (managed by requirements.yml)
 roles/anxs.*
