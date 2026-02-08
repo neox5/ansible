@@ -1,4 +1,7 @@
 ---
+- name: Load distro-specific variables
+  include_vars: "{{ ansible_distribution }}.yml"
+
 - name: Harden SSH
   import_tasks: ssh.yml
 

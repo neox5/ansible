@@ -43,7 +43,7 @@ ClientAliveCountMax 2
 TCPKeepAlive yes
 
 # Subsystems (with detailed SFTP logging)
-Subsystem sftp /usr/libexec/openssh/sftp-server -f AUTHPRIV -l INFO
+Subsystem sftp {{ security_sshd_sftp_subsystem }}
 
 # Disable unused features
 X11Forwarding no

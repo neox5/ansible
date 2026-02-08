@@ -1,0 +1,13 @@
+---
+# Distro-specific variables for Debian
+# Only includes values that differ from Fedora
+
+# SSH
+security_sshd_service_name: ssh
+security_sshd_sftp_subsystem: "internal-sftp -f AUTHPRIV -l INFO"
+
+# Firewall
+security_firewall_backend: nftables
+
+# Updates
+security_updates_backend: unattended_upgrades
