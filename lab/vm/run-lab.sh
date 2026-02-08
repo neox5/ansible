@@ -22,8 +22,8 @@ Commands:
   help, -h         Show this help
 
 State Files:
-  fedora43_base.qcow2   Read-only backup (never modified)
-  fedora43.qcow2        Working image (contains all snapshots)
+  debian13_base.qcow2   Read-only backup (never modified)
+  debian13.qcow2        Working image (contains all snapshots)
 
 Examples:
   $0                    # Run current state
