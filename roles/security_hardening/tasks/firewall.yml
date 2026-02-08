@@ -1,20 +1,8 @@
 ---
-- name: Install firewalld
-  ansible.builtin.package:
-    name: firewalld
-    state: present
+- name: Configure firewall (firewalld backend)
+  import_tasks: firewall_firewalld.yml
+  when: security_firewall_backend == "firewalld"
 
-- name: Enable and start firewalld service
-  ansible.builtin.systemd:
-    name: firewalld
-    enabled: yes
-    state: started
-  when: security_firewall_enabled
-
-- name: Configure SSH service in firewall
-  ansible.posix.firewalld:
-    service: ssh
-    permanent: yes
-    state: enabled
-    immediate: yes
-  when: security_firewall_enabled
+- name: Configure firewall (nftables backend)
+  import_tasks: firewall_nftables.yml
+  when: security_firewall_backend == "nftables"

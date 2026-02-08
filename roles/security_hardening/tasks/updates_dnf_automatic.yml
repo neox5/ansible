@@ -1,0 +1,23 @@
+---
+- name: Install dnf-automatic package
+  ansible.builtin.package:
+    name: dnf-automatic
+    state: present
+  when: security_unattended_upgrades
+
+- name: Configure dnf-automatic
+  ansible.builtin.template:
+    src: automatic.conf.j2
+    dest: /etc/dnf/automatic.conf
+    owner: root
+    group: root
+    mode: "0644"
+  when: security_unattended_upgrades
+  notify: Restart dnf-automatic
+
+- name: Enable and start dnf-automatic timer
+  ansible.builtin.systemd:
+    name: dnf-automatic.timer
+    enabled: yes
+    state: started
+  when: security_unattended_upgrades

@@ -1,0 +1,35 @@
+#!/usr/sbin/nft -f
+# nftables configuration - managed by Ansible
+# Role: security_hardening
+
+flush ruleset
+
+table inet filter {
+  chain input {
+    type filter hook input priority 0; policy drop;
+
+    # Allow established/related connections
+    ct state established,related accept
+
+    # Allow loopback
+    iif lo accept
+
+    # Allow SSH on configured port
+    tcp dport {{ security_ssh_port }} accept
+
+    # Allow ICMP for connectivity diagnostics
+    icmp type { echo-request, destination-unreachable } accept
+    icmpv6 type { echo-request, destination-unreachable, packet-too-big } accept
+
+    # Log and drop everything else
+    counter drop
+  }
+
+  chain forward {
+    type filter hook forward priority 0; policy drop;
+  }
+
+  chain output {
+    type filter hook output priority 0; policy accept;
+  }
+}

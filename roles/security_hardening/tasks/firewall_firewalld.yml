@@ -1,0 +1,26 @@
+---
+- name: Install firewalld
+  ansible.builtin.package:
+    name: firewalld
+    state: present
+
+- name: Enable and start firewalld service
+  ansible.builtin.systemd:
+    name: firewalld
+    enabled: yes
+    state: started
+  when: security_firewall_enabled
+
+- name: Configure SSH port in firewall
+  ansible.posix.firewalld:
+    port: "{{ security_ssh_port }}/tcp"
+    permanent: yes
+    state: enabled
+    immediate: yes
+  when: security_firewall_enabled
+
+- name: Set default zone policy to DROP
+  ansible.builtin.command:
+    cmd: firewall-cmd --permanent --set-target=DROP --zone=public
+  when: security_firewall_enabled and security_firewall_default_policy == "deny"
+  notify: Restart firewalld
