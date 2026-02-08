@@ -1,0 +1,9 @@
+---
+# Security hardening role test playbook
+# Usage: ansible-playbook -i inventory/lab playbooks/test/test_security.yml --limit <host>
+
+- name: Test security_hardening role
+  hosts: all
+  become: yes
+  roles:
+    - security_hardening
