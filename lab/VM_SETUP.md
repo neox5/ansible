@@ -15,7 +15,7 @@ sudo pacman -S qemu-full
 
 ### Create Base Image
 
-1. Download Debian Server ISO: https://www.debian.org/distrib/
+1. Download Debian 13 Trixie Server ISO: https://www.debian.org/distrib/
 2. Create base disk:
 
 ```bash
@@ -35,7 +35,16 @@ qemu-system-x86_64 \
   -boot d
 ```
 
-4. During install: Set root password only (no user creation)
+4. During install:
+   - **Root password: Leave empty (press Enter)**
+   - Create user: `temp`
+   - Install: SSH server + standard system utilities
+
+   **Why empty root password?**
+   - Debian auto-installs sudo package
+   - Adds temp user to sudo group
+   - Bootstrap will set root password from encrypted vars
+
 5. After install: Shutdown VM
 
 ### VM Management
@@ -74,7 +83,12 @@ cd lab/vm
 ./run-lab.sh
 
 # 2. Bootstrap
-ansible-playbook playbooks/bootstrap.yml ...
+ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook playbooks/bootstrap.yml \
+  -i inventory/lab -l lab-vm \
+  --user temp \
+  -k \
+  -K
+
 # (shut down VM: sudo poweroff)
 
 # 3. Save bootstrapped state
@@ -82,7 +96,7 @@ ansible-playbook playbooks/bootstrap.yml ...
 
 # 4. Test configurations
 ./run-lab.sh
-ansible-playbook playbooks/site.yml ...
+ansible-playbook -i inventory/lab playbooks/site.yml
 
 # 5. Save working states
 ./run-lab.sh save postgres
@@ -107,9 +121,35 @@ ansible-playbook playbooks/site.yml ...
 
 ### Bootstrap
 
+Generate root password hash before first bootstrap:
+
 ```bash
-ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook playbooks/bootstrap.yml -i "localhost," --user root --ask-pass -e ansible_port=2222
+# Generate SHA-512 password hash
+openssl passwd -6 -stdin
+
+# Or with Python
+python3 -c 'import crypt,getpass; print(crypt.crypt(getpass.getpass(), crypt.mksalt(crypt.METHOD_SHA512)))'
+
+# Add hash to inventory/lab/host_vars/lab-vm/secrets.yml
+# Then encrypt with SOPS
 ```
+
+Bootstrap command:
+
+```bash
+ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook playbooks/bootstrap.yml \
+  -i "localhost," \
+  --user temp \
+  --ask-become-pass \
+  -e ansible_port=2222
+```
+
+After bootstrap:
+
+- `temp` user removed
+- `ansible` user: automation access
+- `admin` user: operator access (personal + emergency keys)
+- Root password: set from encrypted vars (console access)
 
 ### Deploy
 
@@ -125,6 +165,23 @@ ansible-playbook -i inventory/prod playbooks/site.yml \
   --limit n150-01 \
   -e ansible_host=127.0.0.1 \
   -e ansible_port=2222
+```
+
+### Access After Bootstrap
+
+```bash
+# Automation access
+ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost
+
+# Operator access
+ssh -i ~/.ssh/id_ed25519_desktop -p 2222 admin@localhost
+
+# Emergency access
+ssh -i ~/.ssh/id_ed25519_emergency -p 2222 admin@localhost
+
+# Console access (via QEMU window)
+# Login as: root
+# Password: From inventory/lab/host_vars/lab-vm/secrets.yml (decrypted)
 ```
 
 ---

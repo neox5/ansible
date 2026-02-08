@@ -2,12 +2,7 @@
 - name: Bootstrap server for Ansible management
   hosts: all
   gather_facts: no
-  become: no
-
-  vars:
-    ansible_user_name: ansible
-    ansible_key_url: "{{ lookup('env', 'ANSIBLE_KEY_URL') | default('https://raw.githubusercontent.com/neox5/ssh-keys/main/automation/id_ed25519_ansible.pub', true) }}"
-    emergency_key_url: "{{ lookup('env', 'EMERGENCY_KEY_URL') | default('https://raw.githubusercontent.com/neox5/ssh-keys/main/emergency/id_ed25519_emergency.pub', true) }}"
+  become: yes
 
   tasks:
     - name: Check Python is installed
@@ -20,8 +15,6 @@
       raw: |
         if command -v apt-get >/dev/null 2>&1; then
           apt-get update && apt-get install -y python3
-        elif command -v dnf >/dev/null 2>&1; then
-          dnf install -y python3
         else
           echo "Unsupported package manager" >&2
           exit 1
@@ -32,6 +25,34 @@
     - name: Gather facts after Python installed
       setup:
 
+    - name: Configure Debian network repositories
+      block:
+        - name: Remove CD-ROM source from sources.list
+          ansible.builtin.lineinfile:
+            path: /etc/apt/sources.list
+            regexp: "^deb cdrom:"
+            state: absent
+
+        - name: Configure main Debian repositories
+          ansible.builtin.copy:
+            dest: /etc/apt/sources.list
+            content: |
+              # Debian Trixie (13) - Main repositories
+              deb http://deb.debian.org/debian trixie main contrib non-free-firmware
+              deb-src http://deb.debian.org/debian trixie main contrib non-free-firmware
+
+              # Security updates
+              deb http://deb.debian.org/debian-security trixie-security main contrib non-free-firmware
+              deb-src http://deb.debian.org/debian-security trixie-security main contrib non-free-firmware
+
+              # Stable updates
+              deb http://deb.debian.org/debian trixie-updates main contrib non-free-firmware
+              deb-src http://deb.debian.org/debian trixie-updates main contrib non-free-firmware
+            owner: root
+            group: root
+            mode: "0644"
+      when: ansible_distribution == "Debian"
+
     - name: Install sudo if missing
       package:
         name: sudo
@@ -39,87 +60,101 @@
 
     - name: Create ansible user
       user:
-        name: "{{ ansible_user_name }}"
+        name: "{{ bootstrap_ansible_user }}"
+        shell: /bin/bash
+        create_home: yes
+        state: present
+
+    - name: Create admin user
+      user:
+        name: "{{ bootstrap_admin_user }}"
         shell: /bin/bash
         create_home: yes
         state: present
 
     - name: Create .ssh directory for ansible user
       file:
-        path: "/home/{{ ansible_user_name }}/.ssh"
+        path: "/home/{{ bootstrap_ansible_user }}/.ssh"
         state: directory
-        owner: "{{ ansible_user_name }}"
-        group: "{{ ansible_user_name }}"
+        owner: "{{ bootstrap_ansible_user }}"
+        group: "{{ bootstrap_ansible_user }}"
         mode: "0700"
 
-    - name: Fetch automation SSH key
-      get_url:
-        url: "{{ ansible_key_url }}"
-        dest: "/tmp/ansible_key.pub"
-        mode: "0644"
-
-    - name: Read automation key content
-      slurp:
-        src: /tmp/ansible_key.pub
-      register: ansible_key_content
-
-    - name: Add automation key to ansible user
-      authorized_key:
-        user: "{{ ansible_user_name }}"
-        key: "{{ ansible_key_content['content'] | b64decode }}"
-        state: present
-
-    - name: Fetch emergency SSH key
-      get_url:
-        url: "{{ emergency_key_url }}"
-        dest: /tmp/emergency_key.pub
-        mode: "0644"
-
-    - name: Read emergency key content
-      slurp:
-        src: /tmp/emergency_key.pub
-      register: emergency_key_content
-
-    - name: Add emergency key to ansible user
-      authorized_key:
-        user: "{{ ansible_user_name }}"
-        key: "{{ emergency_key_content['content'] | b64decode }}"
-        comment: "Emergency access key"
-        state: present
-
-    - name: Remove temporary key files
+    - name: Create .ssh directory for admin user
       file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /tmp/ansible_key.pub
-        - /tmp/emergency_key.pub
+        path: "/home/{{ bootstrap_admin_user }}/.ssh"
+        state: directory
+        owner: "{{ bootstrap_admin_user }}"
+        group: "{{ bootstrap_admin_user }}"
+        mode: "0700"
+
+    - name: Add automation SSH keys to ansible user
+      authorized_key:
+        user: "{{ bootstrap_ansible_user }}"
+        key: "{{ item }}"
+        state: present
+      loop: "{{ bootstrap_ansible_keys }}"
+
+    - name: Add admin SSH keys to admin user
+      authorized_key:
+        user: "{{ bootstrap_admin_user }}"
+        key: "{{ item }}"
+        state: present
+      loop: "{{ bootstrap_admin_keys }}"
 
     - name: Configure temporary passwordless sudo for ansible user
       copy:
-        content: "{{ ansible_user_name }} ALL=(ALL) NOPASSWD:ALL\n"
+        content: "{{ bootstrap_ansible_user }} ALL=(ALL) NOPASSWD:ALL\n"
         dest: "/etc/sudoers.d/00-ansible-bootstrap"
+        mode: "0440"
+        validate: "visudo -cf %s"
+
+    - name: Configure temporary passwordless sudo for admin user
+      copy:
+        content: "{{ bootstrap_admin_user }} ALL=(ALL) NOPASSWD:ALL\n"
+        dest: "/etc/sudoers.d/00-admin-bootstrap"
         mode: "0440"
         validate: "visudo -cf %s"
 
     - name: Verify ansible user can sudo
       command: sudo -n -l
       become: yes
-      become_user: "{{ ansible_user_name }}"
+      become_user: "{{ bootstrap_ansible_user }}"
       changed_when: false
+
+    - name: Verify admin user can sudo
+      command: sudo -n -l
+      become: yes
+      become_user: "{{ bootstrap_admin_user }}"
+      changed_when: false
+
+    - name: Remove temporary user
+      user:
+        name: "{{ bootstrap_temp_user }}"
+        state: absent
+        remove: yes
+        force: yes
+      when: bootstrap_temp_user is defined and bootstrap_temp_user != ""
 
     - name: Display next steps
       debug:
         msg:
           - "Bootstrap complete!"
           - ""
-          - "Normal access:"
-          - "  ssh -i ~/.ssh/id_ed25519_ansible ansible@{{ inventory_hostname }}"
+          - "Root account: Locked (no password, use admin user for console access)"
+          - ""
+          - "Automation access:"
+          - "  ssh -i ~/.ssh/id_ed25519_ansible {{ bootstrap_ansible_user }}@{{ inventory_hostname }}"
+          - ""
+          - "Operator access (admin):"
+          - "  ssh -i ~/.ssh/id_ed25519_desktop {{ bootstrap_admin_user }}@{{ inventory_hostname }}"
+          - "  ssh -i ~/.ssh/id_ed25519_mobile {{ bootstrap_admin_user }}@{{ inventory_hostname }}"
           - ""
           - "Emergency access:"
-          - "  ssh -i ~/.ssh/id_ed25519_emergency ansible@{{ inventory_hostname }}"
+          - "  ssh -i ~/.ssh/id_ed25519_emergency {{ bootstrap_admin_user }}@{{ inventory_hostname }}"
           - ""
-          - "Root access prohibited (use sudo)"
+          - "Temporary user removed: {{ bootstrap_temp_user }}"
+          - "Root SSH access: Prohibited (console access via admin user)"
           - ""
           - "Next: Apply security hardening"
-          - "  ansible-playbook -i inventory/prod site.yml --tags security_hardening"
+          - "  ansible-playbook -i inventory/prod playbooks/site.yml --tags security_hardening"

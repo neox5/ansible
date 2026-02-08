@@ -1,0 +1,21 @@
+---
+# Bootstrap Configuration
+# Applied to: all hosts
+
+# User names
+bootstrap_temp_user: temp
+bootstrap_ansible_user: ansible
+bootstrap_admin_user: admin
+
+# SSH keys repository base URL
+bootstrap_ssh_keys_repo_base: "{{ lookup('env', 'SSH_KEYS_REPO_BASE') | default('https://raw.githubusercontent.com/neox5/ssh-keys/main', true) }}"
+
+# Automation user SSH keys
+bootstrap_ansible_keys:
+  - "{{ bootstrap_ssh_keys_repo_base }}/automation/id_ed25519_ansible.pub"
+
+# Admin user SSH keys (personal + emergency)
+bootstrap_admin_keys:
+  - "{{ bootstrap_ssh_keys_repo_base }}/personal/id_ed25519_desktop.pub"
+  - "{{ bootstrap_ssh_keys_repo_base }}/personal/id_ed25519_mobile.pub"
+  - "{{ bootstrap_ssh_keys_repo_base }}/emergency/id_ed25519_emergency.pub"
