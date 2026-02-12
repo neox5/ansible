@@ -1,41 +1,71 @@
 # file: postgresql/tasks/install_apt.yml
 
-# The standard ca-certs are needed because  without them apt_key will fail to
-# validate www.postgresql.org (or probably any other source).
+# The standard ca-certs are needed because without them downloading keys will fail
 - name: PostgreSQL | Make sure the CA certificates are available | apt
-  apt:
+  ansible.builtin.apt:
     pkg: ca-certificates
     state: present
 
-- name: PostgreSQL | Add PostgreSQL repository apt-key | apt
-  apt_key:
+# gnupg is required for apt_repository module with signed-by syntax
+- name: PostgreSQL | Ensure gnupg is installed | apt
+  ansible.builtin.apt:
+    pkg: gnupg
+    state: present
+  when:
+    - ansible_distribution == "Debian" and ansible_distribution_major_version | int >= 13
+      or ansible_distribution == "Ubuntu" and ansible_distribution_major_version | int >= 22
+
+# Modern method (Debian 13+, Ubuntu 22.04+): Download key with get_url
+- name: PostgreSQL | Add PostgreSQL repository key (modern) | apt
+  ansible.builtin.get_url:
+    url: "{{ postgresql_apt_key_url }}"
+    dest: /etc/apt/trusted.gpg.d/postgresql.asc
+    mode: "0644"
+    force: false
+  when:
+    - postgresql_install_repository | bool
+    - postgresql_apt_key_url is defined
+    - postgresql_apt_key_url | length > 0
+    - (ansible_distribution == "Debian" and ansible_distribution_major_version | int >= 13) or
+      (ansible_distribution == "Ubuntu" and ansible_distribution_major_version | int >= 22)
+
+# Legacy method (Debian ≤12, Ubuntu ≤20.04): Use apt_key (deprecated but still functional)
+- name: PostgreSQL | Add PostgreSQL repository apt-key (legacy) | apt
+  ansible.builtin.apt_key:
     id: "{{ postgresql_apt_key_id }}"
     url: "{{ postgresql_apt_key_url }}"
     state: present
     keyring: /etc/apt/trusted.gpg.d/postgresql.gpg
-  when: postgresql_apt_key_url and postgresql_apt_key_id and postgresql_install_repository
+  when:
+    - postgresql_install_repository | bool
+    - postgresql_apt_key_url is defined
+    - postgresql_apt_key_url | length > 0
+    - postgresql_apt_key_id is defined
+    - postgresql_apt_key_id | length > 0
+    - (ansible_distribution == "Debian" and ansible_distribution_major_version | int < 13) or
+      (ansible_distribution == "Ubuntu" and ansible_distribution_major_version | int < 22)
 
 - name: PostgreSQL | Add PostgreSQL repository | apt
-  apt_repository:
+  ansible.builtin.apt_repository:
     repo: "{{ postgresql_apt_repository }}"
     state: present
   when: postgresql_apt_repository | default('') != '' and postgresql_install_repository
 
 - name: PostgreSQL | Add PostgreSQL repository preferences | apt
-  template:
+  ansible.builtin.template:
     src: etc_apt_preferences.d_apt_postgresql_org_pub_repos_apt.pref.j2
     dest: /etc/apt/preferences.d/apt_postgresql_org_pub_repos_apt.pref
   when: postgresql_apt_pin_priority and postgresql_install_repository
 
 - name: PostgreSQL | Make sure the dependencies are installed | apt
-  apt:
+  ansible.builtin.apt:
     pkg: "{{ postgresql_apt_dependencies }}"
     state: present
     update_cache: yes
     cache_valid_time: "{{apt_cache_valid_time | default (3600)}}"
 
 - name: PostgreSQL | Install PostgreSQL | apt
-  apt:
+  ansible.builtin.apt:
     name:
       - "postgresql-{{postgresql_version}}"
       - "postgresql-client-{{postgresql_version}}"
@@ -47,7 +77,7 @@
   environment: "{{postgresql_env}}"
 
 - name: PostgreSQL | PGTune | apt
-  apt:
+  ansible.builtin.apt:
     name: pgtune
     state: present
     update_cache: yes
