@@ -1,0 +1,10 @@
+---
+# PostgreSQL Installation
+# Deploys PostgreSQL using anxs.postgresql role with hierarchical inventory configuration
+# Usage: ansible-playbook -i inventory/prod playbooks/postgresql_install.yml
+
+- name: Install and configure PostgreSQL
+  hosts: db
+  become: yes
+  roles:
+    - anxs.postgresql
