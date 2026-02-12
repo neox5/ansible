@@ -1,0 +1,53 @@
+---
+# PostgreSQL configuration tasks
+
+- name: Ensure log directory exists
+  ansible.builtin.file:
+    path: "{{ postgresql_log_directory }}"
+    state: directory
+    owner: "{{ postgresql_admin_user }}"
+    group: "{{ postgresql_admin_user }}"
+    mode: "0755"
+
+- name: Deploy postgresql.conf
+  ansible.builtin.template:
+    src: postgresql.conf.j2
+    dest: "{{ postgresql_config_directory }}/postgresql.conf"
+    owner: "{{ postgresql_admin_user }}"
+    group: "{{ postgresql_admin_user }}"
+    mode: "0644"
+    backup: true
+  notify: restart postgresql
+
+- name: Deploy pg_hba.conf
+  ansible.builtin.template:
+    src: pg_hba.conf.j2
+    dest: "{{ postgresql_config_directory }}/pg_hba.conf"
+    owner: "{{ postgresql_admin_user }}"
+    group: "{{ postgresql_admin_user }}"
+    mode: "0640"
+    backup: true
+  notify: reload postgresql
+
+- name: Ensure PostgreSQL data directory has correct permissions
+  ansible.builtin.file:
+    path: "{{ postgresql_data_directory }}"
+    state: directory
+    owner: "{{ postgresql_admin_user }}"
+    group: "{{ postgresql_admin_user }}"
+    mode: "0700"
+
+- name: Flush handlers to apply configuration
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for PostgreSQL to be ready
+  ansible.builtin.wait_for:
+    port: "{{ postgresql_port }}"
+    host: "{{ postgresql_listen_addresses }}"
+    timeout: 30
+  when: postgresql_listen_addresses != 'localhost'
+
+- name: Verify PostgreSQL is running
+  ansible.builtin.systemd:
+    name: "{{ postgresql_service_name }}"
+    state: started

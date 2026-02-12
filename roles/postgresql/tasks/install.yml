@@ -1,0 +1,37 @@
+---
+# PostgreSQL installation tasks
+
+- name: Install required packages for repository management
+  ansible.builtin.apt:
+    name:
+      - gnupg
+      - ca-certificates
+    state: present
+    update_cache: true
+
+- name: Add PostgreSQL APT repository key
+  ansible.builtin.get_url:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    dest: /etc/apt/trusted.gpg.d/postgresql.asc
+    mode: "0644"
+
+- name: Add PostgreSQL APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/etc/apt/trusted.gpg.d/postgresql.asc] http://apt.postgresql.org/pub/repos/apt/ {{ ansible_distribution_release }}-pgdg main {{ postgresql_version }}"
+    state: present
+    filename: pgdg
+
+- name: Pin PostgreSQL version via APT preferences
+  ansible.builtin.copy:
+    content: |
+      Package: postgresql-{{ postgresql_version }}
+      Pin: version {{ postgresql_version }}.*
+      Pin-Priority: 1000
+    dest: /etc/apt/preferences.d/postgresql
+    mode: "0644"
+
+- name: Install PostgreSQL packages
+  ansible.builtin.apt:
+    name: "{{ postgresql_packages }}"
+    state: present
+    update_cache: true

@@ -1,0 +1,75 @@
+---
+# PostgreSQL Custom Role - Default Variables
+# Constraints: Debian 13 Trixie, PostgreSQL 17 only
+
+# --- Version Pinning ---
+postgresql_version: 17
+
+# --- Network Configuration ---
+postgresql_listen_addresses: "localhost"
+postgresql_port: 5432
+postgresql_max_connections: 100
+
+# --- Memory Configuration ---
+# Defaults assume 4GB RAM server - override in inventory for specific hardware
+postgresql_shared_buffers: "1GB"
+postgresql_effective_cache_size: "3GB"
+postgresql_work_mem: "16MB"
+postgresql_maintenance_work_mem: "256MB"
+
+# --- WAL Configuration ---
+postgresql_wal_level: "replica"
+postgresql_wal_buffers: "16MB"
+postgresql_checkpoint_completion_target: 0.9
+
+# --- Query Planner ---
+postgresql_random_page_cost: 4.0 # HDD default, override to 1.1 for SSD
+postgresql_effective_io_concurrency: 2 # HDD default, override to 200 for SSD
+
+# --- Logging ---
+postgresql_log_destination: "stderr"
+postgresql_logging_collector: true
+postgresql_log_directory: "/var/log/postgresql"
+postgresql_log_filename: "postgresql-%Y-%m-%d_%H%M%S.log"
+postgresql_log_rotation_age: "1d"
+postgresql_log_rotation_size: "100MB"
+postgresql_log_line_prefix: "%m [%p] %u@%d "
+postgresql_log_timezone: "UTC"
+
+# --- Locale and Encoding Defaults ---
+postgresql_encoding: "UTF-8"
+postgresql_locale: "en_US.UTF-8"
+postgresql_lc_collate: "en_US.UTF-8"
+postgresql_lc_ctype: "en_US.UTF-8"
+
+# --- Databases and Users ---
+# Define these in inventory hierarchy
+postgresql_databases: []
+postgresql_users: []
+
+# --- Authentication Configuration ---
+# Default pg_hba.conf rules
+postgresql_pg_hba_default:
+  - type: local
+    database: all
+    user: postgres
+    address: ""
+    method: peer
+    comment: "Unix socket peer authentication for postgres user"
+
+  - type: host
+    database: all
+    user: all
+    address: "127.0.0.1/32"
+    method: scram-sha-256
+    comment: "IPv4 local connections with SCRAM-SHA-256"
+
+  - type: host
+    database: all
+    user: all
+    address: "::1/128"
+    method: scram-sha-256
+    comment: "IPv6 local connections with SCRAM-SHA-256"
+
+# Custom pg_hba.conf rules (append to defaults)
+postgresql_pg_hba_custom: []

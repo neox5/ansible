@@ -1,0 +1,31 @@
+---
+# PostgreSQL Custom Role - Main Task Orchestration
+
+- name: Include preflight checks
+  ansible.builtin.import_tasks: preflight.yml
+  tags: [postgresql, postgresql-preflight]
+
+- name: Include installation tasks
+  ansible.builtin.import_tasks: install.yml
+  tags: [postgresql, postgresql-install]
+
+- name: Include configuration tasks
+  ansible.builtin.import_tasks: configure.yml
+  tags: [postgresql, postgresql-configure]
+
+- name: Ensure PostgreSQL is started
+  ansible.builtin.systemd:
+    name: "{{ postgresql_service_name }}"
+    state: started
+    enabled: "{{ postgresql_service_enabled }}"
+  tags: [postgresql, postgresql-service]
+
+- name: Include database creation tasks
+  ansible.builtin.import_tasks: databases.yml
+  when: postgresql_databases | length > 0
+  tags: [postgresql, postgresql-databases]
+
+- name: Include user creation tasks
+  ansible.builtin.import_tasks: users.yml
+  when: postgresql_users | length > 0
+  tags: [postgresql, postgresql-users]

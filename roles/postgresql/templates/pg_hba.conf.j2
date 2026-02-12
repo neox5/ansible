@@ -1,0 +1,18 @@
+# {{ ansible_managed }}
+# PostgreSQL Client Authentication Configuration
+# Custom role for Debian 13 Trixie
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+{% for rule in postgresql_pg_hba_default %}
+# {{ rule.comment }}
+{{ rule.type }}  {{ rule.database }}  {{ rule.user }}  {{ rule.address }}  {{ rule.method }}
+{% endfor %}
+
+{% if postgresql_pg_hba_custom | length > 0 %}
+# Custom rules
+{% for rule in postgresql_pg_hba_custom %}
+# {{ rule.comment | default('Custom rule') }}
+{{ rule.type }}  {{ rule.database }}  {{ rule.user }}  {{ rule.address }}  {{ rule.method }}
+{% endfor %}
+{% endif %}

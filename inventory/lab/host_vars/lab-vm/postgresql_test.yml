@@ -1,0 +1,44 @@
+---
+# PostgreSQL test configuration for lab environment
+# Purpose: Learning and testing anxs.postgresql role behavior
+# Security: Plaintext credentials - lab environment only, never use in production
+
+# Test databases
+postgresql_databases:
+  - name: testdb
+    owner: testuser
+    encoding: UTF-8
+    lc_collate: en_US.UTF-8
+    lc_ctype: en_US.UTF-8
+    state: present
+
+  - name: backuptest
+    owner: testuser
+    encoding: UTF-8
+    lc_collate: en_US.UTF-8
+    lc_ctype: en_US.UTF-8
+    state: present
+
+# Test users
+postgresql_users:
+  - name: testuser
+    password: testpass123
+    encrypted: no
+    role_attr_flags: "CREATEDB,NOSUPERUSER"
+    state: present
+
+# Test user privileges
+postgresql_user_privileges:
+  - name: testuser
+    db: testdb
+    priv: "ALL"
+
+  - name: testuser
+    db: backuptest
+    priv: "ALL"
+# Notes:
+# - testdb: Primary database for general testing and queries
+# - backuptest: Secondary database for pg_dump/pg_restore workflow testing
+# - testuser: Has CREATEDB privilege for testing database operations
+# - Plaintext password acceptable in isolated lab environment
+# - This file will be replaced with SOPS-encrypted secrets when moving to production-like testing

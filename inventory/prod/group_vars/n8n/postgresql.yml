@@ -29,6 +29,7 @@ postgresql_users:
   - name: n8n_user
     pass: "{{ n8n_db_password }}"
     encrypted: yes
+    role_attr_flags: "NOCREATEDB,NOSUPERUSER"
     state: present
 
 # --- ROLE: User Privileges ---
@@ -36,4 +37,3 @@ postgresql_user_privileges:
   - name: n8n_user
     db: n8n
     priv: "ALL"
-    role_attr_flags: "NOCREATEDB,NOSUPERUSER"

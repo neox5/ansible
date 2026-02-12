@@ -1,0 +1,26 @@
+---
+# Preflight checks - validate environment before proceeding
+
+- name: Gather distribution facts
+  ansible.builtin.setup:
+    gather_subset:
+      - distribution
+
+- name: Assert Debian 13 Trixie
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == "Debian"
+      - ansible_distribution_major_version == "13"
+    fail_msg: "This role only supports Debian 13 Trixie"
+    success_msg: "Debian 13 Trixie detected"
+
+- name: Assert PostgreSQL version is 17
+  ansible.builtin.assert:
+    that:
+      - postgresql_version == 17
+    fail_msg: "This role only supports PostgreSQL 17"
+    success_msg: "PostgreSQL 17 configuration detected"
+
+- name: Display role constraints
+  ansible.builtin.debug:
+    msg: "PostgreSQL custom role - Debian 13 + PostgreSQL 17 only"

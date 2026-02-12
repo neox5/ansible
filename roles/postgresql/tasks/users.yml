@@ -1,0 +1,38 @@
+---
+# User creation tasks
+
+- name: Create PostgreSQL users
+  community.postgresql.postgresql_user:
+    name: "{{ item.name }}"
+    password: "{{ item.password | default(omit) }}"
+    encrypted: "{{ item.encrypted | default(true) }}"
+    role_attr_flags: "{{ item.role_attr_flags | default('NOCREATEDB,NOSUPERUSER') }}"
+    state: "{{ item.state | default('present') }}"
+    login_user: "{{ postgresql_admin_user }}"
+    port: "{{ postgresql_port }}"
+  become: true
+  become_user: "{{ postgresql_admin_user }}"
+  loop: "{{ postgresql_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+  no_log: true # Hide passwords from logs
+
+- name: Verify users were created
+  community.postgresql.postgresql_query:
+    query: "SELECT usename FROM pg_user WHERE usename = %s"
+    positional_args:
+      - "{{ item.name }}"
+    login_user: "{{ postgresql_admin_user }}"
+    port: "{{ postgresql_port }}"
+  become: true
+  become_user: "{{ postgresql_admin_user }}"
+  loop: "{{ postgresql_users }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: user_verification
+  failed_when: user_verification.rowcount == 0
+
+- name: Display user creation summary
+  ansible.builtin.debug:
+    msg: "Created {{ postgresql_users | length }} PostgreSQL user(s)"
+  when: postgresql_users | length > 0

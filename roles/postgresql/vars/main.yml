@@ -1,0 +1,22 @@
+---
+# PostgreSQL Custom Role - Immutable Variables
+# These are facts about Debian 13 + PostgreSQL 17, not configuration
+
+# Service
+postgresql_service_name: "postgresql"
+postgresql_service_enabled: true
+
+# Packages
+postgresql_packages:
+  - "postgresql-{{ postgresql_version }}"
+  - "postgresql-client-{{ postgresql_version }}"
+  - "postgresql-contrib-{{ postgresql_version }}"
+  - python3-psycopg2
+
+# Paths
+postgresql_config_directory: "/etc/postgresql/{{ postgresql_version }}/main"
+postgresql_data_directory: "/var/lib/postgresql/{{ postgresql_version }}/main"
+postgresql_bin_directory: "/usr/lib/postgresql/{{ postgresql_version }}/bin"
+
+# Admin user
+postgresql_admin_user: "postgres"
