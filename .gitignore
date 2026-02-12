@@ -8,7 +8,7 @@
 **/*.snp
 
 # Ansible Galaxy roles (managed by requirements.yml)
-roles/anxs.*
+# roles/anxs.*
 
 # VM disk images
 lab/vm/images/*.qcow2
