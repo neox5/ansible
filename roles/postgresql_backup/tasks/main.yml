@@ -1,0 +1,80 @@
+---
+# PostgreSQL Backup Role - Main Tasks
+
+- name: Ensure backup directory exists
+  ansible.builtin.file:
+    path: "{{ postgresql_backup_dir }}"
+    state: directory
+    owner: "{{ postgresql_backup_user }}"
+    group: "{{ postgresql_backup_user }}"
+    mode: "0700"
+
+- name: Get list of all databases if none specified
+  community.postgresql.postgresql_query:
+    query: "SELECT datname FROM pg_database WHERE datistemplate = false AND datname != 'postgres'"
+    login_user: "{{ postgresql_backup_user }}"
+    login_host: "{{ postgresql_backup_host }}"
+    port: "{{ postgresql_backup_port }}"
+  become: true
+  become_user: "{{ postgresql_backup_user }}"
+  register: all_databases
+  when: postgresql_backup_databases | length == 0
+
+- name: Set database list (all databases)
+  ansible.builtin.set_fact:
+    backup_database_list: "{{ all_databases.query_result | map(attribute='datname') | list }}"
+  when: postgresql_backup_databases | length == 0
+
+- name: Set database list (specified databases)
+  ansible.builtin.set_fact:
+    backup_database_list: "{{ postgresql_backup_databases }}"
+  when: postgresql_backup_databases | length > 0
+
+- name: Create database backups
+  community.postgresql.postgresql_db:
+    name: "{{ item }}"
+    state: dump
+    target: "{{ postgresql_backup_dir }}/{{ postgresql_backup_filename }}"
+    login_user: "{{ postgresql_backup_user }}"
+    login_host: "{{ postgresql_backup_host }}"
+    port: "{{ postgresql_backup_port }}"
+  become: true
+  become_user: "{{ postgresql_backup_user }}"
+  loop: "{{ backup_database_list }}"
+  loop_control:
+    label: "{{ item }}"
+  register: backup_results
+
+- name: Verify backup files exist
+  ansible.builtin.stat:
+    path: "{{ postgresql_backup_dir }}/{{ postgresql_backup_filename }}"
+  loop: "{{ backup_database_list }}"
+  loop_control:
+    label: "{{ item }}"
+  register: backup_files
+
+- name: Display backup summary
+  ansible.builtin.debug:
+    msg:
+      - "Backed up {{ backup_database_list | length }} database(s)"
+      - "Backup location: {{ postgresql_backup_dir }}"
+      - "Databases: {{ backup_database_list | join(', ') }}"
+
+- name: Clean up old backups
+  ansible.builtin.find:
+    paths: "{{ postgresql_backup_dir }}"
+    patterns: "*.dump"
+    age: "{{ postgresql_backup_keep_days }}d"
+  register: old_backups
+  when: postgresql_backup_cleanup_enabled
+
+- name: Remove old backup files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ old_backups.files }}"
+  loop_control:
+    label: "{{ item.path }}"
+  when:
+    - postgresql_backup_cleanup_enabled
+    - old_backups.files is defined

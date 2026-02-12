@@ -1,0 +1,78 @@
+---
+# PostgreSQL Restore Role - Main Tasks
+
+- name: Validate required parameters
+  ansible.builtin.assert:
+    that:
+      - postgresql_restore_database | length > 0
+      - postgresql_restore_dump_file | length > 0
+    fail_msg: "postgresql_restore_database and postgresql_restore_dump_file are required"
+    success_msg: "Required parameters validated"
+
+- name: Verify dump file exists
+  ansible.builtin.stat:
+    path: "{{ postgresql_restore_dump_file }}"
+  register: dump_file_stat
+  failed_when: not dump_file_stat.stat.exists
+
+- name: Display restore information
+  ansible.builtin.debug:
+    msg:
+      - "Restoring database: {{ postgresql_restore_database }}"
+      - "From dump file: {{ postgresql_restore_dump_file }}"
+      - "File size: {{ dump_file_stat.stat.size | human_readable }}"
+      - "Drop existing: {{ postgresql_restore_drop_existing }}"
+
+- name: Drop existing database
+  community.postgresql.postgresql_db:
+    name: "{{ postgresql_restore_database }}"
+    state: absent
+    login_user: "{{ postgresql_restore_user }}"
+    login_host: "{{ postgresql_restore_host }}"
+    port: "{{ postgresql_restore_port }}"
+  become: true
+  become_user: "{{ postgresql_restore_user }}"
+  when: postgresql_restore_drop_existing
+
+- name: Create database if needed
+  community.postgresql.postgresql_db:
+    name: "{{ postgresql_restore_database }}"
+    owner: "{{ postgresql_restore_owner }}"
+    state: present
+    login_user: "{{ postgresql_restore_user }}"
+    login_host: "{{ postgresql_restore_host }}"
+    port: "{{ postgresql_restore_port }}"
+  become: true
+  become_user: "{{ postgresql_restore_user }}"
+  when: postgresql_restore_create_db
+
+- name: Restore database from dump
+  community.postgresql.postgresql_db:
+    name: "{{ postgresql_restore_database }}"
+    state: restore
+    target: "{{ postgresql_restore_dump_file }}"
+    login_user: "{{ postgresql_restore_user }}"
+    login_host: "{{ postgresql_restore_host }}"
+    port: "{{ postgresql_restore_port }}"
+  become: true
+  become_user: "{{ postgresql_restore_user }}"
+  register: restore_result
+
+- name: Verify database exists after restore
+  community.postgresql.postgresql_query:
+    query: "SELECT datname FROM pg_database WHERE datname = %s"
+    positional_args:
+      - "{{ postgresql_restore_database }}"
+    login_user: "{{ postgresql_restore_user }}"
+    login_host: "{{ postgresql_restore_host }}"
+    port: "{{ postgresql_restore_port }}"
+  become: true
+  become_user: "{{ postgresql_restore_user }}"
+  register: database_verification
+  failed_when: database_verification.rowcount == 0
+
+- name: Display restore summary
+  ansible.builtin.debug:
+    msg:
+      - "Successfully restored database: {{ postgresql_restore_database }}"
+      - "From: {{ postgresql_restore_dump_file }}"

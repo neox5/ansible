@@ -1,0 +1,22 @@
+---
+# PostgreSQL Restore Role - Default Variables
+
+# Database to restore (required - must be set by caller)
+postgresql_restore_database: ""
+
+# Dump file path (required - must be set by caller)
+postgresql_restore_dump_file: ""
+
+# PostgreSQL connection settings
+postgresql_restore_host: "localhost"
+postgresql_restore_port: 5432
+postgresql_restore_user: "postgres"
+
+# Drop existing database before restore
+postgresql_restore_drop_existing: false
+
+# Create database if it doesn't exist
+postgresql_restore_create_db: true
+
+# Database owner (for creation)
+postgresql_restore_owner: "{{ postgresql_restore_user }}"

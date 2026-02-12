@@ -1,0 +1,27 @@
+---
+# PostgreSQL Backup Role - Default Variables
+
+# Databases to backup (empty list = backup all databases)
+postgresql_backup_databases: []
+
+# Backup directory
+postgresql_backup_dir: "/var/backups/postgresql"
+
+# PostgreSQL connection settings
+postgresql_backup_host: "localhost"
+postgresql_backup_port: 5432
+postgresql_backup_user: "postgres"
+
+# Dump format
+# Options: plain, custom, directory, tar
+# custom = compressed binary format (recommended)
+postgresql_backup_format: "custom"
+
+# Filename pattern (uses Ansible facts and item variable)
+postgresql_backup_filename: "{{ inventory_hostname }}-{{ item }}-{{ ansible_date_time.iso8601_basic_short }}.dump"
+
+# Backup retention (days to keep backups)
+postgresql_backup_keep_days: 7
+
+# Enable automatic cleanup of old backups
+postgresql_backup_cleanup_enabled: true
