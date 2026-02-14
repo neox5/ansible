@@ -1,18 +1,18 @@
 # security_hardening
 
-Baseline security hardening for Linux systems.
+Baseline security hardening for Debian systems.
 
 ## Requirements
 
-- Fedora 39+
+- Debian 13 (Trixie) or later
 - Ansible 2.15+
 - OpenSSH 9.0+ (for post-quantum key exchange)
 
 ## What This Role Does
 
 - **SSH Hardening:** PQ hybrid key exchange, public key auth only, no root login
-- **Firewall:** firewalld with default deny policy
-- **Automatic Updates:** dnf-automatic for security patches
+- **Firewall:** nftables with default deny policy
+- **Automatic Updates:** unattended-upgrades for security patches
 - **Intrusion Prevention:** fail2ban for SSH brute-force protection
 - **Logging:** Persistent journald with 30-day retention
 - **Sudo:** Hardened configuration with passwordless access for automation users
@@ -73,3 +73,11 @@ If locked out (user not in `security_ssh_allowed_users`):
 2. Edit `/etc/ssh/sshd_config` (remove `AllowUsers` line)
 3. `systemctl restart sshd`
 4. Update inventory and re-run playbook
+
+## Extending to Other Distributions
+
+The role maintains a multi-distro structure for future extension:
+
+1. Create `vars/{Distribution}.yml` with distro-specific variables
+2. Create `tasks/{feature}_{distribution}.yml` for distro-specific implementations
+3. Update conditionals in `tasks/{feature}.yml` to check for the new distribution

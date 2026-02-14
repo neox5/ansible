@@ -1,15 +1,14 @@
 ---
 galaxy_info:
   author: neox5
-  description: Comprehensive security hardening
+  description: Comprehensive security hardening for Debian
   license: MIT
   min_ansible_version: "2.15"
 
   platforms:
-    - name: Fedora
+    - name: Debian
       versions:
-        - "39"
-        - "40"
+        - "13"
 
   galaxy_tags:
     - security
@@ -18,6 +17,6 @@ galaxy_info:
     - firewall
     - fail2ban
     - journald
-    - fedora
+    - debian
 
 dependencies: []

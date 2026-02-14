@@ -1,8 +1,4 @@
 ---
-- name: Setup automatic updates (dnf-automatic backend)
-  import_tasks: updates_dnf_automatic.yml
-  when: security_updates_backend == "dnf_automatic"
-
-- name: Setup automatic updates (unattended-upgrades backend)
-  import_tasks: updates_unattended_upgrades.yml
-  when: security_updates_backend == "unattended_upgrades"
+- name: Setup automatic updates (Debian backend)
+  import_tasks: updates_debian.yml
+  when: ansible_distribution == "Debian"

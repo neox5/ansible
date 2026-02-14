@@ -1,8 +1,4 @@
 ---
-- name: Configure firewall (firewalld backend)
-  import_tasks: firewall_firewalld.yml
-  when: security_firewall_backend == "firewalld"
-
-- name: Configure firewall (nftables backend)
-  import_tasks: firewall_nftables.yml
-  when: security_firewall_backend == "nftables"
+- name: Configure firewall (Debian backend)
+  import_tasks: firewall_debian.yml
+  when: ansible_distribution == "Debian"

@@ -11,7 +11,7 @@
 # roles/anxs.*
 
 # VM disk images
-lab/vm/images/*.qcow2
+lab/vm/images/**/*
 
 # Editor / OS noise
 .DS_Store

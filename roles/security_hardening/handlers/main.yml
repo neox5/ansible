@@ -4,19 +4,9 @@
     name: "{{ security_sshd_service_name }}"
     state: restarted
 
-- name: Restart firewalld
-  ansible.builtin.systemd:
-    name: firewalld
-    state: restarted
-
 - name: Restart nftables
   ansible.builtin.systemd:
     name: nftables
-    state: restarted
-
-- name: Restart dnf-automatic
-  ansible.builtin.systemd:
-    name: dnf-automatic.timer
     state: restarted
 
 - name: Restart unattended-upgrades
