@@ -1,0 +1,20 @@
+---
+# APT repository components to enable
+apt_repositories_components:
+  - main
+  - contrib
+  - non-free
+  - non-free-firmware
+
+# Whether to include source repositories
+apt_repositories_include_source: yes
+
+# Debian suite (release codename)
+# Defaults to ansible_distribution_release if not set
+apt_repositories_suite: "{{ ansible_distribution_release }}"
+
+# Mirror URL
+apt_repositories_mirror: "http://deb.debian.org/debian"
+
+# Security mirror URL
+apt_repositories_security_mirror: "http://deb.debian.org/debian-security"

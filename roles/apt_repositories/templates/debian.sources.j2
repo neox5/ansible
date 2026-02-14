@@ -1,0 +1,14 @@
+# Debian repositories - managed by Ansible
+# Role: apt_repositories
+
+Types: deb{{ ' deb-src' if apt_repositories_include_source else '' }}
+URIs: {{ apt_repositories_mirror }}
+Suites: {{ apt_repositories_suite }} {{ apt_repositories_suite }}-updates
+Components: {{ apt_repositories_components | join(' ') }}
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+Types: deb{{ ' deb-src' if apt_repositories_include_source else '' }}
+URIs: {{ apt_repositories_security_mirror }}
+Suites: {{ apt_repositories_suite }}-security
+Components: {{ apt_repositories_components | join(' ') }}
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg

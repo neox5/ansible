@@ -1,0 +1,14 @@
+---
+- name: Test apt_repositories role
+  hosts: all
+  become: yes
+
+  roles:
+    - apt_repositories
+
+  post_tasks:
+    - name: Verify debian.sources exists
+      ansible.builtin.stat:
+        path: /etc/apt/sources.list.d/debian.sources
+      register: sources_file
+      failed_when: not sources_file.stat.exists

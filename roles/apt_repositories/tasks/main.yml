@@ -1,0 +1,14 @@
+---
+- name: Load distro-specific variables
+  include_vars: "{{ ansible_distribution }}.yml"
+  when: false # No distro-specific vars yet, placeholder for future
+
+- name: Configure APT repositories (Debian)
+  import_tasks: debian.yml
+  when: ansible_distribution == "Debian"
+
+- name: Update APT cache after repository changes
+  ansible.builtin.apt:
+    update_cache: yes
+  when: ansible_distribution == "Debian"
+  changed_when: false

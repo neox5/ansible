@@ -1,0 +1,27 @@
+---
+- name: Backup existing sources.list
+  ansible.builtin.copy:
+    src: /etc/apt/sources.list
+    dest: /etc/apt/sources.list.backup
+    remote_src: yes
+    force: no
+    mode: "0644"
+
+- name: Disable legacy sources.list
+  ansible.builtin.copy:
+    content: |
+      # Repository configuration managed by Ansible
+      # See /etc/apt/sources.list.d/debian.sources
+    dest: /etc/apt/sources.list
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Configure Debian repositories (DEB822 format)
+  ansible.builtin.template:
+    src: debian.sources.j2
+    dest: /etc/apt/sources.list.d/debian.sources
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Update APT cache

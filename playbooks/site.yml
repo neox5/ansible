@@ -1,12 +1,15 @@
 ---
-- name: Apply baseline hardening to all hosts
+- name: Complete system configuration
   hosts: all
   become: yes
+
   roles:
+    - apt_repositories
     - security_hardening
 
-- name: Apply PostgreSQL only to database hosts
+- name: Database servers
   hosts: db
   become: yes
+
   roles:
     - anxs.postgresql
