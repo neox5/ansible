@@ -1,6 +1,6 @@
 ---
 # PostgreSQL test configuration for lab environment
-# Purpose: Learning and testing anxs.postgresql role behavior
+# Purpose: Learning and testing PostgreSQL role behavior
 # Security: Plaintext credentials - lab environment only, never use in production
 
 # Test databases
@@ -23,7 +23,6 @@ postgresql_databases:
 postgresql_users:
   - name: testuser
     password: testpass123
-    encrypted: no
     role_attr_flags: "CREATEDB,NOSUPERUSER"
     state: present
 
@@ -36,9 +35,9 @@ postgresql_user_privileges:
   - name: testuser
     db: backuptest
     priv: "ALL"
+
 # Notes:
 # - testdb: Primary database for general testing and queries
 # - backuptest: Secondary database for pg_dump/pg_restore workflow testing
 # - testuser: Has CREATEDB privilege for testing database operations
-# - Plaintext password acceptable in isolated lab environment
 # - This file will be replaced with SOPS-encrypted secrets when moving to production-like testing

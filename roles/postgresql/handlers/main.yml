@@ -1,11 +1,16 @@
 ---
 # PostgreSQL role handlers
 
-- name: Restart PostgreSQL
+- name: restart postgresql
   ansible.builtin.systemd:
     name: "{{ postgresql_service_name }}"
     state: restarted
     enabled: true
+
+- name: reload postgresql
+  ansible.builtin.systemd:
+    name: "{{ postgresql_service_name }}"
+    state: reloaded
 
 - name: Display script locations
   ansible.builtin.debug:

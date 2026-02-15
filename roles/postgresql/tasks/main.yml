@@ -20,17 +20,17 @@
     - postgresql
     - postgresql-configure
 
-- name: Include database tasks
-  import_tasks: databases.yml
-  tags:
-    - postgresql
-    - postgresql-databases
-
 - name: Include user tasks
   import_tasks: users.yml
   tags:
     - postgresql
     - postgresql-users
+
+- name: Include database tasks
+  import_tasks: databases.yml
+  tags:
+    - postgresql
+    - postgresql-databases
 
 - name: Include script deployment tasks
   import_tasks: scripts.yml

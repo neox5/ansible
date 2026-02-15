@@ -5,7 +5,6 @@
   community.postgresql.postgresql_user:
     name: "{{ item.name }}"
     password: "{{ item.password | default(omit) }}"
-    encrypted: "{{ item.encrypted | default(true) }}"
     role_attr_flags: "{{ item.role_attr_flags | default('NOCREATEDB,NOSUPERUSER') }}"
     state: "{{ item.state | default('present') }}"
     login_user: "{{ postgresql_admin_user }}"
