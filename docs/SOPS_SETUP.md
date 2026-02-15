@@ -1,200 +1,580 @@
-# SOPS Setup Guide
+# PostgreSQL Operations Testing
 
-Age-based secret encryption for Ansible inventory.
+Manual testing guide for PostgreSQL install, backup, and restore playbooks.
 
 ---
 
-## Initial Setup (First Time)
+## Prerequisites
 
-Generate new age key pair and configure SOPS.
-
-### 1. Install Dependencies
+**Configure SOPS for lab environment:**
 
 ```bash
-# Arch/Manjaro
-sudo pacman -S sops age
-
-# Debian/Ubuntu
-sudo apt install sops age
-
-# macOS
-brew install sops age
-```
-
-### 2. Generate Age Key
-
-```bash
-# Create SOPS config directory
-mkdir -p ~/.config/sops/age
-chmod 700 ~/.config/sops/age
-
-# Generate new age key pair
-age-keygen -o ~/.config/sops/age/keys.txt
-
-# Set permissions
-chmod 600 ~/.config/sops/age/keys.txt
-```
-
-### 3. Save Keys to Password Manager
-
-```bash
-# Display the key file
+# Ensure age key is available
 cat ~/.config/sops/age/keys.txt
+
+# Verify SOPS can decrypt lab secrets
+sops -d inventory/lab/host_vars/lab-vm/secrets.sops.yml
 ```
 
-Save both lines to password manager:
+**Start lab VM:**
 
-- Public key: `age1...` (starts with "# public key:")
-- Private key: `AGE-SECRET-KEY-1...`
+```bash
+cd lab/vm
+./run-lab.sh
+```
 
-### 4. Configure Repository
+**Verify connectivity:**
 
-The public key is already configured in `.sops.yaml`:
+```bash
+ansible -i inventory/lab lab-vm -m ping
+```
+
+---
+
+## Test 1: Configure Test Database Credentials
+
+**Create encrypted secrets file:**
+
+```bash
+# Create/edit secrets file (SOPS will encrypt on save)
+sops inventory/lab/host_vars/lab-vm/secrets.sops.yml
+```
+
+**Add test database configuration:**
 
 ```yaml
-creation_rules:
-  - path_regex: inventory/.*/host_vars/.*/secrets\.sops\.yml$
-    age: age1fmdqnls7zgddw7qxdn3rtwlk878rfly77pqw56fz7p38j36h4gtq6hsh0r
+---
+# PostgreSQL test credentials for lab environment
+# Encrypted with SOPS - use: sops inventory/lab/host_vars/lab-vm/secrets.sops.yml
+
+# Test database user password
+testuser_db_password: "testpass123"
 ```
 
-If you generated a new key, update this value with your public key.
-
-### 5. Verify Access
+**Create PostgreSQL configuration file:**
 
 ```bash
-# Test decryption of existing secrets
-sops -d inventory/prod/host_vars/n150-01/secrets.sops.yml
+# Create unencrypted PostgreSQL configuration
+cat > inventory/lab/host_vars/lab-vm/postgresql.yml << 'EOF'
+---
+# PostgreSQL test configuration for lab environment
+# Uses encrypted credentials from secrets.sops.yml
 
-# Should display decrypted YAML content (not encrypted values)
+# Test databases
+postgresql_databases:
+  - name: testdb
+    owner: testuser
+    encoding: UTF-8
+    lc_collate: en_US.UTF-8
+    lc_ctype: en_US.UTF-8
+    state: present
+
+  - name: backuptest
+    owner: testuser
+    encoding: UTF-8
+    lc_collate: en_US.UTF-8
+    lc_ctype: en_US.UTF-8
+    state: present
+
+# Test users
+postgresql_users:
+  - name: testuser
+    password: "{{ testuser_db_password }}"
+    encrypted: yes
+    role_attr_flags: "CREATEDB,NOSUPERUSER"
+    state: present
+
+# Notes:
+# - testdb: Primary database for general testing and queries
+# - backuptest: Secondary database for pg_dump/pg_restore workflow testing
+# - testuser: Has CREATEDB privilege for testing database operations
+# - Password referenced from secrets.sops.yml (SOPS-encrypted)
+EOF
+```
+
+**Verify configuration:**
+
+```bash
+# Check that secrets can be decrypted
+sops -d inventory/lab/host_vars/lab-vm/secrets.sops.yml | grep testuser_db_password
+
+# Verify Ansible can access encrypted variables
+ansible-inventory -i inventory/lab --host lab-vm | grep testuser_db_password
 ```
 
 ---
 
-## Additional Device Setup
+## Test 2: Fresh Installation
 
-Import existing age keys from password manager.
-
-### 1. Install Dependencies
+**Install PostgreSQL:**
 
 ```bash
-# Same as Initial Setup step 1
+ansible-playbook -i inventory/lab playbooks/postgresql_install.yml --limit lab-vm
 ```
 
-### 2. Create Keys File
+**Verify installation:**
 
 ```bash
-# Create SOPS config directory
-mkdir -p ~/.config/sops/age
-chmod 700 ~/.config/sops/age
+# SSH into lab VM
+ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost
 
-# Create keys.txt file
-nvim ~/.config/sops/age/keys.txt
+# Check service status
+sudo systemctl status postgresql
+
+# List databases
+sudo -u postgres psql -l
+
+# Verify test databases exist
+sudo -u postgres psql -c "SELECT datname FROM pg_database WHERE datname IN ('testdb', 'backuptest');"
+
+# Verify testuser exists
+sudo -u postgres psql -c "SELECT usename, usecreatedb FROM pg_user WHERE usename = 'testuser';"
+
+# Exit SSH
+exit
 ```
 
-Paste both lines from password manager:
+**Expected output:**
 
-```
-# created: 2026-02-08T12:30:00Z
-# public key: age1fmdqnls7zgddw7qxdn3rtwlk878rfly77pqw56fz7p38j36h4gtq6hsh0r
-AGE-SECRET-KEY-1...your-private-key-here...
-```
+- PostgreSQL service active and running
+- testdb and backuptest databases exist
+- testuser exists with CREATEDB privilege
 
-Save and exit.
+---
 
-### 3. Set Permissions
+## Test 3: Add Test Data
+
+**Create test table with sample data:**
 
 ```bash
-chmod 600 ~/.config/sops/age/keys.txt
+# SSH into lab VM
+ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost
+
+# Connect to testdb database
+sudo -u postgres psql -d testdb
+
+# Create test table
+CREATE TABLE test_data (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+# Insert test data
+INSERT INTO test_data (name) VALUES
+    ('test_entry_1'),
+    ('test_entry_2'),
+    ('test_entry_3');
+
+# Verify data
+SELECT * FROM test_data;
+
+# Exit psql
+\q
+
+# Exit SSH
+exit
 ```
 
-### 4. Verify Access
+**Expected output:**
 
-```bash
-# Test decryption
-sops -d inventory/prod/host_vars/n150-01/secrets.sops.yml
-
-# Should display decrypted content
+```
+ id |     name      |         created_at
+----+---------------+----------------------------
+  1 | test_entry_1  | 2026-02-15 15:30:00.123456
+  2 | test_entry_2  | 2026-02-15 15:30:00.234567
+  3 | test_entry_3  | 2026-02-15 15:30:00.345678
 ```
 
 ---
 
-## Working with Secrets
+## Test 4: Create Backup
 
-### Edit Encrypted Files
+**Run backup playbook:**
 
 ```bash
-# SOPS automatically decrypts for editing
-sops inventory/prod/host_vars/n150-01/secrets.sops.yml
-
-# Make changes, save - SOPS re-encrypts automatically
+ansible-playbook -i inventory/lab playbooks/postgresql_backup.yml \
+  --limit lab-vm \
+  -e "backup_database=testdb"
 ```
 
-### Create New Secret Files
+**Verify backup created:**
 
 ```bash
-# Create and encrypt in one step
-sops inventory/prod/host_vars/newhost/secrets.sops.yml
+# SSH into lab VM
+ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost
 
-# Add your secrets in YAML format
-# Save - SOPS encrypts before writing
+# List backups
+sudo ls -lh /var/backups/postgresql/
+
+# Check backup file size (should be non-zero)
+sudo du -h /var/backups/postgresql/lab-vm-testdb-*.dump
+
+# Exit SSH
+exit
 ```
 
-### View Encrypted Files
+**Expected output:**
+
+- Backup file exists in `/var/backups/postgresql/`
+- Filename format: `lab-vm-testdb-YYYYMMDDTHHMMSS.dump`
+- File size > 0 bytes
+
+---
+
+## Test 5: Download Backup to Control Node
+
+**Copy backup from lab VM to local machine:**
 
 ```bash
-# Decrypt to stdout (read-only)
-sops -d inventory/prod/host_vars/n150-01/secrets.sops.yml
+# Get latest backup filename
+BACKUP_FILE=$(ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost \
+  "sudo ls -t /var/backups/postgresql/lab-vm-testdb-*.dump | head -1")
 
-# View in encrypted form
-cat inventory/prod/host_vars/n150-01/secrets.sops.yml
+echo "Backup file: $BACKUP_FILE"
+
+# Copy to local machine
+scp -i ~/.ssh/id_ed25519_ansible -P 2222 \
+  ansible@localhost:$BACKUP_FILE \
+  /tmp/testdb_backup.dump
+
+# Verify local copy
+ls -lh /tmp/testdb_backup.dump
+```
+
+**Expected output:**
+
+- Backup file downloaded to `/tmp/testdb_backup.dump`
+- File size matches remote backup
+
+---
+
+## Test 6: Simulate Data Loss
+
+**Drop test table to simulate data loss:**
+
+```bash
+# SSH into lab VM
+ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost
+
+# Connect to testdb database
+sudo -u postgres psql -d testdb
+
+# Drop test table
+DROP TABLE test_data;
+
+# Verify table is gone
+\dt
+
+# Try to query (should fail)
+SELECT * FROM test_data;
+
+# Exit psql
+\q
+
+# Exit SSH
+exit
+```
+
+**Expected output:**
+
+- Table `test_data` no longer exists
+- Query returns error: `relation "test_data" does not exist`
+
+---
+
+## Test 7: Upload Backup Back to Host
+
+**Copy backup from local machine back to lab VM:**
+
+```bash
+# Upload backup to different location
+scp -i ~/.ssh/id_ed25519_ansible -P 2222 \
+  /tmp/testdb_backup.dump \
+  ansible@localhost:/tmp/testdb_restore.dump
+
+# Verify upload
+ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost \
+  "ls -lh /tmp/testdb_restore.dump"
+```
+
+**Expected output:**
+
+- File uploaded to `/tmp/testdb_restore.dump` on lab VM
+- File size matches original backup
+
+---
+
+## Test 8: Restore from Backup
+
+**Run restore playbook:**
+
+```bash
+ansible-playbook -i inventory/lab playbooks/postgresql_restore.yml \
+  --limit lab-vm \
+  -e "restore_file=/tmp/testdb_restore.dump" \
+  -e "restore_database=testdb"
+```
+
+**Verify restoration:**
+
+```bash
+# SSH into lab VM
+ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost
+
+# Connect to testdb database
+sudo -u postgres psql -d testdb
+
+# Check if table exists
+\dt
+
+# Query restored data
+SELECT * FROM test_data;
+
+# Exit psql
+\q
+
+# Exit SSH
+exit
+```
+
+**Expected output:**
+
+```
+ id |     name      |         created_at
+----+---------------+----------------------------
+  1 | test_entry_1  | 2026-02-15 15:30:00.123456
+  2 | test_entry_2  | 2026-02-15 15:30:00.234567
+  3 | test_entry_3  | 2026-02-15 15:30:00.345678
+```
+
+**Success criteria:**
+
+- All 3 rows restored
+- Data matches original entries
+- Timestamps preserved
+
+---
+
+## Test 9: Verify Data Integrity
+
+**Compare original and restored data:**
+
+```bash
+# SSH into lab VM
+ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost
+
+# Connect to testdb database
+sudo -u postgres psql -d testdb
+
+# Count rows
+SELECT COUNT(*) FROM test_data;
+
+# Verify specific entries
+SELECT * FROM test_data WHERE name = 'test_entry_2';
+
+# Exit psql
+\q
+
+# Exit SSH
+exit
+```
+
+**Expected output:**
+
+- Row count: 3
+- All original data present and intact
+
+---
+
+## Test 10: Verify Backup Scripts
+
+**Check script deployment:**
+
+```bash
+# SSH into lab VM
+ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost
+
+# Verify scripts exist
+ls -la /usr/local/bin/pg_backup.sh
+ls -la /usr/local/bin/pg_restore.sh
+
+# Test backup script directly
+sudo -u postgres /usr/local/bin/pg_backup.sh testdb
+
+# List backups
+sudo ls -lh /var/backups/postgresql/
+
+# Exit SSH
+exit
+```
+
+**Expected output:**
+
+- Scripts executable and owned by root
+- Direct script execution creates backup
+- Backup appears in `/var/backups/postgresql/`
+
+---
+
+## Cleanup
+
+**Remove test data:**
+
+```bash
+# SSH into lab VM
+ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost
+
+# Connect to testdb database
+sudo -u postgres psql -d testdb
+
+# Drop test table
+DROP TABLE test_data;
+
+# Exit psql
+\q
+
+# Remove backup files
+sudo rm -f /var/backups/postgresql/lab-vm-testdb-*.dump
+sudo rm -f /tmp/testdb_restore.dump
+
+# Exit SSH
+exit
+```
+
+**Remove local backup:**
+
+```bash
+# From control node
+rm -f /tmp/testdb_backup.dump
+```
+
+**Remove test configuration (optional):**
+
+```bash
+# Remove test databases and user via playbook
+# (Modify postgresql.yml to set state: absent, then run install playbook)
+
+# Or manually via psql
+ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost << 'EOF'
+sudo -u postgres psql << SQL
+DROP DATABASE IF EXISTS testdb;
+DROP DATABASE IF EXISTS backuptest;
+DROP USER IF EXISTS testuser;
+SQL
+EOF
+```
+
+**Clean up SOPS secrets (optional):**
+
+```bash
+# Edit secrets file and remove test credentials
+sops inventory/lab/host_vars/lab-vm/secrets.sops.yml
+
+# Remove postgresql.yml if no longer needed
+rm inventory/lab/host_vars/lab-vm/postgresql.yml
 ```
 
 ---
 
-## Key Management
+## Quick Test Sequence
 
-### Security Best Practices
-
-- **Never commit private keys to git** (only public keys in `.sops.yaml`)
-- **Store private keys in password manager** (encrypted backup)
-- **Use file permissions** (`chmod 600` on keys.txt)
-- **Rotate keys** if compromised (re-encrypt all secrets)
-
-### Key Rotation (if needed)
+**Complete test in one script:**
 
 ```bash
-# 1. Generate new age key (keep old key in place)
-age-keygen -o ~/.config/sops/age/keys-new.txt
+#!/bin/bash
+set -e
 
-# 2. Append new private key to existing keys.txt
-#    SOPS supports multiple keys - keeps old key for decryption
-cat ~/.config/sops/age/keys-new.txt >> ~/.config/sops/age/keys.txt
+echo "=== PostgreSQL Operations Test ==="
 
-# 3. Extract new public key
-NEW_PUBLIC_KEY=$(grep "public key:" ~/.config/sops/age/keys-new.txt | awk '{print $4}')
-echo "New public key: $NEW_PUBLIC_KEY"
+echo "1. Installing PostgreSQL..."
+ansible-playbook -i inventory/lab playbooks/postgresql_install.yml --limit lab-vm
 
-# 4. Update .sops.yaml with new public key (replace old one)
-#    Edit .sops.yaml manually and commit change
+echo "2. Adding test data..."
+ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost << 'EOF'
+sudo -u postgres psql -d testdb << SQL
+CREATE TABLE IF NOT EXISTS test_data (id SERIAL PRIMARY KEY, name VARCHAR(100));
+INSERT INTO test_data (name) VALUES ('test_entry_1'), ('test_entry_2'), ('test_entry_3');
+SELECT COUNT(*) as row_count FROM test_data;
+SQL
+EOF
 
-# 5. Re-encrypt all secrets (uses new key from .sops.yaml, decrypts with old key from keys.txt)
-find inventory -name "*.sops.yml" -exec sops updatekeys {} \;
+echo "3. Creating backup..."
+ansible-playbook -i inventory/lab playbooks/postgresql_backup.yml \
+  --limit lab-vm \
+  -e "backup_database=testdb"
 
-# 6. Verify all secrets decrypt with new key
-find inventory -name "*.sops.yml" -exec sops -d {} \; >/dev/null
+echo "4. Getting backup filename..."
+BACKUP_FILE=$(ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost \
+  "sudo ls -t /var/backups/postgresql/lab-vm-testdb-*.dump | head -1")
+echo "Backup: $BACKUP_FILE"
 
-# 7. Remove old private key from keys.txt (keep only new key)
-#    Edit ~/.config/sops/age/keys.txt manually, remove old AGE-SECRET-KEY line
+echo "5. Downloading backup..."
+scp -i ~/.ssh/id_ed25519_ansible -P 2222 ansible@localhost:$BACKUP_FILE /tmp/testdb_backup.dump
 
-# 8. Update password manager with new keys
+echo "6. Simulating data loss..."
+ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost \
+  "sudo -u postgres psql -d testdb -c 'DROP TABLE test_data;'"
+
+echo "7. Uploading backup..."
+scp -i ~/.ssh/id_ed25519_ansible -P 2222 /tmp/testdb_backup.dump ansible@localhost:/tmp/testdb_restore.dump
+
+echo "8. Restoring database..."
+ansible-playbook -i inventory/lab playbooks/postgresql_restore.yml \
+  --limit lab-vm \
+  -e "restore_file=/tmp/testdb_restore.dump" \
+  -e "restore_database=testdb"
+
+echo "9. Verifying restoration..."
+ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost << 'EOF'
+sudo -u postgres psql -d testdb << SQL
+SELECT COUNT(*) as restored_rows FROM test_data;
+SELECT * FROM test_data;
+SQL
+EOF
+
+echo "=== Test Complete ==="
+```
+
+**Save as `test-postgresql-ops.sh` and run:**
+
+```bash
+chmod +x test-postgresql-ops.sh
+./test-postgresql-ops.sh
+```
+
+---
+
+## Common Issues
+
+**Issue: "Target database does not exist"**
+
+```bash
+# Solution: Run install playbook first
+ansible-playbook -i inventory/lab playbooks/postgresql_install.yml --limit lab-vm
+```
+
+**Issue: "Backup file does not exist"**
+
+```bash
+# Solution: Verify file path
+ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost "ls -la /tmp/testdb_restore.dump"
+```
+
+**Issue: "Permission denied"**
+
+```bash
+# Solution: Check file ownership
+ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost \
+  "sudo chown postgres:postgres /tmp/testdb_restore.dump"
+```
+
+**Issue: "SOPS decryption failed"**
+
+```bash
+# Verify age key is available
 cat ~/.config/sops/age/keys.txt
 
-# 9. Clean up
-rm ~/.config/sops/age/keys-new.txt
+# Test decryption manually
+sops -d inventory/lab/host_vars/lab-vm/secrets.sops.yml
 ```
-
-**Key rotation requires both old and new private keys during re-encryption:**
-
-- Old key decrypts existing secrets
-- New key encrypts updated secrets
-- Remove old key only after all secrets are re-encrypted and verified
