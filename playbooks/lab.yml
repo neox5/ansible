@@ -1,0 +1,23 @@
+---
+# Lab Environment Setup
+# Complete baseline configuration for lab-vm
+# Usage: ansible-playbook -i inventory/lab playbooks/lab.yml
+
+- name: Configure lab environment baseline
+  hosts: lab
+  become: yes
+
+  roles:
+    # Configure Debian repositories first
+    - apt_repositories
+
+  tasks:
+    # Update system packages after repository configuration
+    - name: Import update tasks
+      ansible.builtin.import_tasks: ../tasks/update.yml
+
+  post_tasks:
+    # Apply security hardening last
+    - name: Import security hardening role
+      ansible.builtin.import_role:
+        name: security_hardening
