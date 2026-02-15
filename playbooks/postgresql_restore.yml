@@ -20,7 +20,7 @@
 
     - name: Execute restore script
       ansible.builtin.command:
-        cmd: "{{ postgresql_scripts_dir | default('/usr/local/bin') }}/pg_restore.sh {{ restore_file }} {{ restore_database }}"
+        cmd: "{{ postgresql_scripts_dir | default('/usr/local/bin') }}/pg_restore.sh -y {{ restore_file }} {{ restore_database }}"
       become_user: "{{ postgresql_admin_user | default('postgres') }}"
       register: restore_result
 

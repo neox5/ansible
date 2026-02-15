@@ -10,12 +10,31 @@ PG_USER="{{ postgresql_admin_user }}"
 PG_PORT="{{ postgresql_port }}"
 
 # Script parameters
-BACKUP_FILE="${1:-}"
-DATABASE="${2:-}"
+SKIP_CONFIRM=false
+BACKUP_FILE=""
+DATABASE=""
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -y|--yes)
+            SKIP_CONFIRM=true
+            shift
+            ;;
+        *)
+            if [[ -z "$BACKUP_FILE" ]]; then
+                BACKUP_FILE="$1"
+            elif [[ -z "$DATABASE" ]]; then
+                DATABASE="$1"
+            fi
+            shift
+            ;;
+    esac
+done
 
 usage() {
     cat <<EOF
-Usage: $(basename "$0") <backup_file> [database]
+Usage: $(basename "$0") [-y|--yes] <backup_file> [database]
 
 Restore a PostgreSQL database from a pg_dump backup.
 
@@ -23,10 +42,13 @@ Arguments:
     backup_file    Path to the backup dump file
     database       Target database name (optional, extracted from filename if not provided)
 
+Options:
+    -y, --yes      Skip confirmation prompt (for automation)
+
 Examples:
     $(basename "$0") /var/backups/postgresql/n150-01-n8n-20260215T120000.dump
     $(basename "$0") /tmp/backup.dump n8n
-    $(basename "$0") /var/backups/postgresql/n150-01-n8n-20260215T120000.dump postgres
+    $(basename "$0") -y /tmp/backup.dump testdb
 
 Notes:
     - Target database must already exist
@@ -85,10 +107,14 @@ echo "Database '$DATABASE' found"
 echo ""
 
 # Confirm restore operation
-read -p "WARNING: This will overwrite data in database '$DATABASE'. Continue? (yes/no): " CONFIRM
-if [[ "$CONFIRM" != "yes" ]]; then
-    echo "Restore cancelled"
-    exit 0
+if [[ "$SKIP_CONFIRM" == "false" ]]; then
+    read -p "WARNING: This will overwrite data in database '$DATABASE'. Continue? (yes/no): " CONFIRM
+    if [[ "$CONFIRM" != "yes" ]]; then
+        echo "Restore cancelled"
+        exit 0
+    fi
+else
+    echo "Skipping confirmation (--yes flag provided)"
 fi
 
 # Perform restore
