@@ -85,7 +85,7 @@ cd lab/vm
 # 2. Bootstrap
 ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook playbooks/bootstrap.yml \
   -i inventory/lab -l lab-vm \
-  --user temp \
+  -e ansible_user=temp \
   -k \
   -K
 
