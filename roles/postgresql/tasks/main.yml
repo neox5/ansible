@@ -1,31 +1,48 @@
 ---
-# PostgreSQL Custom Role - Main Task Orchestration
+# PostgreSQL custom role - Main task orchestration
+# Debian 13 Trixie + PostgreSQL 17 only
 
 - name: Include preflight checks
-  ansible.builtin.import_tasks: preflight.yml
-  tags: [postgresql, postgresql-preflight]
+  import_tasks: preflight.yml
+  tags:
+    - postgresql
+    - postgresql-preflight
 
 - name: Include installation tasks
-  ansible.builtin.import_tasks: install.yml
-  tags: [postgresql, postgresql-install]
+  import_tasks: install.yml
+  tags:
+    - postgresql
+    - postgresql-install
 
 - name: Include configuration tasks
-  ansible.builtin.import_tasks: configure.yml
-  tags: [postgresql, postgresql-configure]
+  import_tasks: configure.yml
+  tags:
+    - postgresql
+    - postgresql-configure
 
-- name: Ensure PostgreSQL is started
-  ansible.builtin.systemd:
-    name: "{{ postgresql_service_name }}"
-    state: started
-    enabled: "{{ postgresql_service_enabled }}"
-  tags: [postgresql, postgresql-service]
+- name: Include database tasks
+  import_tasks: databases.yml
+  tags:
+    - postgresql
+    - postgresql-databases
 
-- name: Include database creation tasks
-  ansible.builtin.import_tasks: databases.yml
-  when: postgresql_databases | length > 0
-  tags: [postgresql, postgresql-databases]
+- name: Include user tasks
+  import_tasks: users.yml
+  tags:
+    - postgresql
+    - postgresql-users
 
-- name: Include user creation tasks
-  ansible.builtin.import_tasks: users.yml
-  when: postgresql_users | length > 0
-  tags: [postgresql, postgresql-users]
+- name: Include script deployment tasks
+  import_tasks: scripts.yml
+  when: postgresql_install_scripts | bool
+  tags:
+    - postgresql
+    - postgresql-scripts
+
+- name: Display deployment summary
+  ansible.builtin.debug:
+    msg:
+      - "PostgreSQL {{ postgresql_version }} deployment complete"
+      - "Databases: {{ postgresql_databases | map(attribute='name') | list | join(', ') }}"
+      - "Users: {{ postgresql_users | map(attribute='name') | list | join(', ') }}"
+      - "Scripts installed: {{ 'yes' if postgresql_install_scripts else 'no' }}"

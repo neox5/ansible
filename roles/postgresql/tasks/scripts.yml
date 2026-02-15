@@ -1,0 +1,36 @@
+---
+# Deploy backup/restore scripts
+
+- name: Create scripts directory
+  ansible.builtin.file:
+    path: "{{ postgresql_scripts_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy pg_backup.sh script
+  ansible.builtin.template:
+    src: pg_backup.sh.j2
+    dest: "{{ postgresql_scripts_dir }}/pg_backup.sh"
+    owner: root
+    group: root
+    mode: "0755"
+  notify: Display script locations
+
+- name: Deploy pg_restore.sh script
+  ansible.builtin.template:
+    src: pg_restore.sh.j2
+    dest: "{{ postgresql_scripts_dir }}/pg_restore.sh"
+    owner: root
+    group: root
+    mode: "0755"
+  notify: Display script locations
+
+- name: Ensure backup directory exists
+  ansible.builtin.file:
+    path: "{{ postgresql_backup_dir }}"
+    state: directory
+    owner: "{{ postgresql_admin_user }}"
+    group: "{{ postgresql_admin_user }}"
+    mode: "0700"

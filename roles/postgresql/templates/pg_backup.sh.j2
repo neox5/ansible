@@ -1,0 +1,102 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# PostgreSQL Backup Script
+# Part of postgresql role - shares inventory variables
+
+set -euo pipefail
+
+# Configuration from Ansible inventory
+BACKUP_DIR="{{ postgresql_backup_dir }}"
+RETENTION_DAYS="{{ postgresql_backup_retention_days }}"
+FORMAT="{{ postgresql_backup_format }}"
+PG_USER="{{ postgresql_admin_user }}"
+PG_PORT="{{ postgresql_port }}"
+
+# Script parameters
+DATABASE="${1:-}"
+TIMESTAMP=$(date +%Y%m%dT%H%M%S)
+HOSTNAME="{{ inventory_hostname }}"
+
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") <database>
+
+Backup a PostgreSQL database using pg_dump.
+
+Arguments:
+    database    Name of the database to backup
+
+Environment Variables:
+    BACKUP_DIR           Backup directory (default: $BACKUP_DIR)
+    RETENTION_DAYS       Days to keep backups (default: $RETENTION_DAYS)
+
+Examples:
+    $(basename "$0") n8n
+    $(basename "$0") postgres
+
+Backup file naming: ${HOSTNAME}-<database>-<timestamp>.dump
+EOF
+    exit 1
+}
+
+# Validate arguments
+if [[ -z "$DATABASE" ]]; then
+    echo "Error: Database name required"
+    usage
+fi
+
+# Ensure backup directory exists
+if [[ ! -d "$BACKUP_DIR" ]]; then
+    echo "Creating backup directory: $BACKUP_DIR"
+    mkdir -p "$BACKUP_DIR"
+    chown postgres:postgres "$BACKUP_DIR"
+    chmod 700 "$BACKUP_DIR"
+fi
+
+# Generate backup filename
+BACKUP_FILE="${BACKUP_DIR}/${HOSTNAME}-${DATABASE}-${TIMESTAMP}.dump"
+
+echo "=== PostgreSQL Backup ==="
+echo "Database: $DATABASE"
+echo "Format: $FORMAT"
+echo "Target: $BACKUP_FILE"
+echo ""
+
+# Perform backup
+echo "Starting backup..."
+if pg_dump \
+    --username="$PG_USER" \
+    --port="$PG_PORT" \
+    --format="$FORMAT" \
+    --file="$BACKUP_FILE" \
+    "$DATABASE"; then
+    
+    echo "Backup completed successfully"
+    
+    # Display backup information
+    BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
+    echo "Backup size: $BACKUP_SIZE"
+    echo "Backup file: $BACKUP_FILE"
+else
+    echo "Error: Backup failed"
+    exit 1
+fi
+
+# Cleanup old backups
+echo ""
+echo "Cleaning up old backups (older than ${RETENTION_DAYS} days)..."
+DELETED_COUNT=0
+while IFS= read -r old_backup; do
+    echo "Deleting: $old_backup"
+    rm -f "$old_backup"
+    ((DELETED_COUNT++))
+done < <(find "$BACKUP_DIR" -name "${HOSTNAME}-${DATABASE}-*.dump" -type f -mtime +${RETENTION_DAYS})
+
+if [[ $DELETED_COUNT -gt 0 ]]; then
+    echo "Removed $DELETED_COUNT old backup(s)"
+else
+    echo "No old backups to remove"
+fi
+
+echo ""
+echo "=== Backup Complete ==="

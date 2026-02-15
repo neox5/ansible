@@ -1,65 +1,29 @@
 ---
 # PostgreSQL Database Restore
-# Restores database from backup file using pg_restore
-# Usage: ansible-playbook -i inventory/prod playbooks/postgresql_restore.yml -e "pg_restore_file=/path/to/backup.dump"
-#        ansible-playbook -i inventory/prod playbooks/postgresql_restore.yml -e "pg_restore_file=/path/to/backup.dump pg_restore_database=mydb"
+# Executes pg_restore.sh script deployed by postgresql role
+# Usage: ansible-playbook -i inventory/lab playbooks/postgresql_restore.yml --limit <target> -e "restore_file=<path> restore_database=<db>"
 
 - name: Restore PostgreSQL database
-  hosts: db
+  hosts: all
   become: yes
   gather_facts: yes
 
   vars:
-    # Backup file to restore (must be provided via -e)
-    pg_restore_file: ""
-
-    # Target database name (override with -e, defaults to first configured database)
-    pg_restore_database: "{{ postgresql_databases[0].name }}"
+    restore_file: ""
+    restore_database: "{{ postgresql_databases[0].name | default('') }}"
 
   tasks:
     - name: Validate restore file parameter
       ansible.builtin.fail:
-        msg: "pg_restore_file parameter is required. Use: -e pg_restore_file=/path/to/backup.dump"
-      when: pg_restore_file == ""
+        msg: "restore_file parameter is required. Usage: -e restore_file=/path/to/backup.dump"
+      when: restore_file == ""
 
-    - name: Verify backup file exists
-      ansible.builtin.stat:
-        path: "{{ pg_restore_file }}"
-      register: restore_file
-
-    - name: Fail if backup file does not exist
-      ansible.builtin.fail:
-        msg: "Backup file does not exist: {{ pg_restore_file }}"
-      when: not restore_file.stat.exists
-
-    - name: Display restore information
-      ansible.builtin.debug:
-        msg:
-          - "Starting restore operation"
-          - "Source file: {{ pg_restore_file }}"
-          - "Target database: {{ pg_restore_database }}"
-          - "File size: {{ restore_file.stat.size | human_readable }}"
-
-    - name: Verify target database exists
-      community.postgresql.postgresql_query:
-        db: postgres
-        query: "SELECT 1 FROM pg_database WHERE datname = '{{ pg_restore_database }}'"
-      become_user: postgres
-      register: db_check
-
-    - name: Fail if target database does not exist
-      ansible.builtin.fail:
-        msg: "Target database '{{ pg_restore_database }}' does not exist. Create it first with postgresql_install.yml"
-      when: db_check.query_result | length == 0
-
-    - name: Restore database from backup
-      community.postgresql.postgresql_db:
-        name: "{{ pg_restore_database }}"
-        state: restore
-        target: "{{ pg_restore_file }}"
-      become_user: postgres
+    - name: Execute restore script
+      ansible.builtin.command:
+        cmd: "{{ postgresql_scripts_dir | default('/usr/local/bin') }}/pg_restore.sh {{ restore_file }} {{ restore_database }}"
+      become_user: "{{ postgresql_admin_user | default('postgres') }}"
       register: restore_result
 
-    - name: Display restore completion
+    - name: Display restore output
       ansible.builtin.debug:
-        msg: "Restore completed successfully for database: {{ pg_restore_database }}"
+        var: restore_result.stdout_lines

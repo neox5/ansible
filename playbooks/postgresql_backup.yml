@@ -1,57 +1,23 @@
 ---
 # PostgreSQL Database Backup
-# Creates compressed backup of single database using pg_dump
-# Usage: ansible-playbook -i inventory/prod playbooks/postgresql_backup.yml
-#        ansible-playbook -i inventory/prod playbooks/postgresql_backup.yml -e "pg_backup_database=mydb"
+# Executes pg_backup.sh script deployed by postgresql role
+# Usage: ansible-playbook -i inventory/lab playbooks/postgresql_backup.yml --limit <target> -e "backup_database=<db>"
 
 - name: Backup PostgreSQL database
-  hosts: db
+  hosts: all
   become: yes
   gather_facts: yes
 
   vars:
-    # Database to backup (override with -e)
-    pg_backup_database: "{{ postgresql_databases[0].name }}"
-
-    # Backup directory
-    pg_backup_dir: /var/backups/postgresql
-
-    # Timestamp for backup filename
-    pg_backup_timestamp: "{{ ansible_date_time.date }}-{{ ansible_date_time.hour }}{{ ansible_date_time.minute }}{{ ansible_date_time.second }}"
-
-    # Backup filename
-    pg_backup_filename: "{{ pg_backup_database }}_{{ pg_backup_timestamp }}.dump"
-
-    # Full backup path
-    pg_backup_path: "{{ pg_backup_dir }}/{{ pg_backup_filename }}"
+    backup_database: "{{ postgresql_databases[0].name }}"
 
   tasks:
-    - name: Create backup directory
-      ansible.builtin.file:
-        path: "{{ pg_backup_dir }}"
-        state: directory
-        owner: postgres
-        group: postgres
-        mode: "0700"
-
-    - name: Backup database to file
-      community.postgresql.postgresql_db:
-        name: "{{ pg_backup_database }}"
-        state: dump
-        target: "{{ pg_backup_path }}"
-      become_user: postgres
+    - name: Execute backup script
+      ansible.builtin.command:
+        cmd: "{{ postgresql_scripts_dir | default('/usr/local/bin') }}/pg_backup.sh {{ backup_database }}"
+      become_user: "{{ postgresql_admin_user | default('postgres') }}"
       register: backup_result
 
-    - name: Verify backup file exists
-      ansible.builtin.stat:
-        path: "{{ pg_backup_path }}"
-      register: backup_file
-
-    - name: Display backup information
+    - name: Display backup output
       ansible.builtin.debug:
-        msg:
-          - "Backup completed successfully"
-          - "Database: {{ pg_backup_database }}"
-          - "Backup file: {{ pg_backup_path }}"
-          - "File size: {{ backup_file.stat.size | human_readable }}"
-      when: backup_file.stat.exists
+        var: backup_result.stdout_lines
