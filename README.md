@@ -14,14 +14,11 @@ pacman -S ansible sops age
 
 ## Secrets (SOPS)
 
+See [SOPS Setup Guide](docs/SOPS_SETUP.md) for initial setup and additional device configuration.
+
+Quick verification:
+
 ```bash
-# Place the age private key at:
-~/.config/sops/age/keys.txt
-
-# Set permissions:
-chmod 700 ~/.config/sops/age
-chmod 600 ~/.config/sops/age/keys.txt
-
 # Verify access (must succeed):
 sops -d inventory/prod/host_vars/<host>/secrets.yml >/dev/null
 ```
@@ -42,8 +39,8 @@ Bootstrap command:
 ```bash
 ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook playbooks/bootstrap.yml \
   -i "<TARGET_IP>," \
-  --user temp \
-  --ask-become-pass
+  -e ansible_user=temp \
+  -k -K
 ```
 
 After bootstrap completes:
