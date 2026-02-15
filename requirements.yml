@@ -4,5 +4,5 @@ collections:
     version: ">=4.0.0"
 
 roles:
-  - name: anxs.postgresql
-    version: "v1.17.0"
+  - name: roles-ansible.restic
+    version: "v0.9.3"

@@ -1,0 +1,51 @@
+---
+# PostgreSQL Database Restore from Restic
+# Orchestrates Restic snapshot extraction + PostgreSQL restore
+# Usage: ansible-playbook -i inventory/lab playbooks/restore_db_from_restic.yml --limit <target> -e "snapshot_id=<id> restore_database=<db>"
+
+- name: Restore PostgreSQL database from Restic backup
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  vars:
+    snapshot_id: "latest"
+    restore_database: "{{ postgresql_databases[0].name | default('') }}"
+    restore_temp_dir: "/tmp/restic_restore"
+    restic_repo_location: "{{ restic_repos.local.location }}"
+    restic_repo_password: "{{ restic_repos.local.password }}"
+
+  tasks:
+    - name: Validate restore_database parameter
+      ansible.builtin.fail:
+        msg: "restore_database parameter is required. Usage: -e restore_database=<dbname>"
+      when: restore_database == ""
+
+    - name: Create temporary restore directory
+      ansible.builtin.file:
+        path: "{{ restore_temp_dir }}"
+        state: directory
+        mode: "0700"
+
+    - name: Extract snapshot from Restic repository
+      ansible.builtin.command:
+        cmd: "restic restore {{ snapshot_id }} --target {{ restore_temp_dir }} --include {{ restore_database }}.dump"
+      environment:
+        RESTIC_REPOSITORY: "{{ restic_repo_location }}"
+        RESTIC_PASSWORD: "{{ restic_repo_password }}"
+      register: restic_extract
+
+    - name: Restore database using pg_restore.sh
+      ansible.builtin.command:
+        cmd: "{{ postgresql_scripts_dir | default('/usr/local/bin') }}/pg_restore.sh -y {{ restore_temp_dir }}/{{ restore_database }}.dump {{ restore_database }}"
+      become_user: "{{ postgresql_admin_user | default('postgres') }}"
+      register: restore_result
+
+    - name: Display restore output
+      ansible.builtin.debug:
+        var: restore_result.stdout_lines
+
+    - name: Clean up temporary restore directory
+      ansible.builtin.file:
+        path: "{{ restore_temp_dir }}"
+        state: absent
