@@ -41,11 +41,15 @@
   ansible.builtin.meta: flush_handlers
 
 - name: Wait for PostgreSQL to be ready
-  ansible.builtin.wait_for:
+  community.postgresql.postgresql_ping:
+    login_user: "{{ postgresql_admin_user }}"
     port: "{{ postgresql_port }}"
-    host: "{{ postgresql_listen_addresses }}"
-    timeout: 30
-  when: postgresql_listen_addresses != 'localhost'
+  become: true
+  become_user: "{{ postgresql_admin_user }}"
+  register: pg_ping
+  until: pg_ping.is_available
+  retries: 10
+  delay: 3
 
 - name: Verify PostgreSQL is running
   ansible.builtin.systemd:

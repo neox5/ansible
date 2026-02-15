@@ -2,6 +2,9 @@
 # PostgreSQL 17 Configuration
 # Custom role for Debian 13 Trixie
 
+# CRITICAL: data_directory required for pg_wrapper
+data_directory = '/var/lib/postgresql/17/main'
+
 #------------------------------------------------------------------------------
 # CONNECTIONS AND AUTHENTICATION
 #------------------------------------------------------------------------------

@@ -16,3 +16,6 @@ galaxy_info:
     - postgresql
 
 dependencies: []
+
+collections:
+  - community.postgresql
