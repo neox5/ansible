@@ -1,0 +1,41 @@
+---
+# n8n role - Main task orchestration
+
+- name: Include preflight checks
+  import_tasks: preflight.yml
+  tags:
+    - n8n
+    - n8n-preflight
+
+- name: Deploy n8n container via Quadlet
+  include_role:
+    name: quadlet
+  vars:
+    quadlet_name: n8n
+    quadlet_image: "docker.io/n8nio/n8n:{{ n8n_version }}"
+    quadlet_environment:
+      WEBHOOK_URL: "{{ n8n_webhook_url }}"
+      N8N_HOST: "{{ n8n_host }}"
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: "{{ n8n_protocol }}"
+      N8N_ENCRYPTION_KEY: "{{ n8n_encryption_key }}"
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "{{ n8n_block_env_access | string | lower }}"
+      GENERIC_TIMEZONE: "{{ n8n_timezone }}"
+      TZ: "{{ n8n_timezone }}"
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: "{{ n8n_db_host }}"
+      DB_POSTGRESDB_PORT: "{{ n8n_db_port }}"
+      DB_POSTGRESDB_DATABASE: "{{ n8n_db_name }}"
+      DB_POSTGRESDB_USER: "{{ n8n_db_user }}"
+      DB_POSTGRESDB_PASSWORD: "{{ n8n_db_password }}"
+      DB_POSTGRESDB_SCHEMA: "public"
+    quadlet_ports:
+      - "{{ n8n_port }}:5678"
+    quadlet_volumes:
+      - "{{ n8n_data_volume }}:/home/node/.n8n"
+    quadlet_systemd_after:
+      - postgresql.service
+    quadlet_systemd_requires:
+      - postgresql.service
+  tags:
+    - n8n

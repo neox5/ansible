@@ -1,0 +1,6 @@
+---
+# n8n Role - Immutable Variables
+
+# Container defaults from n8n documentation
+n8n_container_port: 5678
+n8n_data_path: "/home/node/.n8n"

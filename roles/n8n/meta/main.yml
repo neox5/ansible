@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  role_name: n8n
+  author: neox5
+  description: n8n workflow automation via Podman Quadlet
+  license: MIT
+  min_ansible_version: "2.15"
+
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+
+  galaxy_tags:
+    - automation
+    - workflow
+    - n8n
+
+dependencies: []

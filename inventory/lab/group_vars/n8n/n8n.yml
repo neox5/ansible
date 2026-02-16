@@ -1,0 +1,45 @@
+---
+# ============================================================================
+# n8n: Lab Configuration
+# File: group_vars/n8n/n8n.yml
+# Role: n8n (custom)
+# ============================================================================
+#
+# Lab environment configuration for n8n workflow automation.
+#
+# Applied to: All hosts in 'n8n' group
+# Variable precedence: Overrides all/, overridden by host_vars/
+# ============================================================================
+
+# --- Version ---
+n8n_version: "2.7.5"
+
+# --- Network Configuration ---
+n8n_host: "localhost"
+n8n_port: 5678
+n8n_protocol: "http"
+n8n_webhook_url: "http://localhost:5678/"
+
+# --- Database Configuration ---
+n8n_db_host: "localhost"
+n8n_db_port: 5432
+n8n_db_name: "n8n"
+n8n_db_user: "n8n_user"
+n8n_db_password: "{{ n8n_db_password_secret }}"
+
+# --- Security Configuration ---
+n8n_encryption_key: "{{ n8n_encryption_key_secret }}"
+n8n_block_env_access: true
+
+# --- Timezone ---
+n8n_timezone: "UTC"
+
+# ============================================================================
+# Notes:
+# - Lab configuration uses HTTP and localhost for testing
+# - Database credentials referenced from secrets.sops.yml
+# - Encryption key referenced from secrets.sops.yml
+# - PostgreSQL database created via postgresql role configuration
+# - Container deployed via quadlet role (called internally)
+# - Access: http://localhost:5678 (port forwarded from VM)
+# ============================================================================

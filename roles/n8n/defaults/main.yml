@@ -1,0 +1,30 @@
+---
+# n8n Role - Configuration Defaults
+
+# Version
+n8n_version: "2.7.5"
+
+# Network configuration (REQUIRED - must be set in inventory)
+n8n_webhook_url: ""
+n8n_host: ""
+n8n_port: 5678
+n8n_protocol: "https"
+
+# Database configuration (REQUIRED - must be set in inventory)
+n8n_db_host: "localhost"
+n8n_db_port: 5432
+n8n_db_name: "n8n"
+n8n_db_user: "n8n_user"
+n8n_db_password: ""
+
+# Encryption (REQUIRED - must be set in inventory)
+n8n_encryption_key: ""
+
+# Timezone
+n8n_timezone: "UTC"
+
+# Security
+n8n_block_env_access: true
+
+# Container volume
+n8n_data_volume: "n8n_data"
