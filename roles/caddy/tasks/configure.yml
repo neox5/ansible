@@ -8,7 +8,7 @@
     owner: root
     group: root
     mode: "0644"
-    validate: caddy validate --config %s
+    validate: caddy validate --adapter caddyfile --config %s
   notify: reload caddy
 
 - name: Ensure Caddy configuration directory exists

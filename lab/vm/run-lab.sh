@@ -39,17 +39,17 @@ WORK="$IMAGES_DIR/${DISTRO}.qcow2"
 
 show_help() {
   cat <<EOF
-Usage: $0 [--distro <name>] [COMMAND]
+Usage: $0 [--distro <n>] [COMMAND]
 
 Options:
-  --distro <name>      Select distribution (default: debian13)
+  --distro <n>      Select distribution (default: debian13)
                        Supported: debian13, fedora43
 
 Commands:
   (none)           Run current state
-  save <name>      Create internal snapshot
-  load <name>      Revert to internal snapshot
-  delete <name>    Delete internal snapshot
+  save <n>      Create internal snapshot
+  load <n>      Revert to internal snapshot
+  delete <n>    Delete internal snapshot
   reset            Delete working image (next run creates fresh copy)
   list             List all internal snapshots
   help, -h         Show this help
@@ -67,6 +67,7 @@ Examples:
 
 VM Access:
   SSH: ssh -p 2222 ansible@localhost
+  HTTP: http://n8n.lab.local:8080 (add to /etc/hosts: 127.0.0.1 n8n.lab.local)
   Shutdown: sudo poweroff (from inside VM)
   Force kill: Ctrl+C (may corrupt state)
 EOF
@@ -86,180 +87,149 @@ init_work_image() {
     cp "$BASE" "$WORK"
 
     # Check if 'base' snapshot exists
-    if ! qemu-img snapshot -l "$WORK" 2>/dev/null | grep -q "^[0-9].*base"; then
-      echo "[vm] creating 'base' snapshot"
-      qemu-img snapshot -c base "$WORK" >/dev/null
+    if ! qemu-img snapshot -l "$WORK" 2>/dev/null | grep -q "^[0-9].* base "; then
+      echo "[vm] creating 'base' snapshot (fresh OS state)"
+      qemu-img snapshot -c base "$WORK"
     fi
   fi
 }
 
-case "${1:-}" in
-help | -h | --help)
-  show_help
-  exit 0
-  ;;
-
-save)
-  SNAPSHOT_NAME="${2:-}"
-  if [ -z "$SNAPSHOT_NAME" ]; then
-    echo "[vm] error: snapshot name required" >&2
-    echo "[vm] usage: $0 [--distro <name>] save <name>" >&2
-    exit 1
-  fi
-
+run_vm() {
   check_base
   init_work_image
 
-  # Check for duplicates
-  if qemu-img snapshot -l "$WORK" 2>/dev/null | grep -q "^[0-9].*$SNAPSHOT_NAME"; then
-    echo "[vm] warning: snapshot '$SNAPSHOT_NAME' already exists" >&2
-    echo "[vm] this will create a duplicate" >&2
-    printf "Continue? [y/N]: " >&2
-    read -r response
-    case "$response" in
-    [yY] | [yY][eE][sS]) ;;
-    *)
-      echo "[vm] cancelled" >&2
-      exit 0
-      ;;
-    esac
-  fi
+  echo "[vm] starting ($DISTRO)"
+  echo "[vm] ssh: ssh -p 2222 ansible@localhost"
+  echo "[vm] http: http://n8n.lab.local:8080"
+  echo "[vm] shutdown: sudo poweroff (from inside VM)"
 
-  echo "[vm] creating snapshot: $SNAPSHOT_NAME ($DISTRO)"
-  qemu-img snapshot -c "$SNAPSHOT_NAME" "$WORK"
-  echo "[vm] snapshot created: $SNAPSHOT_NAME"
-  exit 0
-  ;;
+  qemu-system-x86_64 \
+    -enable-kvm \
+    -m 4G \
+    -smp 4 \
+    -drive file="$WORK",if=virtio \
+    -netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::8080-:80 \
+    -device virtio-net-pci,netdev=net0
+}
 
-load)
-  SNAPSHOT_NAME="${2:-}"
-  if [ -z "$SNAPSHOT_NAME" ]; then
+save_snapshot() {
+  NAME="$1"
+  if [ -z "$NAME" ]; then
     echo "[vm] error: snapshot name required" >&2
-    echo "[vm] usage: $0 [--distro <name>] load <name>" >&2
+    echo "[vm] usage: $0 save <name>" >&2
     exit 1
   fi
-
-  check_base
 
   if [ ! -f "$WORK" ]; then
-    echo "[vm] error: no working image found: $WORK" >&2
-    echo "[vm] run without arguments to create it" >&2
+    echo "[vm] error: no working image to snapshot" >&2
+    echo "[vm] run VM first to create working image" >&2
     exit 1
   fi
 
-  if ! qemu-img snapshot -l "$WORK" 2>/dev/null | grep -q "^[0-9].*$SNAPSHOT_NAME"; then
-    echo "[vm] error: snapshot not found: $SNAPSHOT_NAME" >&2
-    echo "[vm] available snapshots ($DISTRO):" >&2
-    qemu-img snapshot -l "$WORK" | tail -n +3 | awk '{print "  - " $2}' >&2
-    exit 1
-  fi
+  echo "[vm] creating snapshot: $NAME"
+  qemu-img snapshot -c "$NAME" "$WORK"
+  echo "[vm] snapshot saved: $NAME"
+}
 
-  echo "[vm] reverting to snapshot: $SNAPSHOT_NAME ($DISTRO)"
-  qemu-img snapshot -a "$SNAPSHOT_NAME" "$WORK"
-  echo "[vm] snapshot loaded: $SNAPSHOT_NAME"
-  exit 0
-  ;;
-
-delete)
-  SNAPSHOT_NAME="${2:-}"
-  if [ -z "$SNAPSHOT_NAME" ]; then
+load_snapshot() {
+  NAME="$1"
+  if [ -z "$NAME" ]; then
     echo "[vm] error: snapshot name required" >&2
-    echo "[vm] usage: $0 [--distro <name>] delete <name>" >&2
+    echo "[vm] usage: $0 load <name>" >&2
     exit 1
   fi
-
-  check_base
 
   if [ ! -f "$WORK" ]; then
-    echo "[vm] error: no working image found: $WORK" >&2
-    echo "[vm] run without arguments to create it" >&2
+    echo "[vm] error: no working image exists" >&2
     exit 1
   fi
 
-  # Protect 'base' snapshot
-  if [ "$SNAPSHOT_NAME" = "base" ]; then
-    echo "[vm] error: cannot delete 'base' snapshot (protected)" >&2
+  # Verify snapshot exists
+  if ! qemu-img snapshot -l "$WORK" 2>/dev/null | grep -q "^[0-9].* $NAME "; then
+    echo "[vm] error: snapshot not found: $NAME" >&2
+    echo "[vm] available snapshots:" >&2
+    qemu-img snapshot -l "$WORK" >&2
     exit 1
   fi
 
-  # Check if snapshot exists
-  if ! qemu-img snapshot -l "$WORK" 2>/dev/null | grep -q "^[0-9].*$SNAPSHOT_NAME"; then
-    echo "[vm] error: snapshot not found: $SNAPSHOT_NAME" >&2
-    echo "[vm] available snapshots ($DISTRO):" >&2
-    qemu-img snapshot -l "$WORK" | tail -n +3 | awk '{print "  - " $2}' >&2
+  echo "[vm] reverting to snapshot: $NAME"
+  qemu-img snapshot -a "$NAME" "$WORK"
+  echo "[vm] reverted to: $NAME"
+}
+
+delete_snapshot() {
+  NAME="$1"
+  if [ -z "$NAME" ]; then
+    echo "[vm] error: snapshot name required" >&2
+    echo "[vm] usage: $0 delete <name>" >&2
     exit 1
   fi
-
-  # Count occurrences of this snapshot name
-  SNAPSHOT_COUNT=$(qemu-img snapshot -l "$WORK" 2>/dev/null | grep -c "^[0-9].*$SNAPSHOT_NAME" || true)
-
-  if [ "$SNAPSHOT_COUNT" -gt 1 ]; then
-    echo "[vm] warning: found $SNAPSHOT_COUNT snapshots named '$SNAPSHOT_NAME'" >&2
-    echo "[vm] this will delete ALL of them" >&2
-    printf "Continue? [y/N]: " >&2
-    read -r response
-    case "$response" in
-    [yY] | [yY][eE][sS]) ;;
-    *)
-      echo "[vm] cancelled" >&2
-      exit 0
-      ;;
-    esac
-  fi
-
-  echo "[vm] deleting snapshot: $SNAPSHOT_NAME ($DISTRO)"
-  # Delete all snapshots with this name (handles duplicates)
-  while qemu-img snapshot -l "$WORK" 2>/dev/null | grep -q "^[0-9].*$SNAPSHOT_NAME"; do
-    qemu-img snapshot -d "$SNAPSHOT_NAME" "$WORK" 2>/dev/null
-  done
-  echo "[vm] snapshot deleted: $SNAPSHOT_NAME"
-  exit 0
-  ;;
-
-reset)
-  if [ -f "$WORK" ]; then
-    echo "[vm] deleting working image ($DISTRO)"
-    rm -f "$WORK"
-    echo "[vm] working image deleted (next run will create fresh copy)"
-  else
-    echo "[vm] no working image to delete ($DISTRO)"
-  fi
-  exit 0
-  ;;
-
-list)
-  check_base
 
   if [ ! -f "$WORK" ]; then
-    echo "[vm] no working image ($DISTRO) - run without arguments to create it"
+    echo "[vm] error: no working image exists" >&2
+    exit 1
+  fi
+
+  # Verify snapshot exists
+  if ! qemu-img snapshot -l "$WORK" 2>/dev/null | grep -q "^[0-9].* $NAME "; then
+    echo "[vm] error: snapshot not found: $NAME" >&2
+    echo "[vm] available snapshots:" >&2
+    qemu-img snapshot -l "$WORK" >&2
+    exit 1
+  fi
+
+  echo "[vm] deleting snapshot: $NAME"
+  qemu-img snapshot -d "$NAME" "$WORK"
+  echo "[vm] deleted: $NAME"
+}
+
+list_snapshots() {
+  if [ ! -f "$WORK" ]; then
+    echo "[vm] no working image exists" >&2
     exit 0
   fi
 
-  echo "[vm] available snapshots ($DISTRO):"
-  if qemu-img snapshot -l "$WORK" 2>/dev/null | tail -n +3 | grep -q .; then
-    qemu-img snapshot -l "$WORK" | tail -n +3 | awk '{print "  - " $2 " (" $3 " " $4 ")"}'
-  else
-    echo "  (none)"
+  echo "[vm] snapshots in: $WORK"
+  qemu-img snapshot -l "$WORK"
+}
+
+reset_work() {
+  if [ ! -f "$WORK" ]; then
+    echo "[vm] no working image to delete"
+    exit 0
   fi
-  exit 0
-  ;;
 
+  echo "[vm] deleting working image: $WORK"
+  rm "$WORK"
+  echo "[vm] deleted - next run will create fresh copy from base"
+}
+
+# Command routing
+case "${1:-}" in
+save)
+  save_snapshot "$2"
+  ;;
+load)
+  load_snapshot "$2"
+  ;;
+delete)
+  delete_snapshot "$2"
+  ;;
+list)
+  list_snapshots
+  ;;
+reset)
+  reset_work
+  ;;
+help | -h | --help)
+  show_help
+  ;;
 "")
-  check_base
-  init_work_image
-  echo "[vm] starting VM ($DISTRO)"
+  run_vm
   ;;
-
 *)
   echo "[vm] error: unknown command: $1" >&2
-  echo "[vm] run '$0 help' for usage" >&2
+  echo "[vm] use '$0 help' for usage" >&2
   exit 1
   ;;
 esac
-
-exec qemu-system-x86_64 \
-  -enable-kvm \
-  -m 4G \
-  -smp 4 \
-  -drive file="$WORK",if=virtio \
-  -nic user,hostfwd=tcp::2222-:22

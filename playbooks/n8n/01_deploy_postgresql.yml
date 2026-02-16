@@ -1,0 +1,46 @@
+---
+- name: "Stage 1: Deploy PostgreSQL for n8n"
+  hosts: n8n
+  become: true
+  tasks:
+    - name: Display stage information
+      ansible.builtin.debug:
+        msg: "Deploying PostgreSQL database for n8n..."
+
+    - name: Deploy PostgreSQL role
+      ansible.builtin.include_role:
+        name: postgresql
+
+    - name: Ensure PostgreSQL service is started and enabled
+      ansible.builtin.systemd_service:
+        name: postgresql
+        state: started
+        enabled: true
+
+    - name: Wait for PostgreSQL to accept connections
+      ansible.builtin.command:
+        cmd: pg_isready -h {{ n8n_db_host }} -p {{ n8n_db_port }} -q
+      register: pg_ready_check
+      until: pg_ready_check.rc == 0
+      retries: "{{ postgres_ready_retries }}"
+      delay: "{{ postgres_ready_delay }}"
+      changed_when: false
+
+    - name: Verify n8n user can connect to database
+      community.postgresql.postgresql_query:
+        login_host: "{{ n8n_db_host }}"
+        login_port: "{{ n8n_db_port }}"
+        login_user: "{{ n8n_db_user }}"
+        login_password: "{{ n8n_db_password }}"
+        db: "{{ n8n_db_name }}"
+        query: "SELECT 1;"
+      changed_when: false
+
+    - name: Display PostgreSQL deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "✓ PostgreSQL deployment complete"
+          - "Database: {{ n8n_db_name }}"
+          - "User: {{ n8n_db_user }}"
+          - "Host: {{ n8n_db_host }}:{{ n8n_db_port }}"
+          - "Status: Ready and accepting connections"

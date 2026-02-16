@@ -1,0 +1,42 @@
+---
+# ============================================================================
+# PostgreSQL: n8n Database Objects
+# File: group_vars/n8n/postgresql.yml
+# Role: postgresql (custom)
+# ============================================================================
+#
+# Defines n8n-specific database, user, and privileges.
+# Applied to: Hosts in both 'db' and 'n8n' groups
+# Variable precedence: Overrides group_vars/all/ and group_vars/db/
+# ============================================================================
+
+# --- Database Creation ---
+postgresql_databases:
+  - name: "{{ n8n_db_name }}"
+    owner: "{{ n8n_db_user }}"
+    lc_collate: "{{ postgresql_defaults.db.lc_collate }}"
+    lc_ctype: "{{ postgresql_defaults.db.lc_ctype }}"
+    encoding: "{{ postgresql_defaults.db.encoding }}"
+    template: "{{ postgresql_defaults.db.template }}"
+    state: present
+
+# --- User Creation ---
+postgresql_users:
+  - name: "{{ n8n_db_user }}"
+    password: "{{ n8n_db_password }}"
+    encrypted: yes
+    role_attr_flags: "NOCREATEDB,NOSUPERUSER"
+    state: present
+
+# --- User Privileges ---
+postgresql_user_privileges:
+  - name: "{{ n8n_db_user }}"
+    db: "{{ n8n_db_name }}"
+    priv: "ALL"
+
+# ============================================================================
+# Notes:
+# - Database user password referenced from host_vars secrets.sops.yml
+# - Uses postgresql_defaults from group_vars/all/postgresql.yml
+# - Database owned by n8n_user for schema migrations
+# ============================================================================

@@ -18,12 +18,30 @@
     healthcheck_interval: "{{ quadlet_health_interval if quadlet_health_cmd else omit }}"
     healthcheck_timeout: "{{ quadlet_health_timeout if quadlet_health_cmd else omit }}"
     healthcheck_retries: "{{ quadlet_health_retries if quadlet_health_cmd else omit }}"
+    healthcheck_start_period: "{{ quadlet_health_start_period if quadlet_health_cmd else omit }}"
     quadlet_options:
       - "AutoUpdate={{ 'registry' if quadlet_auto_update else 'disabled' }}"
       - "Pull={{ quadlet_pull_policy }}"
       - |
+        [Container]
+        {% if quadlet_health_cmd and quadlet_health_notify %}
+        Notify=healthy
+        HealthOnFailure=kill
+        {% endif %}
+      - |
         [Service]
         Restart={{ quadlet_restart_policy }}
+        RestartSec={{ quadlet_restart_sec }}
+        TimeoutStartSec={{ quadlet_timeout_start_sec }}
+        StartLimitBurst={{ quadlet_start_limit_burst }}
+        StartLimitIntervalSec={{ quadlet_start_limit_interval }}
+        {% if quadlet_exec_start_pre %}
+        {% if quadlet_exec_start_pre_user %}
+        ExecStartPre=-/usr/bin/runuser -u {{ quadlet_exec_start_pre_user }} -- {{ quadlet_exec_start_pre }}
+        {% else %}
+        ExecStartPre={{ quadlet_exec_start_pre }}
+        {% endif %}
+        {% endif %}
       - |
         [Unit]
         {% if quadlet_systemd_after %}
@@ -44,25 +62,25 @@
   ansible.builtin.meta: flush_handlers
 
 - name: Enable Quadlet service
-  ansible.builtin.systemd:
+  ansible.builtin.systemd_service:
     name: "{{ quadlet_service_name }}"
     enabled: "{{ quadlet_service_enabled }}"
     daemon_reload: true
   when: quadlet_service_enabled
 
 - name: Start Quadlet service
-  ansible.builtin.systemd:
+  ansible.builtin.systemd_service:
     name: "{{ quadlet_service_name }}"
     state: "{{ quadlet_service_state }}"
   when: quadlet_service_state == 'started'
 
 - name: Wait for service to be active
-  ansible.builtin.systemd:
+  ansible.builtin.systemd_service:
     name: "{{ quadlet_service_name }}"
   register: service_status
   until: service_status.status.ActiveState == "active"
-  retries: 5
-  delay: 2
+  retries: 20
+  delay: 3
   when: quadlet_service_state == 'started'
 
 - name: Display deployment summary
@@ -73,3 +91,4 @@
       - "Image: {{ quadlet_image }}"
       - "Service: {{ quadlet_service_name }}"
       - "State: {{ 'enabled and started' if quadlet_service_enabled and quadlet_service_state == 'started' else 'deployed' }}"
+      - "Health check: {{ 'enabled with systemd integration' if quadlet_health_cmd and quadlet_health_notify else 'enabled' if quadlet_health_cmd else 'disabled' }}"

@@ -39,9 +39,21 @@ quadlet_security_opt: [] # Security options
 
 # Health checks
 quadlet_health_cmd: "" # Health check command
+quadlet_health_notify: false # Enable Notify=healthy (systemd readiness integration)
 quadlet_health_interval: "30s" # Health check interval
 quadlet_health_timeout: "30s" # Health check timeout
 quadlet_health_retries: 3 # Health check retries
+quadlet_health_start_period: "30s" # Grace period before health checks start failing
+
+# Pre-start validation
+quadlet_exec_start_pre: "" # Command to run before container starts
+quadlet_exec_start_pre_user: "" # User to run pre-start command as (empty = root)
+
+# Service timeouts and restart behavior
+quadlet_timeout_start_sec: 90 # Time to wait for service startup
+quadlet_restart_sec: 10 # Delay between restart attempts
+quadlet_start_limit_burst: 5 # Maximum restart attempts in interval
+quadlet_start_limit_interval: 600 # Time window for burst limit (seconds)
 
 # Systemd unit options
 quadlet_systemd_after: [] # Systemd After= dependencies

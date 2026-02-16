@@ -1,0 +1,44 @@
+---
+- name: "Stage 3: Deploy Caddy Reverse Proxy"
+  hosts: n8n
+  become: true
+
+  pre_tasks:
+    - name: Verify n8n is running (preflight)
+      ansible.builtin.uri:
+        url: "http://{{ n8n_db_host }}:{{ n8n_port }}/healthz"
+        status_code: 200
+        timeout: 5
+      register: n8n_health
+      failed_when: n8n_health.status != 200
+
+  tasks:
+    - name: Display stage information
+      ansible.builtin.debug:
+        msg: "Configuring Caddy reverse proxy for n8n..."
+
+    - name: Deploy Caddy role
+      ansible.builtin.include_role:
+        name: caddy
+
+    - name: Wait briefly for Caddy to initialize
+      ansible.builtin.pause:
+        seconds: 3
+
+    - name: Verify Caddy admin API responds
+      ansible.builtin.uri:
+        url: "http://localhost:2019/config/"
+        status_code: 200
+        timeout: 5
+      register: caddy_admin_check
+      retries: 5
+      delay: 2
+      until: caddy_admin_check.status == 200
+
+    - name: Display Caddy deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "✓ Caddy deployment complete"
+          - "Domain: {{ n8n_domain }}"
+          - "Backend: localhost:{{ n8n_port }}"
+          - "Admin API: http://localhost:2019"

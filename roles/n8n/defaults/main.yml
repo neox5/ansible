@@ -2,7 +2,7 @@
 # n8n Role - Configuration Defaults
 
 # Version
-n8n_version: "2.7.5"
+n8n_version: "latest"
 
 # Network configuration (REQUIRED - must be set in inventory)
 n8n_webhook_url: ""
@@ -28,3 +28,20 @@ n8n_block_env_access: true
 
 # Container volume
 n8n_data_volume: "n8n_data"
+
+# Health check configuration
+n8n_health_check_interval: "30s"
+n8n_health_check_timeout: "10s"
+n8n_health_check_retries: 3
+n8n_health_check_start_period: "30s"
+
+# systemd service configuration
+n8n_systemd_timeout_start: 300
+n8n_systemd_restart_sec: 15
+n8n_systemd_start_limit_burst: 5
+n8n_systemd_start_limit_interval: 600
+
+# Deployment validation timeouts
+n8n_port_wait_timeout: 60
+n8n_readiness_retries: 12
+n8n_readiness_delay: 5

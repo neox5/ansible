@@ -1,0 +1,29 @@
+---
+# ============================================================================
+# Caddy: n8n Reverse Proxy Configuration
+# File: group_vars/n8n/caddy.yml
+# Role: caddy (custom)
+# ============================================================================
+#
+# Applied to: Hosts in both 'caddy' and 'n8n' groups
+# Variable precedence: Overrides group_vars/all/ and group_vars/caddy/
+# ============================================================================
+
+# --- Let's Encrypt Contact Email ---
+# Required by Caddy even for HTTP-only lab configs
+# Production should use real email for certificate notifications
+caddy_email: "test@domain.com"
+
+# --- Caddy Sites Configuration ---
+caddy_sites:
+  - domain: "n8n.lab.local:8080"
+    backend: "localhost:{{ n8n_port }}"
+
+# ============================================================================
+# Notes:
+# - Lab configuration uses HTTP on port 8080 (no TLS)
+# - Port 8080 forwarded from host to VM port 80
+# - Production should use HTTPS with automatic certificates
+# - Backend points to n8n container port
+# - Domain should be added to host /etc/hosts: 127.0.0.1 n8n.lab.local
+# ============================================================================

@@ -1,0 +1,119 @@
+---
+- name: "Stage 4: Validate n8n Full Stack"
+  hosts: n8n
+  become: true
+
+  tasks:
+    - name: Display validation information
+      ansible.builtin.debug:
+        msg: "Running comprehensive validation of n8n stack..."
+
+    # ═══════════════════════════════════════════════════════════
+    # Service-level validation
+    # ═══════════════════════════════════════════════════════════
+
+    - name: Verify PostgreSQL service is active
+      ansible.builtin.systemd_service:
+        name: postgresql
+      register: pg_status
+      failed_when: pg_status.status.ActiveState != "active"
+
+    - name: Verify n8n service is active
+      ansible.builtin.systemd_service:
+        name: n8n
+      register: n8n_status
+      failed_when: n8n_status.status.ActiveState != "active"
+
+    - name: Verify Caddy service is active
+      ansible.builtin.systemd_service:
+        name: caddy
+      register: caddy_status
+      failed_when: caddy_status.status.ActiveState != "active"
+
+    # ═══════════════════════════════════════════════════════════
+    # Database connectivity validation
+    # ═══════════════════════════════════════════════════════════
+
+    - name: Test PostgreSQL query execution
+      ansible.builtin.command:
+        cmd: psql -h {{ n8n_db_host }} -p {{ n8n_db_port }} -U {{ n8n_db_user }} -d {{ n8n_db_name }} -t -c 'SELECT current_database();'
+      register: pg_query
+      changed_when: false
+      environment:
+        PGPASSWORD: "{{ n8n_db_password }}"
+      failed_when: n8n_db_name not in pg_query.stdout
+
+    # ═══════════════════════════════════════════════════════════
+    # Application health validation
+    # ═══════════════════════════════════════════════════════════
+
+    - name: Check n8n liveness endpoint
+      ansible.builtin.uri:
+        url: "http://{{ n8n_db_host }}:{{ n8n_port }}/healthz"
+        status_code: 200
+        timeout: 5
+      register: n8n_liveness
+
+    - name: Check n8n readiness endpoint (includes DB connection)
+      ansible.builtin.uri:
+        url: "http://{{ n8n_db_host }}:{{ n8n_port }}/healthz/readiness"
+        status_code: 200
+        timeout: 5
+      register: n8n_readiness
+
+    # ═══════════════════════════════════════════════════════════
+    # Reverse proxy validation
+    # ═══════════════════════════════════════════════════════════
+
+    - name: Check Caddy admin API
+      ansible.builtin.uri:
+        url: "http://localhost:2019/config/"
+        status_code: 200
+        timeout: 5
+      register: caddy_admin
+
+    - name: Test full request chain through Caddy
+      ansible.builtin.uri:
+        url: "http://{{ n8n_domain }}/healthz/readiness"
+        status_code: 200
+        timeout: 10
+        headers:
+          Host: "{{ n8n_domain }}"
+      register: full_chain
+
+    # ═══════════════════════════════════════════════════════════
+    # Backup configuration validation
+    # ═══════════════════════════════════════════════════════════
+
+    - name: Verify Restic repository exists
+      ansible.builtin.command:
+        cmd: restic -r {{ restic_repository }} cat config
+      environment:
+        RESTIC_PASSWORD_FILE: "{{ restic_password_file }}"
+      changed_when: false
+      when: restic_repository is defined
+
+    # ═══════════════════════════════════════════════════════════
+    # Validation summary
+    # ═══════════════════════════════════════════════════════════
+
+    - name: Display validation summary
+      ansible.builtin.debug:
+        msg:
+          - "═══════════════════════════════════════════════════════"
+          - "✓ n8n Stack Validation Complete"
+          - "═══════════════════════════════════════════════════════"
+          - ""
+          - "Services:"
+          - "  • PostgreSQL: {{ pg_status.status.ActiveState }}"
+          - "  • n8n:        {{ n8n_status.status.ActiveState }}"
+          - "  • Caddy:      {{ caddy_status.status.ActiveState }}"
+          - ""
+          - "Health Checks:"
+          - "  • n8n liveness:  {{ n8n_liveness.status }}"
+          - "  • n8n readiness: {{ n8n_readiness.status }}"
+          - "  • Full chain:    {{ full_chain.status }}"
+          - ""
+          - "All validations passed successfully!"
+          - ""
+          - "═══════════════════════════════════════════════════════"

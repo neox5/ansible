@@ -1,0 +1,41 @@
+---
+# ============================================================================
+# Restic: n8n Backup Configuration
+# File: group_vars/n8n/restic.yml
+# Role: restic (custom)
+# ============================================================================
+#
+# Defines backup configuration for n8n data and database.
+# Applied to: Hosts in both 'db' and 'n8n' groups
+# Variable precedence: Overrides group_vars/all/ and group_vars/db/
+# ============================================================================
+
+# --- n8n Backup Configurations ---
+restic_backups:
+  n8n_data:
+    paths:
+      - "{{ n8n_data_dir }}"
+    schedule: "*-*-* 03:00:00" # Daily at 3:00 AM
+    keep_daily: 7
+    keep_weekly: 4
+    keep_monthly: 3
+    prune: true
+
+  n8n_database:
+    stdin: true
+    stdin_cmd: "sudo -u postgres pg_dump -U postgres -Fc {{ n8n_db_name }}"
+    stdin_filename: "n8n_database.dump"
+    schedule: "*-*-* 02:30:00" # Daily at 2:30 AM (before data backup)
+    keep_daily: 7
+    keep_weekly: 4
+    keep_monthly: 3
+    prune: true
+
+# ============================================================================
+# Notes:
+# - Database backup runs before data backup (restore order matters)
+# - Uses PostgreSQL custom format (-Fc) with compression
+# - Retention: 7 daily, 4 weekly, 3 monthly snapshots
+# - Automatic pruning enabled
+# - systemd timers created by restic role
+# ============================================================================

@@ -1,0 +1,48 @@
+---
+# n8n Full Stack Deployment
+# Orchestrates complete deployment sequence
+# Usage: ansible-playbook -i inventory/lab playbooks/n8n/deploy_stack.yml
+
+- name: Display deployment information
+  hosts: n8n
+  gather_facts: false
+  tasks:
+    - name: Show deployment plan
+      ansible.builtin.debug:
+        msg:
+          - "═══════════════════════════════════════════════════════"
+          - "n8n Full Stack Deployment"
+          - "═══════════════════════════════════════════════════════"
+          - ""
+          - "Deployment sequence:"
+          - "  1. PostgreSQL database"
+          - "  2. n8n application container"
+          - "  3. Caddy reverse proxy"
+          - "  4. Full stack validation"
+          - ""
+          - "Starting deployment..."
+          - ""
+
+- import_playbook: 01_deploy_postgresql.yml
+- import_playbook: 02_deploy_n8n.yml
+- import_playbook: 03_deploy_caddy.yml
+
+- name: Display deployment complete
+  hosts: n8n
+  gather_facts: false
+  tasks:
+    - name: Show completion message
+      ansible.builtin.debug:
+        msg:
+          - ""
+          - "═══════════════════════════════════════════════════════"
+          - "✓ n8n Full Stack Deployment Complete"
+          - "═══════════════════════════════════════════════════════"
+          - ""
+          - "Access n8n at: http://{{ n8n_domain }}"
+          - ""
+          - "Next steps:"
+          - "  • Add {{ n8n_domain }} to /etc/hosts or DNS"
+          - "  • Complete n8n initial setup wizard"
+          - "  • Configure backup schedules"
+          - ""

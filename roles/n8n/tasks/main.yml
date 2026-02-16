@@ -12,6 +12,7 @@
     name: quadlet
   vars:
     quadlet_name: n8n
+    quadlet_network: host
     quadlet_image: "docker.io/n8nio/n8n:{{ n8n_version }}"
     quadlet_environment:
       WEBHOOK_URL: "{{ n8n_webhook_url }}"
@@ -33,9 +34,23 @@
       - "{{ n8n_port }}:5678"
     quadlet_volumes:
       - "{{ n8n_data_volume }}:/home/node/.n8n"
+    quadlet_health_cmd: "wget --spider -q http://localhost:5678/healthz/readiness || exit 1"
+    quadlet_health_notify: true
+    quadlet_health_interval: "{{ n8n_health_check_interval }}"
+    quadlet_health_timeout: "{{ n8n_health_check_timeout }}"
+    quadlet_health_retries: "{{ n8n_health_check_retries }}"
+    quadlet_health_start_period: "{{ n8n_health_check_start_period }}"
+    quadlet_exec_start_pre: '/bin/sh -c ''until pg_isready -h {{ n8n_db_host }} -p {{ n8n_db_port }} -U {{ n8n_db_user }} -q; do echo "Waiting for PostgreSQL..."; sleep 2; done'''
+    quadlet_timeout_start_sec: "{{ n8n_systemd_timeout_start }}"
+    quadlet_restart_sec: "{{ n8n_systemd_restart_sec }}"
+    quadlet_start_limit_burst: "{{ n8n_systemd_start_limit_burst }}"
+    quadlet_start_limit_interval: "{{ n8n_systemd_start_limit_interval }}"
     quadlet_systemd_after:
       - postgresql.service
+      - network-online.target
     quadlet_systemd_requires:
       - postgresql.service
+    quadlet_systemd_wants:
+      - network-online.target
   tags:
     - n8n

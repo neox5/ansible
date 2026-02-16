@@ -27,7 +27,7 @@ postgresql_databases:
 # --- ROLE: User Creation ---
 postgresql_users:
   - name: n8n_user
-    pass: "{{ n8n_db_password }}"
+    password: "{{ n8n_db_password }}"
     encrypted: yes
     role_attr_flags: "NOCREATEDB,NOSUPERUSER"
     state: present
