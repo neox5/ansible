@@ -6,13 +6,13 @@
     gather_subset:
       - distribution
 
-- name: Assert Debian 13 Trixie
+- name: Assert Debian 13 or later
   ansible.builtin.assert:
     that:
       - ansible_distribution == "Debian"
-      - ansible_distribution_major_version == "13"
-    fail_msg: "This role only supports Debian 13 Trixie"
-    success_msg: "Debian 13 Trixie detected"
+      - ansible_distribution_major_version | int >= 13
+    fail_msg: "This role requires Debian 13 or later"
+    success_msg: "Debian {{ ansible_distribution_major_version }} detected"
 
 - name: Assert caddy_email is configured
   ansible.builtin.assert:
@@ -26,6 +26,6 @@
       - caddy_sites | length > 0
     fail_msg: "caddy_sites must contain at least one site configuration"
 
-- name: Display role constraints
+- name: Display role information
   ansible.builtin.debug:
-    msg: "Caddy custom role - Debian 13 + Caddy 2.x only"
+    msg: "Caddy role - Debian {{ ansible_distribution_major_version }}"

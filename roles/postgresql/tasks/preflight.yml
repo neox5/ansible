@@ -6,21 +6,22 @@
     gather_subset:
       - distribution
 
-- name: Assert Debian 13 Trixie
+- name: Assert Debian 13 or later
   ansible.builtin.assert:
     that:
       - ansible_distribution == "Debian"
-      - ansible_distribution_major_version == "13"
-    fail_msg: "This role only supports Debian 13 Trixie"
-    success_msg: "Debian 13 Trixie detected"
+      - ansible_distribution_major_version | int >= 13
+    fail_msg: "This role requires Debian 13 or later"
+    success_msg: "Debian {{ ansible_distribution_major_version }} detected"
 
-- name: Assert PostgreSQL version is 17
+- name: Assert PostgreSQL version is configured
   ansible.builtin.assert:
     that:
-      - postgresql_version == 17
-    fail_msg: "This role only supports PostgreSQL 17"
-    success_msg: "PostgreSQL 17 configuration detected"
+      - postgresql_version is defined
+      - postgresql_version | int > 0
+    fail_msg: "postgresql_version must be configured"
+    success_msg: "PostgreSQL {{ postgresql_version }} configuration detected"
 
-- name: Display role constraints
+- name: Display role information
   ansible.builtin.debug:
-    msg: "PostgreSQL custom role - Debian 13 + PostgreSQL 17 only"
+    msg: "PostgreSQL role - Debian {{ ansible_distribution_major_version }}"
