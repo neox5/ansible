@@ -1,0 +1,16 @@
+# {{ ansible_managed }}
+# Caddy Configuration
+# Custom role for Debian 13 Trixie
+
+# Global options
+{
+	email {{ caddy_email }}
+}
+
+# Virtual hosts - Reverse proxy with automatic HTTPS
+{% for site in caddy_sites %}
+{{ site.domain }} {
+	reverse_proxy {{ site.backend }}
+}
+
+{% endfor %}

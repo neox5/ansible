@@ -1,0 +1,5 @@
+---
+# Caddy Custom Role - Immutable Variables
+
+# Service name defined by Debian package
+caddy_service_name: caddy

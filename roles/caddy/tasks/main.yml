@@ -1,0 +1,21 @@
+---
+# Caddy custom role - Main task orchestration
+# Debian 13 Trixie + Caddy 2.x only
+
+- name: Include preflight checks
+  import_tasks: preflight.yml
+  tags:
+    - caddy
+    - caddy-preflight
+
+- name: Include installation tasks
+  import_tasks: install.yml
+  tags:
+    - caddy
+    - caddy-install
+
+- name: Include configuration tasks
+  import_tasks: configure.yml
+  tags:
+    - caddy
+    - caddy-configure

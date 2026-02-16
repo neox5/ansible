@@ -1,0 +1,29 @@
+---
+# Caddy Custom Role - Configuration Defaults
+
+# Caddy version (major version pin)
+caddy_version: 2
+
+# Let's Encrypt contact email (required)
+caddy_email: ""
+
+# Virtual hosts configuration (required)
+# Each site is a reverse proxy to a backend service
+caddy_sites: []
+# Example:
+# caddy_sites:
+#   - domain: app.example.com
+#     backend: localhost:3000
+#   - domain: api.example.com
+#     backend: localhost:8080
+
+# Service state
+caddy_service_state: started
+caddy_service_enabled: yes
+
+# Configuration file location
+caddy_config_file: /etc/caddy/Caddyfile
+
+# APT repository
+caddy_apt_key_url: https://dl.cloudsmith.io/public/caddy/stable/gpg.key
+caddy_apt_repo_url: https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt

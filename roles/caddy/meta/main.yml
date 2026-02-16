@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  role_name: caddy
+  author: neox5
+  description: Caddy 2.x reverse proxy for Debian 13 Trixie
+  license: MIT
+  min_ansible_version: "2.15"
+
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+
+  galaxy_tags:
+    - web
+    - proxy
+    - caddy
+
+dependencies: []

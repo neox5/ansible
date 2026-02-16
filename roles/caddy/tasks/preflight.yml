@@ -1,0 +1,31 @@
+---
+# Preflight checks - validate environment before proceeding
+
+- name: Gather distribution facts
+  ansible.builtin.setup:
+    gather_subset:
+      - distribution
+
+- name: Assert Debian 13 Trixie
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == "Debian"
+      - ansible_distribution_major_version == "13"
+    fail_msg: "This role only supports Debian 13 Trixie"
+    success_msg: "Debian 13 Trixie detected"
+
+- name: Assert caddy_email is configured
+  ansible.builtin.assert:
+    that:
+      - caddy_email | length > 0
+    fail_msg: "caddy_email must be configured for Let's Encrypt"
+
+- name: Assert caddy_sites is not empty
+  ansible.builtin.assert:
+    that:
+      - caddy_sites | length > 0
+    fail_msg: "caddy_sites must contain at least one site configuration"
+
+- name: Display role constraints
+  ansible.builtin.debug:
+    msg: "Caddy custom role - Debian 13 + Caddy 2.x only"

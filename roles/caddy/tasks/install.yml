@@ -1,0 +1,39 @@
+---
+# Caddy installation tasks
+
+- name: Install required packages for repository management
+  ansible.builtin.apt:
+    name:
+      - debian-keyring
+      - debian-archive-keyring
+      - apt-transport-https
+      - curl
+    state: present
+    update_cache: true
+
+- name: Add Caddy APT repository key
+  ansible.builtin.get_url:
+    url: "{{ caddy_apt_key_url }}"
+    dest: /usr/share/keyrings/caddy-stable-archive-keyring.asc
+    mode: "0644"
+
+- name: Add Caddy APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/caddy-stable-archive-keyring.asc] {{ caddy_apt_repo_url | regex_replace('\\.deb\\.txt$', '') }} {{ ansible_distribution_release }} main"
+    state: present
+    filename: caddy-stable
+
+- name: Pin Caddy version via APT preferences
+  ansible.builtin.copy:
+    content: |
+      Package: caddy
+      Pin: version {{ caddy_version }}.*
+      Pin-Priority: 1000
+    dest: /etc/apt/preferences.d/caddy
+    mode: "0644"
+
+- name: Install Caddy package
+  ansible.builtin.apt:
+    name: caddy
+    state: present
+    update_cache: true

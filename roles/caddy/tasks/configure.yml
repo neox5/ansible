@@ -1,0 +1,42 @@
+---
+# Caddy configuration tasks
+
+- name: Deploy Caddyfile
+  ansible.builtin.template:
+    src: Caddyfile.j2
+    dest: "{{ caddy_config_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+    validate: caddy validate --config %s
+  notify: reload caddy
+
+- name: Ensure Caddy configuration directory exists
+  ansible.builtin.file:
+    path: /etc/caddy
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Enable and start Caddy service
+  ansible.builtin.systemd:
+    name: "{{ caddy_service_name }}"
+    enabled: "{{ caddy_service_enabled }}"
+    state: "{{ caddy_service_state }}"
+
+- name: Flush handlers to apply configuration
+  ansible.builtin.meta: flush_handlers
+
+- name: Verify Caddy is running
+  ansible.builtin.systemd:
+    name: "{{ caddy_service_name }}"
+    state: started
+
+- name: Display deployment summary
+  ansible.builtin.debug:
+    msg:
+      - "Caddy {{ caddy_version }}.x deployment complete"
+      - "Sites configured: {{ caddy_sites | map(attribute='domain') | list | join(', ') }}"
+      - "Automatic HTTPS enabled via Let's Encrypt"
+      - "Contact email: {{ caddy_email }}"
