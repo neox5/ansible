@@ -19,9 +19,10 @@ restic_download_path: "/opt"
 restic_install_path: "/usr/local/bin"
 
 # --- ROLE: User Configuration ---
-# Run Restic as postgres user for database access
-restic_user: "postgres"
-restic_create_user: false # postgres user already exists
+# Run Restic as root for repository access
+# Use sudo in stdin_cmd for database access as postgres user
+restic_user: "root"
+restic_create_user: false
 
 # --- ROLE: Script Directory ---
 # Location for backup scripts
@@ -49,7 +50,7 @@ restic_backups:
 
     # stdin configuration for pg_dump
     stdin: true
-    stdin_cmd: pg_dump -U postgres -Fc testdb
+    stdin_cmd: sudo -u postgres pg_dump -U postgres -Fc testdb
     stdin_filename: testdb.dump
     src: /dev/null # Dummy value - template requires this even for stdin backups
 
@@ -68,7 +69,8 @@ restic_backups:
 
 # ============================================================================
 # Notes:
-# - Backup runs as postgres user for database access
+# - Backup runs as root for repository access
+# - stdin_cmd uses sudo to run pg_dump as postgres user for database access
 # - stdin_cmd uses pg_dump custom format (-Fc) with built-in compression
 # - Retention: 7 days + 4 weeks + 3 months
 # - Automatic pruning removes old snapshots per retention policy

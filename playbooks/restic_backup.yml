@@ -1,0 +1,44 @@
+---
+# Restic Manual Backup Trigger
+# Execute backup scripts manually for testing or on-demand snapshots
+# Usage: ansible-playbook -i inventory/lab playbooks/restic_backup.yml --limit lab-vm
+#        ansible-playbook -i inventory/lab playbooks/restic_backup.yml --limit lab-vm -e "backup_name=testdb"
+
+- name: Trigger Restic backup manually
+  hosts: all
+  become: yes
+
+  vars:
+    backup_name: "" # Empty = all backups, or specify specific backup
+
+  tasks:
+    - name: Execute all backup scripts
+      ansible.builtin.command:
+        cmd: "{{ restic_script_dir }}/backup-{{ item.key }}.sh"
+      become_user: "{{ restic_user }}"
+      loop: "{{ restic_backups | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+      register: backup_results
+      failed_when: false
+      when: backup_name == ""
+
+    - name: Execute specific backup script
+      ansible.builtin.command:
+        cmd: "{{ restic_script_dir }}/backup-{{ backup_name }}.sh"
+      become_user: "{{ restic_user }}"
+      register: backup_result
+      when: backup_name != ""
+
+    - name: Display backup results (all backups)
+      ansible.builtin.debug:
+        msg: "{{ item.item.key }}: {{ 'SUCCESS' if item.rc == 0 else 'FAILED' }}"
+      loop: "{{ backup_results.results }}"
+      loop_control:
+        label: "{{ item.item.key }}"
+      when: backup_name == ""
+
+    - name: Display backup output (specific backup)
+      ansible.builtin.debug:
+        var: backup_result.stdout_lines
+      when: backup_name != ""

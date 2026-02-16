@@ -1,0 +1,55 @@
+---
+# Restic Repository Verification
+# Verify repository structure and optionally full data integrity
+# Usage: ansible-playbook -i inventory/lab playbooks/restic_check.yml --limit lab-vm
+#        ansible-playbook -i inventory/lab playbooks/restic_check.yml --limit lab-vm -e "check_data=true"
+#        ansible-playbook -i inventory/lab playbooks/restic_check.yml --limit lab-vm -e "repo_name=local"
+
+- name: Verify Restic repository integrity
+  hosts: all
+  become: yes
+
+  vars:
+    repo_name: "" # Empty = all repos, or specify specific repo
+    check_data: false # Set to true for full data verification (slow)
+
+  tasks:
+    - name: Check all repositories
+      ansible.builtin.command:
+        cmd: "restic check{{ ' --read-data' if check_data else '' }}"
+      environment:
+        RESTIC_REPOSITORY: "{{ item.value.location }}"
+        RESTIC_PASSWORD: "{{ item.value.password }}"
+      become_user: "{{ restic_user }}"
+      loop: "{{ restic_repos | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+      register: check_all
+      failed_when: false
+      when: repo_name == ""
+
+    - name: Check specific repository
+      ansible.builtin.command:
+        cmd: "restic check{{ ' --read-data' if check_data else '' }}"
+      environment:
+        RESTIC_REPOSITORY: "{{ restic_repos[repo_name].location }}"
+        RESTIC_PASSWORD: "{{ restic_repos[repo_name].password }}"
+      become_user: "{{ restic_user }}"
+      register: check_specific
+      when: repo_name != ""
+
+    - name: Display check results for all repositories
+      ansible.builtin.debug:
+        msg: |
+          Repository: {{ item.item.key }}
+          Status: {{ 'OK' if item.rc == 0 else 'FAILED' }}
+          {{ item.stdout }}
+      loop: "{{ check_all.results }}"
+      loop_control:
+        label: "{{ item.item.key }}"
+      when: repo_name == ""
+
+    - name: Display check results for specific repository
+      ansible.builtin.debug:
+        var: check_specific.stdout_lines
+      when: repo_name != ""
