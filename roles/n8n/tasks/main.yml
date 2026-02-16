@@ -15,10 +15,11 @@
     quadlet_network: host
     quadlet_image: "docker.io/n8nio/n8n:{{ n8n_version }}"
     quadlet_environment:
-      WEBHOOK_URL: "{{ n8n_webhook_url }}"
       N8N_HOST: "{{ n8n_host }}"
       N8N_PORT: "5678"
-      N8N_PROTOCOL: "{{ n8n_protocol }}"
+      N8N_PROTOCOL: "https"
+      N8N_PROXY_HOPS: "1"
+      WEBHOOK_URL: "{{ n8n_webhook_url }}"
       N8N_ENCRYPTION_KEY: "{{ n8n_encryption_key }}"
       N8N_BLOCK_ENV_ACCESS_IN_NODE: "{{ n8n_block_env_access | string | lower }}"
       GENERIC_TIMEZONE: "{{ n8n_timezone }}"
