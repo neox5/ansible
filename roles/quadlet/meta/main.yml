@@ -1,0 +1,20 @@
+---
+galaxy_info:
+  role_name: quadlet
+  author: neox5
+  description: Generic Quadlet container deployment for Debian 13 Trixie
+  license: MIT
+  min_ansible_version: "2.15"
+
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+
+  galaxy_tags:
+    - containers
+    - podman
+    - quadlet
+    - systemd
+
+dependencies: []

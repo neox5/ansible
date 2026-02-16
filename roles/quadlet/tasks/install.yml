@@ -1,0 +1,26 @@
+---
+# Podman installation tasks
+
+- name: Install Podman system packages
+  ansible.builtin.apt:
+    name: "{{ quadlet_packages }}"
+    state: present
+    update_cache: true
+
+- name: Verify Podman is installed
+  ansible.builtin.command:
+    cmd: podman --version
+  register: podman_version
+  changed_when: false
+
+- name: Display Podman version
+  ansible.builtin.debug:
+    msg: "{{ podman_version.stdout }}"
+
+- name: Ensure systemd directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - /etc/containers/systemd

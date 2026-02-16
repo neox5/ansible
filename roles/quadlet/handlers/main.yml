@@ -1,0 +1,11 @@
+---
+# Quadlet role handlers
+
+- name: reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: restart quadlet service
+  ansible.builtin.systemd:
+    name: "{{ quadlet_service_name }}"
+    state: restarted

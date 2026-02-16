@@ -1,0 +1,21 @@
+---
+# Quadlet role - Main task orchestration
+# Debian 13 Trixie + Podman 5.4+ only
+
+- name: Include preflight checks
+  import_tasks: preflight.yml
+  tags:
+    - quadlet
+    - quadlet-preflight
+
+- name: Include installation tasks
+  import_tasks: install.yml
+  tags:
+    - quadlet
+    - quadlet-install
+
+- name: Include deployment tasks
+  import_tasks: deploy.yml
+  tags:
+    - quadlet
+    - quadlet-deploy

@@ -1,0 +1,31 @@
+---
+# Preflight checks - validate environment before proceeding
+
+- name: Gather distribution facts
+  ansible.builtin.setup:
+    gather_subset:
+      - distribution
+
+- name: Assert Debian 13 or later
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == "Debian"
+      - ansible_distribution_major_version | int >= 13
+    fail_msg: "This role requires Debian 13 or later"
+    success_msg: "Debian {{ ansible_distribution_major_version }} detected"
+
+- name: Assert required variables are set
+  ansible.builtin.assert:
+    that:
+      - quadlet_name | length > 0
+      - quadlet_image | length > 0
+    fail_msg: "quadlet_name and quadlet_image must be set by calling role"
+    success_msg: "Required variables validated"
+
+- name: Set service name variable
+  ansible.builtin.set_fact:
+    quadlet_service_name: "{{ quadlet_name }}.service"
+
+- name: Display role information
+  ansible.builtin.debug:
+    msg: "Quadlet role - deploying {{ quadlet_name }} container"

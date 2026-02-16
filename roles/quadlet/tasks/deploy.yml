@@ -1,0 +1,75 @@
+---
+# Container deployment via Quadlet
+
+- name: Deploy Quadlet container unit
+  containers.podman.podman_container:
+    name: "{{ quadlet_name }}"
+    image: "{{ quadlet_image }}"
+    state: quadlet
+    quadlet_dir: /etc/containers/systemd
+    command: "{{ quadlet_command if quadlet_command else omit }}"
+    env: "{{ quadlet_environment if quadlet_environment else omit }}"
+    ports: "{{ quadlet_ports if quadlet_ports else omit }}"
+    volume: "{{ quadlet_volumes if quadlet_volumes else omit }}"
+    network: "{{ quadlet_network if quadlet_network else omit }}"
+    cap_add: "{{ quadlet_capabilities if quadlet_capabilities else omit }}"
+    security_opt: "{{ quadlet_security_opt if quadlet_security_opt else omit }}"
+    healthcheck: "{{ quadlet_health_cmd if quadlet_health_cmd else omit }}"
+    healthcheck_interval: "{{ quadlet_health_interval if quadlet_health_cmd else omit }}"
+    healthcheck_timeout: "{{ quadlet_health_timeout if quadlet_health_cmd else omit }}"
+    healthcheck_retries: "{{ quadlet_health_retries if quadlet_health_cmd else omit }}"
+    quadlet_options:
+      - "AutoUpdate={{ 'registry' if quadlet_auto_update else 'disabled' }}"
+      - "Pull={{ quadlet_pull_policy }}"
+      - |
+        [Service]
+        Restart={{ quadlet_restart_policy }}
+      - |
+        [Unit]
+        {% if quadlet_systemd_after %}
+        After={{ quadlet_systemd_after | join(' ') }}
+        {% endif %}
+        {% if quadlet_systemd_requires %}
+        Requires={{ quadlet_systemd_requires | join(' ') }}
+        {% endif %}
+        {% if quadlet_systemd_wants %}
+        Wants={{ quadlet_systemd_wants | join(' ') }}
+        {% endif %}
+      - |
+        [Install]
+        WantedBy=multi-user.target
+  notify: reload systemd
+
+- name: Flush handlers to reload systemd
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable Quadlet service
+  ansible.builtin.systemd:
+    name: "{{ quadlet_service_name }}"
+    enabled: "{{ quadlet_service_enabled }}"
+    daemon_reload: true
+  when: quadlet_service_enabled
+
+- name: Start Quadlet service
+  ansible.builtin.systemd:
+    name: "{{ quadlet_service_name }}"
+    state: "{{ quadlet_service_state }}"
+  when: quadlet_service_state == 'started'
+
+- name: Wait for service to be active
+  ansible.builtin.systemd:
+    name: "{{ quadlet_service_name }}"
+  register: service_status
+  until: service_status.status.ActiveState == "active"
+  retries: 5
+  delay: 2
+  when: quadlet_service_state == 'started'
+
+- name: Display deployment summary
+  ansible.builtin.debug:
+    msg:
+      - "Quadlet deployment complete"
+      - "Container: {{ quadlet_name }}"
+      - "Image: {{ quadlet_image }}"
+      - "Service: {{ quadlet_service_name }}"
+      - "State: {{ 'enabled and started' if quadlet_service_enabled and quadlet_service_state == 'started' else 'deployed' }}"

@@ -1,0 +1,15 @@
+---
+# Quadlet Role - Immutable Variables
+
+# Podman system packages required for Debian 13
+quadlet_packages:
+  - podman
+  - crun
+  - dbus-user-session
+  - uidmap
+  - fuse-overlayfs
+  - slirp4netns
+  - containers-storage
+
+# Systemd directories
+quadlet_systemd_dir: /etc/containers/systemd
