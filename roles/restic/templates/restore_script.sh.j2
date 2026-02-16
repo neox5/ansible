@@ -1,0 +1,84 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# Restic restore script: {{ item.key }}
+# Part of restic role
+
+set -euo pipefail
+
+# Source environment variables
+source {{ restic_script_dir }}/env-{{ item.key }}.sh
+
+SNAPSHOT_ID="${1:-latest}"
+
+{% if item.value.stdin | default(false) %}
+# stdin backup mode - dump to stdout
+echo "=== Restic Restore (stdout): {{ item.key }} ===" >&2
+echo "Repository: $RESTIC_REPOSITORY" >&2
+echo "Snapshot: $SNAPSHOT_ID" >&2
+echo "File: {{ item.value.stdin_filename }}" >&2
+echo "" >&2
+echo "Usage: $0 [snapshot_id] | restore_command" >&2
+echo "Example: $0 latest | sudo -u postgres pg_restore -d {{ item.key }} --clean --if-exists" >&2
+echo "" >&2
+
+# Dump snapshot to stdout for piping
+{{ restic_install_path }}/restic dump "$SNAPSHOT_ID" "/{{ item.value.stdin_filename }}"
+
+RESTORE_EXIT_CODE=$?
+
+if [ $RESTORE_EXIT_CODE -ne 0 ]; then
+  echo "Restore: FAILED (exit code $RESTORE_EXIT_CODE)" >&2
+  exit $RESTORE_EXIT_CODE
+fi
+
+{% else %}
+# directory backup mode - restore to filesystem
+RESTORE_TARGET="${2:-{{ item.value.restore_target | default(restic_restore_target_default) }}}"
+
+echo "=== Restic Restore (filesystem): {{ item.key }} ==="
+echo "Repository: $RESTIC_REPOSITORY"
+echo "Snapshot: $SNAPSHOT_ID"
+echo "Target: $RESTORE_TARGET"
+{% if item.value.src is string %}
+echo "Source: {{ item.value.src }}"
+{% else %}
+echo "Sources:"
+{% for path in item.value.src %}
+echo "  - {{ path }}"
+{% endfor %}
+{% endif %}
+echo ""
+echo "Usage: $0 [snapshot_id] [target_directory]"
+echo ""
+
+# Create restore target if it doesn't exist
+if [ ! -d "$RESTORE_TARGET" ]; then
+  echo "Creating restore target: $RESTORE_TARGET"
+  mkdir -p "$RESTORE_TARGET"
+fi
+
+# Restore snapshot to target
+{{ restic_install_path }}/restic restore "$SNAPSHOT_ID" \
+  --target "$RESTORE_TARGET" \
+{% if item.value.src is string %}
+  --path "{{ item.value.src }}"
+{% else %}
+{% for path in item.value.src %}
+  --path "{{ path }}" \
+{% endfor %}
+{% endif %}
+
+RESTORE_EXIT_CODE=$?
+
+echo ""
+if [ $RESTORE_EXIT_CODE -eq 0 ]; then
+  echo "Restore: SUCCESS"
+  echo "Files restored to: $RESTORE_TARGET"
+else
+  echo "Restore: FAILED (exit code $RESTORE_EXIT_CODE)"
+  exit $RESTORE_EXIT_CODE
+fi
+
+echo "Completed: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+echo "=== End Restore: {{ item.key }} ==="
+{% endif %}

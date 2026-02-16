@@ -15,18 +15,15 @@
     - name: Execute all backup scripts
       ansible.builtin.command:
         cmd: "{{ restic_script_dir }}/backup-{{ item.key }}.sh"
-      become_user: "{{ restic_user }}"
       loop: "{{ restic_backups | dict2items }}"
       loop_control:
         label: "{{ item.key }}"
       register: backup_results
-      failed_when: false
       when: backup_name == ""
 
     - name: Execute specific backup script
       ansible.builtin.command:
         cmd: "{{ restic_script_dir }}/backup-{{ backup_name }}.sh"
-      become_user: "{{ restic_user }}"
       register: backup_result
       when: backup_name != ""
 

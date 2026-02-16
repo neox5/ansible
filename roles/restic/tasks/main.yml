@@ -1,0 +1,27 @@
+---
+# Restic custom role - Main task orchestration
+# Debian 13 Trixie only
+
+- name: Include preflight checks
+  import_tasks: preflight.yml
+  tags:
+    - restic
+    - restic-preflight
+
+- name: Include installation tasks
+  import_tasks: install.yml
+  tags:
+    - restic
+    - restic-install
+
+- name: Include repository initialization
+  import_tasks: repository.yml
+  tags:
+    - restic
+    - restic-repository
+
+- name: Include backup configuration
+  import_tasks: backup.yml
+  tags:
+    - restic
+    - restic-backup

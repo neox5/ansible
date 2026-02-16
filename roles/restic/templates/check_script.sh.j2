@@ -1,0 +1,30 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# Restic repository check script
+# Part of restic role
+
+set -euo pipefail
+
+# Source environment variables (use first backup's env file)
+source {{ restic_script_dir }}/env-{{ restic_backups.keys() | first }}.sh
+
+echo "=== Restic Repository Check ==="
+echo "Repository: $RESTIC_REPOSITORY"
+echo "Started: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+echo ""
+
+# Run repository check
+{{ restic_install_path }}/restic check "$@"
+
+CHECK_EXIT_CODE=$?
+
+echo ""
+if [ $CHECK_EXIT_CODE -eq 0 ]; then
+  echo "Check: SUCCESS"
+else
+  echo "Check: FAILED (exit code $CHECK_EXIT_CODE)"
+  exit $CHECK_EXIT_CODE
+fi
+
+echo "Completed: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+echo "=== End Repository Check ==="

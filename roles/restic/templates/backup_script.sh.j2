@@ -1,0 +1,153 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# Restic backup script: {{ item.key }}
+# Part of restic role
+
+set -euo pipefail
+
+# Source environment variables
+source {{ restic_script_dir }}/env-{{ item.key }}.sh
+
+# Log files
+BACKUP_LOG="{{ restic_log_dir }}/{{ item.key }}/backup.log"
+FORGET_LOG="{{ restic_log_dir }}/{{ item.key }}/forget.log"
+
+# Detect execution context (manual vs automated)
+if [ -n "${INVOCATION_ID:-}" ]; then
+  MODE_TAG="--tag automated"
+else
+  MODE_TAG="--tag manual"
+fi
+
+# Additional tags
+{% if restic_backup_tags | length > 0 %}
+EXTRA_TAGS="{% for tag in restic_backup_tags %} --tag {{ tag }}{% endfor %}"
+{% else %}
+EXTRA_TAGS=""
+{% endif %}
+{% if item.value.tags is defined %}
+BACKUP_TAGS="{% for tag in item.value.tags %} --tag {{ tag }}{% endfor %}"
+{% else %}
+BACKUP_TAGS=""
+{% endif %}
+
+echo "=== Restic Backup: {{ item.key }} ===" | tee -a "$BACKUP_LOG"
+echo "Started: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" | tee -a "$BACKUP_LOG"
+
+{% if item.value.stdin | default(false) %}
+# stdin backup mode
+echo "Mode: stdin ({{ item.value.stdin_filename }})" | tee -a "$BACKUP_LOG"
+
+{{ item.value.stdin_cmd }} | {{ restic_install_path }}/restic backup \
+  --stdin \
+  --stdin-filename "{{ item.value.stdin_filename }}" \
+  $MODE_TAG \
+  $EXTRA_TAGS \
+  $BACKUP_TAGS \
+  "$@" 2>&1 | tee -a "$BACKUP_LOG"
+
+{% else %}
+# directory backup mode
+echo "Mode: directory" | tee -a "$BACKUP_LOG"
+{% if item.value.src is string %}
+echo "Source: {{ item.value.src }}" | tee -a "$BACKUP_LOG"
+{% else %}
+echo "Sources:" | tee -a "$BACKUP_LOG"
+{% for path in item.value.src %}
+echo "  - {{ path }}" | tee -a "$BACKUP_LOG"
+{% endfor %}
+{% endif %}
+
+{{ restic_install_path }}/restic backup \
+{% if item.value.src is string %}
+  "{{ item.value.src }}" \
+{% else %}
+{% for path in item.value.src %}
+  "{{ path }}" \
+{% endfor %}
+{% endif %}
+{% if item.value.exclude is defined %}
+{% for pattern in item.value.exclude %}
+  --exclude "{{ pattern }}" \
+{% endfor %}
+{% endif %}
+  $MODE_TAG \
+  $EXTRA_TAGS \
+  $BACKUP_TAGS \
+  "$@" 2>&1 | tee -a "$BACKUP_LOG"
+
+{% endif %}
+BACKUP_EXIT_CODE=$?
+
+if [ $BACKUP_EXIT_CODE -eq 0 ]; then
+  echo "Backup: SUCCESS" | tee -a "$BACKUP_LOG"
+else
+  echo "Backup: FAILED (exit code $BACKUP_EXIT_CODE)" | tee -a "$BACKUP_LOG"
+  exit $BACKUP_EXIT_CODE
+fi
+
+# Retention policy enforcement
+echo "" | tee -a "$FORGET_LOG"
+echo "=== Retention Policy: {{ item.key }} ===" | tee -a "$FORGET_LOG"
+echo "Started: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" | tee -a "$FORGET_LOG"
+
+{{ restic_install_path }}/restic forget \
+{% if item.value.keep_last is defined %}
+  --keep-last {{ item.value.keep_last }} \
+{% elif restic_keep_last is not none %}
+  --keep-last {{ restic_keep_last }} \
+{% endif %}
+{% if item.value.keep_hourly is defined %}
+  --keep-hourly {{ item.value.keep_hourly }} \
+{% elif restic_keep_hourly is not none %}
+  --keep-hourly {{ restic_keep_hourly }} \
+{% endif %}
+{% if item.value.keep_daily is defined %}
+  --keep-daily {{ item.value.keep_daily }} \
+{% elif restic_keep_daily is not none %}
+  --keep-daily {{ restic_keep_daily }} \
+{% endif %}
+{% if item.value.keep_weekly is defined %}
+  --keep-weekly {{ item.value.keep_weekly }} \
+{% elif restic_keep_weekly is not none %}
+  --keep-weekly {{ restic_keep_weekly }} \
+{% endif %}
+{% if item.value.keep_monthly is defined %}
+  --keep-monthly {{ item.value.keep_monthly }} \
+{% elif restic_keep_monthly is not none %}
+  --keep-monthly {{ restic_keep_monthly }} \
+{% endif %}
+{% if item.value.keep_yearly is defined %}
+  --keep-yearly {{ item.value.keep_yearly }} \
+{% elif restic_keep_yearly is not none %}
+  --keep-yearly {{ restic_keep_yearly }} \
+{% endif %}
+{% if item.value.keep_within is defined %}
+  --keep-within {{ item.value.keep_within }} \
+{% elif restic_keep_within is not none %}
+  --keep-within {{ restic_keep_within }} \
+{% endif %}
+{% if item.value.prune | default(restic_backup_prune) %}
+  --prune \
+{% endif %}
+  "$@" 2>&1 | tee -a "$FORGET_LOG"
+
+FORGET_EXIT_CODE=$?
+
+if [ $FORGET_EXIT_CODE -eq 0 ]; then
+  echo "Forget: SUCCESS" | tee -a "$FORGET_LOG"
+else
+  echo "Forget: FAILED (exit code $FORGET_EXIT_CODE)" | tee -a "$FORGET_LOG"
+  exit $FORGET_EXIT_CODE
+fi
+
+{% if item.value.monitoring_url is defined %}
+# Call monitoring hook on complete success
+if [ $BACKUP_EXIT_CODE -eq 0 ] && [ $FORGET_EXIT_CODE -eq 0 ]; then
+  echo "Calling monitoring hook..." | tee -a "$BACKUP_LOG"
+  curl -fsS --retry 3 "{{ item.value.monitoring_url }}" || echo "Warning: Monitoring hook failed" | tee -a "$BACKUP_LOG"
+fi
+{% endif %}
+
+echo "Completed: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" | tee -a "$BACKUP_LOG"
+echo "=== End Backup: {{ item.key }} ===" | tee -a "$BACKUP_LOG"

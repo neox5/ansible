@@ -1,0 +1,33 @@
+---
+# Repository initialization tasks
+
+- name: Check if repository exists
+  ansible.builtin.command:
+    cmd: "{{ restic_install_path }}/restic snapshots --json"
+  environment:
+    RESTIC_REPOSITORY: "{{ restic_repository }}"
+    RESTIC_PASSWORD: "{{ restic_password }}"
+  register: restic_snapshots_check
+  changed_when: false
+  failed_when: false
+  no_log: true
+
+- name: Initialize restic repository
+  ansible.builtin.command:
+    cmd: "{{ restic_install_path }}/restic init"
+  environment:
+    RESTIC_REPOSITORY: "{{ restic_repository }}"
+    RESTIC_PASSWORD: "{{ restic_password }}"
+  when:
+    - restic_init
+    - restic_snapshots_check.rc != 0
+  no_log: true
+
+- name: Verify repository is accessible
+  ansible.builtin.command:
+    cmd: "{{ restic_install_path }}/restic snapshots --json"
+  environment:
+    RESTIC_REPOSITORY: "{{ restic_repository }}"
+    RESTIC_PASSWORD: "{{ restic_password }}"
+  changed_when: false
+  no_log: true

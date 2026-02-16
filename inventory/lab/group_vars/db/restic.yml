@@ -2,7 +2,7 @@
 # ============================================================================
 # Restic: Backup Configuration
 # File: group_vars/db/restic.yml
-# Role: roles-ansible.restic
+# Role: restic (custom)
 # ============================================================================
 #
 # This file contains backup configuration for database hosts.
@@ -11,69 +11,49 @@
 # Variable precedence: Overrides all/, overridden by hw_* → app/ → host_vars/
 # ============================================================================
 
-# --- ROLE: Installation ---
-# Download Restic binary from GitHub releases
-restic_url: "https://github.com/restic/restic/releases/download/v{{ restic_version }}/restic_{{ restic_version }}_linux_amd64.bz2"
-restic_version: "0.18.0"
-restic_download_path: "/opt"
-restic_install_path: "/usr/local/bin"
+# --- Repository Configuration ---
+restic_repository: /var/backups/restic
+restic_password: "{{ restic_local_password }}"
 
-# --- ROLE: User Configuration ---
-# Run Restic as root for repository access
-# Use sudo in stdin_cmd for database access as postgres user
-restic_user: "root"
-restic_create_user: false
+# --- Repository Initialization ---
+restic_init: true
 
-# --- ROLE: Script Directory ---
-# Location for backup scripts
-restic_script_dir: "/opt/restic"
+# --- Repository-level Retention Defaults ---
+restic_keep_daily: 7
+restic_keep_weekly: 4
+restic_keep_monthly: 3
 
-# --- ROLE: Scheduling ---
-# Enable systemd timer-based scheduling
-restic_create_schedule: true
-restic_schedule_type: "systemd"
-
-# --- ROLE: Repository Configuration ---
-restic_repos:
-  local:
-    location: /var/backups/restic
-    password: "{{ restic_local_password }}"
-    init: true
-
-# --- ROLE: Backup Configuration ---
-# PostgreSQL stdin-based backup using pg_dump
+# --- Backup Configurations ---
 restic_backups:
   testdb:
-    # Backup identification
-    name: testdb
-    repo: local
-
-    # stdin configuration for pg_dump
+    # Backup mode
     stdin: true
     stdin_cmd: sudo -u postgres pg_dump -U postgres -Fc testdb
     stdin_filename: testdb.dump
-    src: /dev/null # Dummy value - template requires this even for stdin backups
 
     # Scheduling
-    scheduled: true
-    schedule_oncalendar: "*-*-* 02:00:00" # Daily at 2:00 AM
+    schedule: "*-*-* 02:00:00" # Daily at 2:00 AM
 
-    # Retention policy
-    keep_daily: 7 # Keep 7 daily backups
-    keep_weekly: 4 # Keep 4 weekly backups
-    keep_monthly: 3 # Keep 3 monthly backups
+    # Retention (uses repository defaults if not specified)
+    # keep_daily: 7
+    # keep_weekly: 4
+    # keep_monthly: 3
 
     # Pruning
-    prune: true # Enable automatic pruning
-
+    prune: true
 
 # ============================================================================
 # Notes:
 # - Backup runs as root for repository access
-# - stdin_cmd uses sudo to run pg_dump as postgres user for database access
-# - stdin_cmd uses pg_dump custom format (-Fc) with built-in compression
-# - Retention: 7 days + 4 weeks + 3 months
+# - stdin_cmd uses sudo to run pg_dump as postgres user
+# - pg_dump uses custom format (-Fc) with built-in compression
+# - Retention: Uses repository defaults (7 daily, 4 weekly, 3 monthly)
 # - Automatic pruning removes old snapshots per retention policy
 # - systemd timer: /etc/systemd/system/restic-backup-testdb.timer
-# - src: /dev/null is a workaround for role template bug (not used for stdin)
+# - Generated scripts in /opt/restic/:
+#   - backup-testdb.sh   (create backup)
+#   - list-testdb.sh     (list snapshots)
+#   - restore-testdb.sh  (restore from snapshot)
+#   - list.sh            (all snapshots)
+#   - check.sh           (verify repository)
 # ============================================================================

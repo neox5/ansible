@@ -1,69 +1,31 @@
 ---
 # Restic Database Restore
-# Restore PostgreSQL database from Restic snapshot
+# Restore from Restic snapshot (stdin backups only)
 # Usage: ansible-playbook -i inventory/lab playbooks/restic_restore.yml --limit lab-vm
 #        ansible-playbook -i inventory/lab playbooks/restic_restore.yml --limit lab-vm -e "snapshot_id=abc123def"
-#        ansible-playbook -i inventory/lab playbooks/restic_restore.yml --limit lab-vm -e "backup_name=testdb repo_name=local"
+#        ansible-playbook -i inventory/lab playbooks/restic_restore.yml --limit lab-vm -e "backup_name=testdb"
 
-- name: Restore database from Restic snapshot
+- name: Restore from Restic snapshot
   hosts: all
   become: yes
 
   vars:
-    # Defaults (first repo, first backup, latest snapshot)
-    repo_name: "{{ restic_repos.keys() | first }}"
-    backup_name: "{{ restic_backups.keys() | first }}"
+    backup_name: "{{ restic_backups.keys() | first }}" # Default to first backup
     snapshot_id: "latest"
-    restore_database: "{{ restic_backups[backup_name].name }}"
-    restore_temp_dir: "/tmp/restic_restore"
+    restore_database: "{{ backup_name }}" # Assumes database name matches backup name
 
   tasks:
-    - name: Validate configuration
-      ansible.builtin.fail:
-        msg: "Backup '{{ backup_name }}' is not configured for stdin"
-      when: not restic_backups[backup_name].stdin | default(false)
+    - name: Validate backup is stdin mode
+      ansible.builtin.assert:
+        that:
+          - restic_backups[backup_name].stdin | default(false)
+        fail_msg: "Backup '{{ backup_name }}' must be stdin mode for database restore"
 
-    - name: Set repository and backup variables
-      ansible.builtin.set_fact:
-        restic_repo_location: "{{ restic_repos[repo_name].location }}"
-        restic_repo_password: "{{ restic_repos[repo_name].password }}"
-        stdin_filename: "{{ restic_backups[backup_name].stdin_filename }}"
-
-    - name: Create temporary restore directory
-      ansible.builtin.file:
-        path: "{{ restore_temp_dir }}"
-        state: directory
-        owner: "{{ restic_user }}"
-        group: "{{ restic_user }}"
-        mode: "0755"
-
-    - name: Dump snapshot from Restic repository
+    - name: Restore database from snapshot
       ansible.builtin.shell:
-        cmd: "restic dump {{ snapshot_id }} {{ stdin_filename }} > {{ restore_temp_dir }}/{{ stdin_filename }}"
-      environment:
-        RESTIC_REPOSITORY: "{{ restic_repo_location }}"
-        RESTIC_PASSWORD: "{{ restic_repo_password }}"
-      become_user: "{{ restic_user }}"
-      register: restic_dump
-
-    - name: Fix dump file ownership for postgres access
-      ansible.builtin.file:
-        path: "{{ restore_temp_dir }}/{{ stdin_filename }}"
-        owner: "{{ postgresql_admin_user | default('postgres') }}"
-        group: "{{ postgresql_admin_user | default('postgres') }}"
-        mode: "0644"
-
-    - name: Restore database using pg_restore.sh
-      ansible.builtin.command:
-        cmd: "{{ postgresql_scripts_dir | default('/usr/local/bin') }}/pg_restore.sh -y {{ restore_temp_dir }}/{{ stdin_filename }} {{ restore_database }}"
-      become_user: "{{ postgresql_admin_user | default('postgres') }}"
+        cmd: "{{ restic_script_dir }}/restore-{{ backup_name }}.sh {{ snapshot_id }} | sudo -u postgres {{ postgresql_scripts_dir | default('/usr/local/bin') }}/pg_restore.sh -y /dev/stdin {{ restore_database }}"
       register: restore_result
 
     - name: Display restore output
       ansible.builtin.debug:
         var: restore_result.stdout_lines
-
-    - name: Clean up temporary restore directory
-      ansible.builtin.file:
-        path: "{{ restore_temp_dir }}"
-        state: absent

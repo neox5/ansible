@@ -1,0 +1,15 @@
+---
+# Restic role handlers
+
+- name: reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: restart restic timer
+  ansible.builtin.systemd:
+    name: "restic-backup-{{ item.key }}.timer"
+    state: restarted
+    enabled: "{{ item.value.schedule_enabled | default(restic_backup_schedule_enabled) }}"
+  loop: "{{ restic_backups | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"

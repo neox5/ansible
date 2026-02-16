@@ -1,10 +1,10 @@
 ---
 # Restic Installation
-# Deploys Restic backup system using roles-ansible.restic
+# Deploys Restic backup system using custom restic role
 # Usage: ansible-playbook -i inventory/lab playbooks/restic_install.yml
 
 - name: Install and configure Restic
   hosts: all
   become: yes
   roles:
-    - roles-ansible.restic
+    - restic

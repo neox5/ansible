@@ -1,0 +1,74 @@
+---
+# Restic Custom Role - Configuration Defaults
+
+# Restic version
+restic_version: "0.18.0"
+
+# Installation paths
+restic_download_path: "/opt"
+restic_install_path: "/usr/local/bin"
+
+# Script and log directories
+restic_script_dir: "/opt/restic"
+restic_log_dir: "/var/log/restic"
+
+# User configuration
+restic_user: "root"
+
+# Repository configuration (REQUIRED - must be set by calling role/inventory)
+restic_repository: ""
+restic_password: ""
+
+# Repository initialization
+restic_init: true
+
+# Repository-level retention defaults (null = not used)
+restic_keep_last: null
+restic_keep_hourly: null
+restic_keep_daily: 7
+restic_keep_weekly: 4
+restic_keep_monthly: 3
+restic_keep_yearly: null
+restic_keep_within: null
+
+# Backup configurations (REQUIRED - must be set by calling role/inventory)
+# Each backup is a dict with key = backup name
+restic_backups: {}
+# Example stdin backup:
+# restic_backups:
+#   postgresql_db1:
+#     stdin: true
+#     stdin_cmd: "sudo -u postgres pg_dump -Fc db1"
+#     stdin_filename: "db1.dump"
+#     schedule: "*-*-* 02:00:00"
+#     keep_daily: 7  # Override repository default
+#     prune: true
+#     monitoring_url: "https://hc.example.com/uuid"
+#
+# Example directory backup:
+#   grafana_dashboards:
+#     src: /var/lib/grafana/dashboards
+#     schedule: "*-*-* 03:00:00"
+#     exclude:
+#       - "*.tmp"
+#       - "cache/*"
+#     prune: true
+#     restore_target: /var/lib/grafana/dashboards  # Default restore location
+#
+# Example multiple directories:
+#   configs:
+#     src:
+#       - /etc/postgresql
+#       - /etc/caddy
+#     schedule: "*-*-* 04:00:00"
+#     restore_target: /etc  # Restore to original locations
+
+# Per-backup defaults
+restic_backup_schedule_enabled: true
+restic_backup_prune: true
+
+# Backup script configuration
+restic_backup_tags: [] # Additional tags for all backups
+
+# Restore defaults
+restic_restore_target_default: "/tmp/restic-restore" # Default if not specified per-backup

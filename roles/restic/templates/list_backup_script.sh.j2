@@ -1,0 +1,33 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# Restic list snapshots script: {{ item.key }}
+# Part of restic role
+
+set -euo pipefail
+
+# Source environment variables
+source {{ restic_script_dir }}/env-{{ item.key }}.sh
+
+echo "=== Restic Snapshots: {{ item.key }} ==="
+echo "Repository: $RESTIC_REPOSITORY"
+echo ""
+
+# List snapshots for this backup
+{% if item.value.stdin | default(false) %}
+# stdin backup - filter by stdin filename
+{{ restic_install_path }}/restic snapshots --path "/{{ item.value.stdin_filename }}" "$@"
+{% else %}
+# directory backup - filter by source path(s)
+{% if item.value.src is string %}
+{{ restic_install_path }}/restic snapshots --path "{{ item.value.src }}" "$@"
+{% else %}
+{{ restic_install_path }}/restic snapshots {% for path in item.value.src %}--path "{{ path }}" {% endfor %}"$@"
+{% endif %}
+{% endif %}
+
+LIST_EXIT_CODE=$?
+
+if [ $LIST_EXIT_CODE -ne 0 ]; then
+  echo "List: FAILED (exit code $LIST_EXIT_CODE)"
+  exit $LIST_EXIT_CODE
+fi

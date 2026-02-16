@@ -1,0 +1,23 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# Restic list all snapshots script
+# Part of restic role
+
+set -euo pipefail
+
+# Source environment variables (use first backup's env file)
+source {{ restic_script_dir }}/env-{{ restic_backups.keys() | first }}.sh
+
+echo "=== Restic Snapshots (All) ==="
+echo "Repository: $RESTIC_REPOSITORY"
+echo ""
+
+# List all snapshots
+{{ restic_install_path }}/restic snapshots "$@"
+
+LIST_EXIT_CODE=$?
+
+if [ $LIST_EXIT_CODE -ne 0 ]; then
+  echo "List: FAILED (exit code $LIST_EXIT_CODE)"
+  exit $LIST_EXIT_CODE
+fi

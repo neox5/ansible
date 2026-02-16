@@ -1,0 +1,38 @@
+---
+# Preflight checks - validate environment before proceeding
+
+- name: Gather distribution facts
+  ansible.builtin.setup:
+    gather_subset:
+      - distribution
+
+- name: Assert Debian 13 or later
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == "Debian"
+      - ansible_distribution_major_version | int >= 13
+    fail_msg: "This role requires Debian 13 or later"
+    success_msg: "Debian {{ ansible_distribution_major_version }} detected"
+
+- name: Assert required variables are set
+  ansible.builtin.assert:
+    that:
+      - restic_repository | length > 0
+      - restic_password | length > 0
+      - restic_backups | length > 0
+    fail_msg: "restic_repository, restic_password, and restic_backups must be configured"
+    success_msg: "Required variables validated"
+
+- name: Validate backup configurations
+  ansible.builtin.assert:
+    that:
+      - (item.value.stdin | default(false) and item.value.stdin_cmd is defined and item.value.stdin_filename is defined) or (not (item.value.stdin | default(false)) and item.value.src is defined)
+    fail_msg: "Backup {{ item.key }} must have either (stdin + stdin_cmd + stdin_filename) or (src)"
+    success_msg: "Backup {{ item.key }} configuration valid"
+  loop: "{{ restic_backups | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Display role information
+  ansible.builtin.debug:
+    msg: "Restic role - configuring {{ restic_backups | length }} backup(s)"

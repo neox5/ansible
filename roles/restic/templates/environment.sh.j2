@@ -1,0 +1,5 @@
+# {{ ansible_managed }}
+# Restic environment: {{ item.key }}
+
+export RESTIC_REPOSITORY="{{ restic_repository }}"
+export RESTIC_PASSWORD="{{ restic_password }}"
