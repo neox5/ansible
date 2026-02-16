@@ -77,4 +77,4 @@ postgresql_backup_format: "custom" # custom, plain, directory, tar
 
 # Scripts installation
 postgresql_install_scripts: true
-postgresql_scripts_dir: "/usr/local/bin"
+postgresql_scripts_dir: "/opt/postgresql"

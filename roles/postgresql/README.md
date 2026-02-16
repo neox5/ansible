@@ -66,6 +66,32 @@ There is no separate `postgresql_user_privileges` variable. When you specify `ow
     - postgresql
 ```
 
+## Backup and Restore
+
+Scripts are deployed to `/opt/postgresql/`:
+
+**Manual backup:**
+
+```bash
+ssh ansible@host "sudo /opt/postgresql/pg_backup.sh <database>"
+```
+
+**Manual restore:**
+
+```bash
+ssh ansible@host "sudo /opt/postgresql/pg_restore.sh <backup_file> <database> -y"
+```
+
+**Examples:**
+
+```bash
+# Backup testdb
+ssh ansible@host "sudo /opt/postgresql/pg_backup.sh testdb"
+
+# Restore from backup
+ssh ansible@host "sudo /opt/postgresql/pg_restore.sh /var/backups/postgresql/lab-vm-testdb-20260216T120000.dump testdb -y"
+```
+
 ## Tags
 
 - `postgresql` - All tasks
