@@ -8,7 +8,7 @@
 # This file contains backup configuration for database hosts.
 #
 # Applied to: All hosts in 'db' group
-# Variable precedence: Overrides all/, overridden by hw_*/ → app/ → host_vars/
+# Variable precedence: Overrides all/, overridden by hw_* → app/ → host_vars/
 # ============================================================================
 
 # --- ROLE: Installation ---
@@ -25,7 +25,7 @@ restic_create_user: false # postgres user already exists
 
 # --- ROLE: Script Directory ---
 # Location for backup scripts
-restic_script_dir: "/usr/local/bin/restic"
+restic_script_dir: "/opt/restic"
 
 # --- ROLE: Scheduling ---
 # Enable systemd timer-based scheduling
@@ -51,6 +51,7 @@ restic_backups:
     stdin: true
     stdin_cmd: pg_dump -U postgres -Fc testdb
     stdin_filename: testdb.dump
+    src: /dev/null # Dummy value - template requires this even for stdin backups
 
     # Scheduling
     scheduled: true
@@ -72,4 +73,5 @@ restic_backups:
 # - Retention: 7 days + 4 weeks + 3 months
 # - Automatic pruning removes old snapshots per retention policy
 # - systemd timer: /etc/systemd/system/restic-backup-testdb.timer
+# - src: /dev/null is a workaround for role template bug (not used for stdin)
 # ============================================================================
