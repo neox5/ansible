@@ -1,6 +1,12 @@
 ---
 # Caddy configuration tasks
 
+- name: Add caddy user to ssl-cert group
+  ansible.builtin.user:
+    name: caddy
+    groups: ssl-cert
+    append: true
+
 - name: Deploy Caddyfile
   ansible.builtin.template:
     src: Caddyfile.j2

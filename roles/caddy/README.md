@@ -40,6 +40,61 @@ caddy_version: 2 # Major version pin
 
 See `defaults/main.yml` for all available variables.
 
+## TLS Configuration
+
+Three modes supported via the `tls` parameter:
+
+### 1. Caddy Internal CA (lab/development)
+
+```yaml
+caddy_sites:
+  - domain: app.lab.local
+    backend: localhost:3000
+    tls: internal
+```
+
+### 2. Let's Encrypt (production with public DNS)
+
+```yaml
+caddy_sites:
+  - domain: app.example.com
+    backend: localhost:3000
+    tls: "[email protected]"
+```
+
+### 3. External Certificates (certs role integration)
+
+```yaml
+caddy_sites:
+  - domain: app.example.com
+    backend: localhost:3000
+    tls:
+      cert: /etc/ssl/certs/app.crt
+      key: /etc/ssl/private/app.key
+```
+
+When using external certificates, configure the `certs` role to reload Caddy on certificate changes:
+
+```yaml
+certs:
+  - name: app
+    cert: "{{ app_cert }}"
+    key: "{{ app_key }}"
+
+certs_reload_services:
+  - caddy
+```
+
+## Firewall Configuration
+
+For any host running Caddy, open ports 80/443 in inventory:
+
+```yaml
+security_firewall_allowed_tcp_ports:
+  - 80
+  - 443
+```
+
 ## Example Playbook
 
 ```yaml
@@ -70,11 +125,21 @@ caddy_sites:
 
 ## Certificate Management
 
-Caddy handles Let's Encrypt certificates automatically:
+### Let's Encrypt (Automatic)
+
+Caddy handles certificates automatically:
 
 - Obtains certificates on first request
 - Renews before expiration
 - Stored in `/var/lib/caddy/.local/share/caddy`
+
+### External Certificates
+
+When using external certificates via the `certs` role:
+
+- Caddy user is added to `ssl-cert` group for key access
+- Certificate paths must match certs role output locations
+- Configure `certs_reload_services` to reload Caddy on cert changes
 
 ## Future Caddy Versions
 
@@ -83,8 +148,7 @@ When Caddy 3.x is released:
 1. Evaluate migration path from 2.x → 3.x
 2. Test in lab environment
 3. Update role version pin
-4. Update templates if needed
-5. Document breaking changes
+4. Document breaking changes
 
 ## License
 

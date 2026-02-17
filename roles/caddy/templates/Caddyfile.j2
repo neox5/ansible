@@ -11,7 +11,11 @@
 {% for site in caddy_sites %}
 {{ site.domain }} {
 {% if site.tls is defined %}
+{% if site.tls is mapping %}
+	tls {{ site.tls.cert }} {{ site.tls.key }}
+{% else %}
 	tls {{ site.tls }}
+{% endif %}
 {% endif %}
 	reverse_proxy {{ site.backend }}
 }
