@@ -1,0 +1,13 @@
+---
+# =============================================================================
+# Security: n8n Group Configuration
+# File: group_vars/n8n/security.yml
+# Role: security_hardening
+# =============================================================================
+#
+# Firewall ports required for reverse proxy operation.
+# Caddy listens on 80 (HTTP redirect) and 443 (HTTPS).
+
+security_firewall_allowed_tcp_ports:
+  - 80
+  - 443

@@ -7,6 +7,7 @@ security_ssh_allowed_users:
 # Firewall (restrictive baseline)
 security_firewall_enabled: yes
 security_firewall_default_policy: deny
+security_firewall_allowed_tcp_ports: []
 
 # Automatic Security Updates (Debian: unattended-upgrades)
 security_unattended_upgrades: yes

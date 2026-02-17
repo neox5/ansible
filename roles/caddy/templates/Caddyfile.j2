@@ -10,6 +10,9 @@
 # Virtual hosts - Reverse proxy with automatic HTTPS
 {% for site in caddy_sites %}
 {{ site.domain }} {
+{% if site.tls is defined %}
+	tls {{ site.tls }}
+{% endif %}
 	reverse_proxy {{ site.backend }}
 }
 

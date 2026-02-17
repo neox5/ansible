@@ -67,7 +67,7 @@ Examples:
 
 VM Access:
   SSH: ssh -p 2222 ansible@localhost
-  HTTP: http://n8n.lab.local:8080 (add to /etc/hosts: 127.0.0.1 n8n.lab.local)
+  HTTPS: https://n8n.lab.local (add to /etc/hosts: 127.0.0.1 n8n.lab.local)
   Shutdown: sudo poweroff (from inside VM)
   Force kill: Ctrl+C (may corrupt state)
 EOF
@@ -100,7 +100,7 @@ run_vm() {
 
   echo "[vm] starting ($DISTRO)"
   echo "[vm] ssh: ssh -p 2222 ansible@localhost"
-  echo "[vm] http: http://n8n.lab.local:8080"
+  echo "[vm] https: https://n8n.lab.local"
   echo "[vm] shutdown: sudo poweroff (from inside VM)"
 
   qemu-system-x86_64 \
@@ -108,7 +108,7 @@ run_vm() {
     -m 4G \
     -smp 4 \
     -drive file="$WORK",if=virtio \
-    -netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::8080-:80 \
+    -netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::80-:80,hostfwd=tcp::443-:443 \
     -device virtio-net-pci,netdev=net0
 }
 

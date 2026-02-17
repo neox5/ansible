@@ -16,6 +16,11 @@ caddy_sites: []
 #     backend: localhost:3000
 #   - domain: api.example.com
 #     backend: localhost:8080
+#
+# Optional per-site TLS configuration:
+#   tls: internal   # Caddy local CA (lab/dev)
+#   tls: /path/to/cert.pem /path/to/key.pem  # BYO certificate
+#   (omit for ACME/Let's Encrypt default)
 
 # Service state
 caddy_service_state: started
