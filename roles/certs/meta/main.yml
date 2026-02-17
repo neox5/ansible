@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  role_name: certs
+  author: neox5
+  description: Deploy TLS certificates and keys to target filesystem
+  license: MIT
+  min_ansible_version: "2.15"
+
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+
+  galaxy_tags:
+    - tls
+    - certificates
+    - pki
+
+dependencies: []

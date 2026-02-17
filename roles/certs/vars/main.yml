@@ -1,0 +1,9 @@
+---
+# Certs Role - Immutable Variables
+
+# Debian standard paths
+certs_dir: /etc/ssl/certs
+certs_keys_dir: /etc/ssl/private
+
+# Debian standard group for private key access
+certs_group: ssl-cert

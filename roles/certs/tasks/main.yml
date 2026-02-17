@@ -1,0 +1,15 @@
+---
+# Certs role - Main task orchestration
+# Debian 13 Trixie only
+
+- name: Include preflight checks
+  ansible.builtin.import_tasks: preflight.yml
+  tags:
+    - certs
+    - certs-preflight
+
+- name: Include deployment tasks
+  ansible.builtin.import_tasks: deploy.yml
+  tags:
+    - certs
+    - certs-deploy

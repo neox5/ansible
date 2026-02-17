@@ -1,0 +1,34 @@
+---
+# Preflight checks
+
+- name: Gather distribution facts
+  ansible.builtin.setup:
+    gather_subset:
+      - distribution
+
+- name: Assert Debian 13 or later
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == "Debian"
+      - ansible_distribution_major_version | int >= 13
+    fail_msg: "This role requires Debian 13 or later"
+    success_msg: "Debian {{ ansible_distribution_major_version }} detected"
+
+- name: Assert certs list is not empty
+  ansible.builtin.assert:
+    that:
+      - certs | length > 0
+    fail_msg: "certs must contain at least one entry"
+
+- name: Assert each cert entry has required fields
+  ansible.builtin.assert:
+    that:
+      - item.name is defined
+      - item.name | length > 0
+      - item.cert is defined
+      - item.cert | length > 0
+      - item.key is defined
+      - item.key | length > 0
+    fail_msg: "cert entry '{{ item.name | default('unnamed') }}' missing required fields (name, cert, key)"
+  loop: "{{ certs }}"
+  no_log: true

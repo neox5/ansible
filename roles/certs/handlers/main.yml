@@ -1,0 +1,9 @@
+---
+# Certs role handlers
+
+- name: Reload cert-dependent services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: reloaded
+  loop: "{{ certs_reload_services }}"
+  when: certs_reload_services | length > 0

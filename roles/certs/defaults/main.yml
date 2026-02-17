@@ -1,0 +1,21 @@
+---
+# Certs Role - Configuration Defaults
+
+# Certificates to deploy.
+# Each entry requires:
+#   name: logical identifier (used as filename stem)
+#   cert: PEM content of certificate
+#   key:  PEM content of private key
+certs: []
+# Example:
+# certs:
+#   - name: n8n
+#     cert: "{{ n8n_cert }}"
+#     key: "{{ n8n_key }}"
+
+# Services to reload when certificates change.
+# Each entry is a systemd service name.
+certs_reload_services: []
+# Example:
+# certs_reload_services:
+#   - caddy

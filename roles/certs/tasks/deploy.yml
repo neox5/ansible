@@ -1,0 +1,38 @@
+---
+# Certificate deployment tasks
+
+- name: Ensure ssl-cert group exists
+  ansible.builtin.group:
+    name: "{{ certs_group }}"
+    state: present
+    system: true
+
+- name: Ensure /etc/ssl/private has correct ownership and permissions
+  ansible.builtin.file:
+    path: "{{ certs_keys_dir }}"
+    state: directory
+    owner: root
+    group: "{{ certs_group }}"
+    mode: "0710"
+
+- name: Deploy certificate files
+  ansible.builtin.copy:
+    content: "{{ item.cert }}"
+    dest: "{{ certs_dir }}/{{ item.name }}.crt"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ certs }}"
+  no_log: true
+  notify: Reload cert-dependent services
+
+- name: Deploy private key files
+  ansible.builtin.copy:
+    content: "{{ item.key }}"
+    dest: "{{ certs_keys_dir }}/{{ item.name }}.key"
+    owner: root
+    group: "{{ certs_group }}"
+    mode: "0640"
+  loop: "{{ certs }}"
+  no_log: true
+  notify: Reload cert-dependent services
