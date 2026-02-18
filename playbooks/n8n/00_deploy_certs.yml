@@ -1,0 +1,17 @@
+---
+- name: "Stage 0: Deploy TLS Certificates (if configured)"
+  hosts: n8n
+  become: true
+  tasks:
+    - name: Check if certificates are configured
+      ansible.builtin.set_fact:
+        certs_configured: "{{ certs is defined and certs | length > 0 }}"
+
+    - name: Deploy certificates
+      ansible.builtin.include_role:
+        name: certs
+      when: certs_configured
+
+    - name: Display certificate deployment status
+      ansible.builtin.debug:
+        msg: "{{ 'Certificates deployed' if certs_configured else 'No certificates configured - skipping' }}"

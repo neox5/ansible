@@ -23,6 +23,7 @@
           - "Starting deployment..."
           - ""
 
+- import_playbook: 00_deploy_certs.yml
 - import_playbook: 01_deploy_postgresql.yml
 - import_playbook: 02_deploy_n8n.yml
 - import_playbook: 03_deploy_caddy.yml
