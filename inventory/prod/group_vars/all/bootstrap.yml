@@ -16,6 +16,5 @@ bootstrap_ansible_keys:
 
 # Admin user SSH keys (personal + emergency)
 bootstrap_admin_keys:
-  - "{{ bootstrap_ssh_keys_repo_base }}/personal/id_ed25519_desktop.pub"
-  - "{{ bootstrap_ssh_keys_repo_base }}/personal/id_ed25519_mobile.pub"
+  - "{{ bootstrap_ssh_keys_repo_base }}/personal/id_ed25519_frwk.pub"
   - "{{ bootstrap_ssh_keys_repo_base }}/emergency/id_ed25519_emergency.pub"

@@ -1,7 +1,7 @@
 ---
 # Caddy role handlers
 
-- name: reload caddy
+- name: restart caddy
   ansible.builtin.systemd:
     name: caddy
-    state: reloaded
+    state: restarted

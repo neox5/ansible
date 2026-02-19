@@ -24,7 +24,7 @@
     mode: "0644"
   loop: "{{ certs }}"
   no_log: true
-  notify: Reload cert-dependent services
+  notify: restart cert-dependent services
 
 - name: Deploy private key files
   ansible.builtin.copy:
@@ -35,4 +35,4 @@
     mode: "0640"
   loop: "{{ certs }}"
   no_log: true
-  notify: Reload cert-dependent services
+  notify: restart cert-dependent services

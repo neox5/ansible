@@ -15,7 +15,7 @@
     group: root
     mode: "0644"
     validate: caddy validate --adapter caddyfile --config %s
-  notify: reload caddy
+  notify: restart caddy
 
 - name: Ensure Caddy configuration directory exists
   ansible.builtin.file:

@@ -51,10 +51,9 @@ Bootstrap command:
 
 ```bash
 ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook playbooks/bootstrap.yml \
-  -i inventory/lab -l lab-vm \
+  -i inventory/prod -l n150-01 \
   -e ansible_user=temp \
-  -k \
-  -K
+  -k -K
 ```
 
 After bootstrap:
