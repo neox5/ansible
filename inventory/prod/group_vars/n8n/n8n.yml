@@ -17,10 +17,10 @@
 n8n_version: "latest"
 
 # --- Network Configuration ---
-n8n_host: "n8n.bgc.local"
+n8n_host: "n8n.zion.local"
 n8n_port: 5678
-n8n_webhook_url: "https://n8n.bgc.local/"
-n8n_domain: "n8n.bgc.local"
+n8n_webhook_url: "https://n8n.zion.local/"
+n8n_domain: "n8n.zion.local"
 
 # --- Database Configuration ---
 n8n_db_host: "localhost"
@@ -61,7 +61,6 @@ n8n_readiness_delay: 5
 # --- PostgreSQL Readiness Check ---
 postgres_ready_retries: 10
 postgres_ready_delay: 3
-
 # ============================================================================
 # Notes:
 # - Lab configuration uses HTTPS with self-signed certificates

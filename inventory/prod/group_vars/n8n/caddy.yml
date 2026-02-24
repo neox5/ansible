@@ -16,16 +16,15 @@
 # --- Let's Encrypt Contact Email ---
 # Required by Caddy even for self-signed lab configs
 # Production should use real email for certificate notifications
-caddy_email: "office@testbgc.wien"
+caddy_email: "office@zion.local"
 
 # --- Caddy Sites Configuration ---
 caddy_sites:
-  - domain: "n8n.bgc.local"
+  - domain: "n8n.zion.local"
     backend: "localhost:{{ n8n_port }}"
     tls:
       cert: /etc/ssl/certs/n8n.crt
       key: /etc/ssl/private/n8n.key
-
 # ============================================================================
 # Notes:
 # - Lab configuration uses Caddy internal CA (tls internal)
