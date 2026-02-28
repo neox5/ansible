@@ -1,0 +1,22 @@
+---
+# ============================================================================
+# Restic: Backup Foundation
+# File: group_vars/backup/restic.yml
+# Role: restic (custom)
+# ============================================================================
+#
+# Defines local repository for lab backup hosts.
+# No off-site backends in lab — copy jobs not configured.
+# Applied to: All hosts in 'backup' group
+# Variable precedence: Overrides all/, overridden by app/ → host_vars/
+# ============================================================================
+
+# --- Local Repository ---
+restic_repository: /var/backups/restic
+restic_password: "{{ restic_repository_password_secret }}"
+restic_init: true
+
+# --- Repository-level Retention Defaults ---
+restic_keep_daily: 7
+restic_keep_weekly: 4
+restic_keep_monthly: 3

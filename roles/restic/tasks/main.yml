@@ -25,3 +25,9 @@
   tags:
     - restic
     - restic-backup
+
+- name: Include copy configuration
+  import_tasks: copy.yml
+  tags:
+    - restic
+    - restic-copy

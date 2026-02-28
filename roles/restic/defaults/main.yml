@@ -31,6 +31,31 @@ restic_keep_monthly: 3
 restic_keep_yearly: null
 restic_keep_within: null
 
+# Per-backup defaults
+restic_backup_schedule_enabled: true
+restic_backup_prune: true
+
+# Backup script configuration
+restic_backup_tags: [] # Additional tags for all backups
+
+# Restore defaults
+restic_restore_target_default: "/tmp/restic-restore" # Default if not specified per-backup
+
+# Backend definitions (optional - required when copies are configured)
+# Each backend is a named dict with type-specific credentials
+restic_backends: {}
+# Example s3_compatible backend (covers B2 via S3 API, Wasabi, MinIO, R2):
+# restic_backends:
+#   offsite_b2:
+#     type: s3_compatible
+#     endpoint: "https://s3.us-east-005.backblazeb2.com"
+#     bucket: "my-restic-bucket"
+#     key_id: "{{ restic_b2_key_id_secret }}"
+#     key_secret: "{{ restic_b2_key_secret }}"
+
+# Copy schedule defaults
+restic_copy_schedule_enabled: true
+
 # Backup configurations (REQUIRED - must be set by calling role/inventory)
 # Each backup is a dict with key = backup name
 restic_backups: {}
@@ -62,13 +87,17 @@ restic_backups: {}
 #       - /etc/caddy
 #     schedule: "*-*-* 04:00:00"
 #     restore_target: /etc  # Restore to original locations
+#
+# Example with copies:
+#   n8n_database:
+#     stdin: true
+#     stdin_cmd: "sudo -u postgres pg_dump -Fc n8n"
+#     stdin_filename: "n8n.dump"
+#     schedule: "*-*-* 02:30:00"
+#     prune: true
+#     copies:
+#       - backend: offsite_b2
+#         path: "n150-01"
+#         repo_password: "{{ restic_b2_repo_password_secret }}"
+#         schedule: "*-*-* 05:30:00"
 
-# Per-backup defaults
-restic_backup_schedule_enabled: true
-restic_backup_prune: true
-
-# Backup script configuration
-restic_backup_tags: [] # Additional tags for all backups
-
-# Restore defaults
-restic_restore_target_default: "/tmp/restic-restore" # Default if not specified per-backup

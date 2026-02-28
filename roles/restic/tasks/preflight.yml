@@ -33,6 +33,16 @@
   loop_control:
     label: "{{ item.key }}"
 
+- name: Validate copy backend references
+  ansible.builtin.assert:
+    that:
+      - item.1.backend in restic_backends
+    fail_msg: "Backup {{ item.0.key }}: copy references undefined backend '{{ item.1.backend }}'"
+    success_msg: "Backup {{ item.0.key }}: backend '{{ item.1.backend }}' validated"
+  loop: "{{ restic_backups | dict2items | subelements('value.copies', skip_missing=True) }}"
+  loop_control:
+    label: "{{ item.0.key }}-{{ item.1.backend }}"
+
 - name: Display role information
   ansible.builtin.debug:
     msg: "Restic role - configuring {{ restic_backups | length }} backup(s)"

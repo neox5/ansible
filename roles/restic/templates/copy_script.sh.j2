@@ -1,0 +1,34 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# Restic copy script: {{ job.backup_name }} → {{ job.backend_name }}
+# Part of restic role
+
+set -euo pipefail
+
+# Source copy environment
+source {{ restic_script_dir }}/copy-env-{{ job.backup_name }}-{{ job.backend_name }}.sh
+
+COPY_LOG="{{ restic_log_dir }}/{{ job.backup_name }}/copy-{{ job.backend_name }}.log"
+
+echo "=== Restic Copy: {{ job.backup_name }} → {{ job.backend_name }} ===" | tee -a "$COPY_LOG"
+echo "Started: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" | tee -a "$COPY_LOG"
+echo "Source:      $RESTIC_FROM_REPOSITORY" | tee -a "$COPY_LOG"
+echo "Destination: $RESTIC_REPOSITORY" | tee -a "$COPY_LOG"
+echo "" | tee -a "$COPY_LOG"
+
+{{ restic_install_path }}/restic copy \
+  --from-repo "$RESTIC_FROM_REPOSITORY" \
+  "$@" 2>&1 | tee -a "$COPY_LOG"
+
+COPY_EXIT_CODE=$?
+
+echo "" | tee -a "$COPY_LOG"
+if [ $COPY_EXIT_CODE -eq 0 ]; then
+  echo "Copy: SUCCESS" | tee -a "$COPY_LOG"
+else
+  echo "Copy: FAILED (exit code $COPY_EXIT_CODE)" | tee -a "$COPY_LOG"
+  exit $COPY_EXIT_CODE
+fi
+
+echo "Completed: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" | tee -a "$COPY_LOG"
+echo "=== End Copy: {{ job.backup_name }} → {{ job.backend_name }} ===" | tee -a "$COPY_LOG"

@@ -1,0 +1,30 @@
+---
+# ============================================================================
+# Restic: Backup Foundation
+# File: group_vars/backup/restic.yml
+# Role: restic (custom)
+# ============================================================================
+#
+# Defines local repository and backend definitions for all backup hosts.
+# Applied to: All hosts in 'backup' group
+# Variable precedence: Overrides all/, overridden by app/ → host_vars/
+# ============================================================================
+
+# --- Local Repository ---
+restic_repository: /var/backups/restic
+restic_password: "{{ restic_repository_password_secret }}"
+restic_init: true
+
+# --- Repository-level Retention Defaults ---
+restic_keep_daily: 7
+restic_keep_weekly: 4
+restic_keep_monthly: 3
+
+# --- Backend Definitions ---
+restic_backends:
+  offsite_b2:
+    type: s3_compatible
+    endpoint: "https://s3.us-east-005.backblazeb2.com"
+    bucket: "zion-restic-backups"
+    key_id: "{{ restic_b2_key_id_secret }}"
+    key_secret: "{{ restic_b2_key_secret }}"

@@ -1,0 +1,12 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Restic copy: {{ job.backup_name }} → {{ job.backend_name }}
+After=network-online.target
+
+[Service]
+Type=oneshot
+User={{ restic_user }}
+ExecStart={{ restic_script_dir }}/copy-{{ job.backup_name }}-{{ job.backend_name }}.sh
+
+[Install]
+WantedBy=multi-user.target

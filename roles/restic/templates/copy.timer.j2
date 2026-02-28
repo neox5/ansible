@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Restic copy timer: {{ job.backup_name }} → {{ job.backend_name }}
+
+[Timer]
+OnCalendar={{ job.copy.schedule }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target
