@@ -1,0 +1,12 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Restic check: {{ item.key }}
+After=network-online.target
+
+[Service]
+Type=oneshot
+User={{ restic_user }}
+ExecStart={{ restic_script_dir }}/check-{{ item.key }}.sh
+
+[Install]
+WantedBy=multi-user.target

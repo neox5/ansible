@@ -1,0 +1,10 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Restic {{ item.value.type }} timer: {{ item.key }}
+
+[Timer]
+OnCalendar={{ item.value.schedule }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target

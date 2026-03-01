@@ -1,0 +1,70 @@
+---
+# Repository initialization and environment files
+
+- name: Identify primary repository
+  ansible.builtin.set_fact:
+    restic_primary_repo: "{{ restic_repos | dict2items | selectattr('value.primary', 'defined') | selectattr('value.primary', 'equalto', true) | first }}"
+
+- name: Deploy repository environment files
+  ansible.builtin.template:
+    src: "env/{{ item.value.backend | first }}.sh.j2"
+    dest: "{{ restic_script_dir }}/env-{{ item.key }}.sh"
+    owner: root
+    group: root
+    mode: "0600"
+  loop: "{{ restic_repos | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  no_log: true
+
+- name: Check if primary repository exists
+  ansible.builtin.command:
+    cmd: "bash -c 'source {{ restic_script_dir }}/env-{{ restic_primary_repo.key }}.sh && {{ restic_install_path }}/restic snapshots --json'"
+  register: restic_primary_check
+  changed_when: false
+  failed_when: false
+  no_log: true
+
+- name: Initialize primary repository
+  ansible.builtin.command:
+    cmd: "bash -c 'source {{ restic_script_dir }}/env-{{ restic_primary_repo.key }}.sh && {{ restic_install_path }}/restic init'"
+  when:
+    - restic_primary_repo.value.init | default(true)
+    - restic_primary_check.rc != 0
+  no_log: true
+
+- name: Check if non-primary repositories exist
+  ansible.builtin.command:
+    cmd: "bash -c 'source {{ restic_script_dir }}/env-{{ item.key }}.sh && {{ restic_install_path }}/restic snapshots --json'"
+  register: restic_repo_checks
+  changed_when: false
+  failed_when: false
+  loop: "{{ restic_repos | dict2items | rejectattr('value.primary', 'defined') | list + restic_repos | dict2items | selectattr('value.primary', 'defined') | rejectattr('value.primary', 'equalto', true) | list }}"
+  loop_control:
+    label: "{{ item.key }}"
+  no_log: true
+
+- name: Initialize non-primary repositories with copy-chunker-params
+  ansible.builtin.command:
+    cmd: >
+      bash -c 'source {{ restic_script_dir }}/env-{{ item.item.key }}.sh &&
+      source {{ restic_script_dir }}/env-{{ restic_primary_repo.key }}.sh &&
+      RESTIC_FROM_REPOSITORY=$RESTIC_REPOSITORY RESTIC_FROM_PASSWORD=$RESTIC_PASSWORD
+      source {{ restic_script_dir }}/env-{{ item.item.key }}.sh &&
+      {{ restic_install_path }}/restic init --from-repo "$RESTIC_FROM_REPOSITORY" --copy-chunker-params'
+  when:
+    - item.item.value.init | default(true)
+    - item.rc != 0
+  loop: "{{ restic_repo_checks.results }}"
+  loop_control:
+    label: "{{ item.item.key }}"
+  no_log: true
+
+- name: Verify all repositories are accessible
+  ansible.builtin.command:
+    cmd: "bash -c 'source {{ restic_script_dir }}/env-{{ item.key }}.sh && {{ restic_install_path }}/restic snapshots --json'"
+  changed_when: false
+  loop: "{{ restic_repos | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  no_log: true

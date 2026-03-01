@@ -1,9 +1,9 @@
 # {{ ansible_managed }}
 [Unit]
-Description=Restic backup timer: {{ item.key }}
+Description=Restic check timer: {{ item.key }}
 
 [Timer]
-OnCalendar={{ item.value.schedule }}
+OnCalendar={{ item.value.check.schedule }}
 Persistent=true
 
 [Install]

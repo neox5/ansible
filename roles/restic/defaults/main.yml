@@ -1,101 +1,33 @@
 ---
 # Restic Custom Role - Configuration Defaults
 
-# Restic version
+# Installation
 restic_version: "0.18.0"
-
-# Installation paths
 restic_download_path: "/opt"
 restic_install_path: "/usr/local/bin"
 
-# Script and log directories
+# Directories
 restic_script_dir: "/opt/restic"
 restic_log_dir: "/var/log/restic"
 
-# User configuration
+# User
 restic_user: "root"
 
-# Repository configuration (REQUIRED - must be set by calling role/inventory)
-restic_repository: ""
-restic_password: ""
+# Sources (required - must be set by inventory)
+restic_sources: {}
 
-# Repository initialization
-restic_init: true
+# Repositories (required - must be set by inventory)
+restic_repos: {}
 
-# Repository-level retention defaults (null = not used)
-restic_keep_last: null
-restic_keep_hourly: null
-restic_keep_daily: 7
-restic_keep_weekly: 4
-restic_keep_monthly: 3
-restic_keep_yearly: null
-restic_keep_within: null
-
-# Repository-level defaults
-restic_schedule_enabled: true
-restic_prune: true
-restic_tags: []
+# Jobs (required - must be set by inventory)
+restic_jobs: {}
 
 # Restore defaults
 restic_restore_target: "/tmp/restic-restore"
 
-# Backend definitions (optional - required when copies are configured)
-# Each backend is a named dict with type-specific credentials
-restic_backends: {}
-# Example s3_compatible backend (covers B2 via S3 API, Wasabi, MinIO, R2):
-# restic_backends:
-#   offsite_b2:
-#     type: s3_compatible
-#     endpoint: "https://s3.us-east-005.backblazeb2.com"
-#     bucket: "my-restic-bucket"
-#     key_id: "{{ restic_b2_key_id_secret }}"
-#     key_secret: "{{ restic_b2_key_secret }}"
-
-# Copy schedule defaults
-restic_copy_schedule_enabled: true
-restic_copy_prune: true
-
-# Backup configurations (REQUIRED - must be set by calling role/inventory)
-# Each backup is a dict with key = backup name
-restic_backups: {}
-# Example stdin backup:
-# restic_backups:
-#   postgresql_db1:
-#     stdin: true
-#     stdin_command: "sudo -u postgres pg_dump -Fc db1"
-#     stdin_filename: "db1.dump"
-#     schedule: "*-*-* 02:00:00"
-#     keep_daily: 7  # Override repository default
-#     prune: true
-#     monitoring_url: "https://hc.example.com/uuid"
-#
-# Example directory backup:
-#   grafana_dashboards:
-#     paths: /var/lib/grafana/dashboards
-#     schedule: "*-*-* 03:00:00"
-#     exclude:
-#       - "*.tmp"
-#       - "cache/*"
-#     prune: true
-#     restore_target: /var/lib/grafana/dashboards
-#
-# Example multiple directories:
-#   configs:
-#     paths:
-#       - /etc/postgresql
-#       - /etc/caddy
-#     schedule: "*-*-* 04:00:00"
-#     restore_target: /etc
-#
-# Example with copies:
-#   n8n_database:
-#     stdin: true
-#     stdin_command: "sudo -u postgres pg_dump -Fc n8n"
-#     stdin_filename: "n8n.dump"
-#     schedule: "*-*-* 02:30:00"
-#     prune: true
-#     copies:
-#       - backend: offsite_b2
-#         path: "n150-01"
-#         password: "{{ restic_b2_repo_password_secret }}"
-#         schedule: "*-*-* 05:30:00"
+# Default retention (used when repository does not define retention)
+restic_retention:
+  keep_daily: 7
+  keep_weekly: 4
+  keep_monthly: 3
+  prune: true

@@ -1,0 +1,22 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# Restic check: {{ item.key }}
+
+set -euo pipefail
+
+source {{ restic_script_dir }}/env-{{ item.key }}.sh
+
+echo "=== Restic Repository Check: {{ item.key }} ==="
+echo "Repository: $RESTIC_REPOSITORY"
+echo "Started: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+echo ""
+
+{{ restic_install_path }}/restic check \
+{% if item.value.check is defined and item.value.check.read_data_subset is defined %}
+  --read-data-subset {{ item.value.check.read_data_subset }} \
+{% endif %}
+  "$@"
+
+echo ""
+echo "Completed: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+echo "=== End Check: {{ item.key }} ==="

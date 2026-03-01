@@ -4,22 +4,3 @@
 - name: reload systemd
   ansible.builtin.systemd:
     daemon_reload: true
-
-- name: restart restic timer
-  ansible.builtin.systemd:
-    name: "restic-backup-{{ item.key }}.timer"
-    state: restarted
-    enabled: "{{ item.value.schedule_enabled | default(restic_schedule_enabled) }}"
-  loop: "{{ restic_backups | dict2items }}"
-  loop_control:
-    label: "{{ item.key }}"
-
-- name: restart restic copy timer
-  ansible.builtin.systemd:
-    name: "restic-copy-{{ job.backup_name }}-{{ job.backend_name }}.timer"
-    state: restarted
-    enabled: "{{ job.copy.schedule_enabled | default(restic_copy_schedule_enabled) }}"
-  loop: "{{ restic_copy_jobs | default([]) }}"
-  loop_control:
-    label: "{{ job.backup_name }}-{{ job.backend_name }}"
-    loop_var: job
