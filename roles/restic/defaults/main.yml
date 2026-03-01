@@ -53,6 +53,7 @@ restic_backends: {}
 
 # Copy schedule defaults
 restic_copy_schedule_enabled: true
+restic_copy_prune: true
 
 # Backup configurations (REQUIRED - must be set by calling role/inventory)
 # Each backup is a dict with key = backup name

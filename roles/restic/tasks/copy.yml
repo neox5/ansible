@@ -7,6 +7,7 @@
       {{ restic_copy_jobs | default([]) + [
         {
           'backup_name': item.0.key,
+          'backup': item.0.value,
           'copy': item.1,
           'backend': restic_backends[item.1.backend],
           'backend_name': item.1.backend,
@@ -73,6 +74,30 @@
   ansible.builtin.template:
     src: copy_script.sh.j2
     dest: "{{ restic_script_dir }}/copy-{{ job.backup_name }}-{{ job.backend_name }}.sh"
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ restic_copy_jobs | default([]) }}"
+  loop_control:
+    label: "{{ job.backup_name }}-{{ job.backend_name }}"
+    loop_var: job
+
+- name: Deploy copy check scripts
+  ansible.builtin.template:
+    src: copy_check_script.sh.j2
+    dest: "{{ restic_script_dir }}/check-copy-{{ job.backup_name }}-{{ job.backend_name }}.sh"
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ restic_copy_jobs | default([]) }}"
+  loop_control:
+    label: "{{ job.backup_name }}-{{ job.backend_name }}"
+    loop_var: job
+
+- name: Deploy copy restore scripts
+  ansible.builtin.template:
+    src: copy_restore_script.sh.j2
+    dest: "{{ restic_script_dir }}/restore-copy-{{ job.backup_name }}-{{ job.backend_name }}.sh"
     owner: root
     group: root
     mode: "0755"
