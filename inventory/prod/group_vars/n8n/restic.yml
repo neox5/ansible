@@ -1,50 +1,27 @@
 ---
 # ============================================================================
-# Restic: n8n Backup Configuration
+# Restic: n8n Sources
 # File: group_vars/n8n/restic.yml
 # Role: restic (custom)
 # ============================================================================
 #
-# Defines backup configuration for n8n data and database.
-# Applied to: Hosts in both 'backup' and 'n8n' groups
-# Variable precedence: Overrides group_vars/all/ and group_vars/backup/
+# Defines what gets backed up for all n8n hosts.
+# Repos and jobs are host-specific (host_vars/<host>/restic.yml).
+#
+# Applied to: All hosts in 'n8n' group
+# Variable precedence: Overrides all/, overridden by host_vars/
 # ============================================================================
 
-restic_backups:
-  n8n_data:
-    paths:
-      - "{{ n8n_data_dir }}"
-    schedule: "*-*-* 03:00:00"
-    keep_daily: 7
-    keep_weekly: 4
-    keep_monthly: 3
-    prune: true
-    copies:
-      - backend: offsite_b2
-        path: "n150-01"
-        password: "{{ restic_b2_repo_password_secret }}"
-        schedule: "*-*-* 05:00:00"
-
+restic_sources:
   n8n_database:
     stdin: true
     stdin_command: "sudo -u postgres pg_dump -U postgres -Fc {{ n8n_db_name }}"
     stdin_filename: "n8n_database.dump"
-    schedule: "*-*-* 02:30:00"
-    keep_daily: 7
-    keep_weekly: 4
-    keep_monthly: 3
-    prune: true
-    copies:
-      - backend: offsite_b2
-        path: "n150-01"
-        password: "{{ restic_b2_repo_password_secret }}"
-        schedule: "*-*-* 05:30:00"
-# ============================================================================
-# Notes:
-# - Database backup runs before data backup (restore order matters)
-# - Uses PostgreSQL custom format (-Fc) with compression
-# - Retention: 7 daily, 4 weekly, 3 monthly snapshots
-# - Automatic pruning enabled
-# - Copy jobs run 2.5h after backups to ensure completion
-# - Both backups copy to offsite_b2 under n150-01/ path
-# ============================================================================
+    tags:
+      - database
+
+  n8n_data:
+    paths:
+      - "{{ n8n_data_dir }}"
+    tags:
+      - data

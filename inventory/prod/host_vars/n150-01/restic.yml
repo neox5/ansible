@@ -1,0 +1,65 @@
+---
+# ============================================================================
+# Restic: n150-01 Repositories and Jobs
+# File: host_vars/n150-01/restic.yml
+# Role: restic (custom)
+# ============================================================================
+#
+# Defines where and when backups run for n150-01.
+# Sources are group-scoped (group_vars/n8n/restic.yml).
+# Passwords and credentials are in secrets.sops.yml.
+#
+# Variable precedence: Overrides group_vars/
+# ============================================================================
+
+restic_repos:
+  local:
+    primary: true
+    password: "{{ restic_local_password_secret }}"
+    backend:
+      local:
+        path: /var/backups/restic
+    retention:
+      keep_daily: 7
+      keep_weekly: 4
+      keep_monthly: 3
+      prune: true
+    check:
+      schedule: "*-*-01 06:00:00"
+      read_data_subset: "10%"
+
+  offsite_b2:
+    password: "{{ restic_b2_password_secret }}"
+    backend:
+      s3:
+        endpoint: "https://s3.us-east-005.backblazeb2.com"
+        bucket: "zion-restic-backups"
+        key_id: "{{ restic_b2_key_id_secret }}"
+        key_secret: "{{ restic_b2_key_secret_secret }}"
+    retention:
+      keep_daily: 3
+      keep_weekly: 2
+      prune: true
+    check:
+      schedule: "*-*-15 06:00:00"
+      read_data_subset: "10%"
+
+restic_jobs:
+  nightly_backup:
+    type: backup
+    sources:
+      - n8n_database
+      - n8n_data
+    repo: local
+    schedule: "*-*-* 02:30:00"
+    on_failure: continue
+
+  offsite_copy:
+    type: copy
+    sources:
+      - n8n_database
+      - n8n_data
+    from: local
+    to: offsite_b2
+    schedule: "*-*-* 05:00:00"
+    on_failure: continue
