@@ -9,7 +9,10 @@
           'backup_name': item.0.key,
           'copy': item.1,
           'backend': restic_backends[item.1.backend],
-          'backend_name': item.1.backend
+          'backend_name': item.1.backend,
+          'stdin': item.0.value.stdin | default(false),
+          'stdin_filename': item.0.value.stdin_filename | default(''),
+          'paths': item.0.value.paths | default([])
         }
       ] }}
   loop: "{{ restic_backups | dict2items | subelements('value.copies', skip_missing=True) }}"

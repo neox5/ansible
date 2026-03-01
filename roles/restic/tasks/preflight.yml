@@ -26,8 +26,8 @@
 - name: Validate backup configurations
   ansible.builtin.assert:
     that:
-      - (item.value.stdin | default(false) and item.value.stdin_cmd is defined and item.value.stdin_filename is defined) or (not (item.value.stdin | default(false)) and item.value.src is defined)
-    fail_msg: "Backup {{ item.key }} must have either (stdin + stdin_cmd + stdin_filename) or (src)"
+      - (item.value.stdin | default(false) and item.value.stdin_command is defined and item.value.stdin_filename is defined) or (not (item.value.stdin | default(false)) and item.value.paths is defined)
+    fail_msg: "Backup {{ item.key }} must have either (stdin + stdin_command + stdin_filename) or (paths)"
     success_msg: "Backup {{ item.key }} configuration valid"
   loop: "{{ restic_backups | dict2items }}"
   loop_control:
@@ -39,6 +39,17 @@
       - item.1.backend in restic_backends
     fail_msg: "Backup {{ item.0.key }}: copy references undefined backend '{{ item.1.backend }}'"
     success_msg: "Backup {{ item.0.key }}: backend '{{ item.1.backend }}' validated"
+  loop: "{{ restic_backups | dict2items | subelements('value.copies', skip_missing=True) }}"
+  loop_control:
+    label: "{{ item.0.key }}-{{ item.1.backend }}"
+
+- name: Validate copy password defined
+  ansible.builtin.assert:
+    that:
+      - item.1.password is defined
+      - item.1.password | length > 0
+    fail_msg: "Backup {{ item.0.key }}: copy to '{{ item.1.backend }}' missing password"
+    success_msg: "Backup {{ item.0.key }}: copy to '{{ item.1.backend }}' password validated"
   loop: "{{ restic_backups | dict2items | subelements('value.copies', skip_missing=True) }}"
   loop_control:
     label: "{{ item.0.key }}-{{ item.1.backend }}"

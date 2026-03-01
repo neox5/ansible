@@ -16,11 +16,19 @@ echo "Source:      $RESTIC_FROM_REPOSITORY" | tee -a "$COPY_LOG"
 echo "Destination: $RESTIC_REPOSITORY" | tee -a "$COPY_LOG"
 echo "" | tee -a "$COPY_LOG"
 
+COPY_EXIT_CODE=0
 {{ restic_install_path }}/restic copy \
   --from-repo "$RESTIC_FROM_REPOSITORY" \
-  "$@" 2>&1 | tee -a "$COPY_LOG"
-
-COPY_EXIT_CODE=$?
+{% if job.stdin %}
+  --path "/{{ job.stdin_filename }}" \
+{% elif job.paths is string %}
+  --path "{{ job.paths }}" \
+{% else %}
+{% for path in job.paths %}
+  --path "{{ path }}" \
+{% endfor %}
+{% endif %}
+  "$@" 2>&1 | tee -a "$COPY_LOG" || COPY_EXIT_CODE=$?
 
 echo "" | tee -a "$COPY_LOG"
 if [ $COPY_EXIT_CODE -eq 0 ]; then

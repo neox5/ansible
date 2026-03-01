@@ -33,17 +33,17 @@ fi
 
 {% else %}
 # directory backup mode - restore to filesystem
-RESTORE_TARGET="${2:-{{ item.value.restore_target | default(restic_restore_target_default) }}}"
+RESTORE_TARGET="${2:-{{ item.value.restore_target | default(restic_restore_target) }}}"
 
 echo "=== Restic Restore (filesystem): {{ item.key }} ==="
 echo "Repository: $RESTIC_REPOSITORY"
 echo "Snapshot: $SNAPSHOT_ID"
 echo "Target: $RESTORE_TARGET"
-{% if item.value.src is string %}
-echo "Source: {{ item.value.src }}"
+{% if item.value.paths is string %}
+echo "Source: {{ item.value.paths }}"
 {% else %}
 echo "Sources:"
-{% for path in item.value.src %}
+{% for path in item.value.paths %}
 echo "  - {{ path }}"
 {% endfor %}
 {% endif %}
@@ -60,12 +60,13 @@ fi
 # Restore snapshot to target
 {{ restic_install_path }}/restic restore "$SNAPSHOT_ID" \
   --target "$RESTORE_TARGET" \
-{% if item.value.src is string %}
-  --path "{{ item.value.src }}"
+{% if item.value.paths is string %}
+  --path "{{ item.value.paths }}"
 {% else %}
-{% for path in item.value.src %}
+{% for path in item.value.paths %}
   --path "{{ path }}" \
 {% endfor %}
+
 {% endif %}
 
 RESTORE_EXIT_CODE=$?

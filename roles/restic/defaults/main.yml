@@ -31,15 +31,13 @@ restic_keep_monthly: 3
 restic_keep_yearly: null
 restic_keep_within: null
 
-# Per-backup defaults
-restic_backup_schedule_enabled: true
-restic_backup_prune: true
-
-# Backup script configuration
-restic_backup_tags: [] # Additional tags for all backups
+# Repository-level defaults
+restic_schedule_enabled: true
+restic_prune: true
+restic_tags: []
 
 # Restore defaults
-restic_restore_target_default: "/tmp/restic-restore" # Default if not specified per-backup
+restic_restore_target: "/tmp/restic-restore"
 
 # Backend definitions (optional - required when copies are configured)
 # Each backend is a named dict with type-specific credentials
@@ -63,7 +61,7 @@ restic_backups: {}
 # restic_backups:
 #   postgresql_db1:
 #     stdin: true
-#     stdin_cmd: "sudo -u postgres pg_dump -Fc db1"
+#     stdin_command: "sudo -u postgres pg_dump -Fc db1"
 #     stdin_filename: "db1.dump"
 #     schedule: "*-*-* 02:00:00"
 #     keep_daily: 7  # Override repository default
@@ -72,32 +70,31 @@ restic_backups: {}
 #
 # Example directory backup:
 #   grafana_dashboards:
-#     src: /var/lib/grafana/dashboards
+#     paths: /var/lib/grafana/dashboards
 #     schedule: "*-*-* 03:00:00"
 #     exclude:
 #       - "*.tmp"
 #       - "cache/*"
 #     prune: true
-#     restore_target: /var/lib/grafana/dashboards  # Default restore location
+#     restore_target: /var/lib/grafana/dashboards
 #
 # Example multiple directories:
 #   configs:
-#     src:
+#     paths:
 #       - /etc/postgresql
 #       - /etc/caddy
 #     schedule: "*-*-* 04:00:00"
-#     restore_target: /etc  # Restore to original locations
+#     restore_target: /etc
 #
 # Example with copies:
 #   n8n_database:
 #     stdin: true
-#     stdin_cmd: "sudo -u postgres pg_dump -Fc n8n"
+#     stdin_command: "sudo -u postgres pg_dump -Fc n8n"
 #     stdin_filename: "n8n.dump"
 #     schedule: "*-*-* 02:30:00"
 #     prune: true
 #     copies:
 #       - backend: offsite_b2
 #         path: "n150-01"
-#         repo_password: "{{ restic_b2_repo_password_secret }}"
+#         password: "{{ restic_b2_repo_password_secret }}"
 #         schedule: "*-*-* 05:30:00"
-

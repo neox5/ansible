@@ -16,13 +16,12 @@ echo ""
 {% if item.value.stdin | default(false) %}
 # stdin backup - filter by stdin filename
 {{ restic_install_path }}/restic snapshots --path "/{{ item.value.stdin_filename }}" "$@"
+{% elif item.value.paths is string %}
+# directory backup - single path
+{{ restic_install_path }}/restic snapshots --path "{{ item.value.paths }}" "$@"
 {% else %}
-# directory backup - filter by source path(s)
-{% if item.value.src is string %}
-{{ restic_install_path }}/restic snapshots --path "{{ item.value.src }}" "$@"
-{% else %}
-{{ restic_install_path }}/restic snapshots {% for path in item.value.src %}--path "{{ path }}" {% endfor %}"$@"
-{% endif %}
+# directory backup - multiple paths
+{{ restic_install_path }}/restic snapshots {% for path in item.value.paths %}--path "{{ path }}" {% endfor %}"$@"
 {% endif %}
 
 LIST_EXIT_CODE=$?

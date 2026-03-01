@@ -14,7 +14,7 @@ export RESTIC_REPOSITORY="s3:{{ job.backend.endpoint }}/{{ job.backend.bucket }}
 export RESTIC_REPOSITORY="s3:{{ job.backend.endpoint }}/{{ job.backend.bucket }}"
 {% endif %}
 {% endif %}
-export RESTIC_PASSWORD="{{ job.copy.repo_password }}"
+export RESTIC_PASSWORD="{{ job.copy.password }}"
 
 # Backend credentials
 {% if job.backend.type == 's3_compatible' %}

@@ -23,14 +23,13 @@ restic_backups:
 
   n8n_database:
     stdin: true
-    stdin_cmd: "sudo -u postgres pg_dump -U postgres -Fc {{ n8n_db_name }}"
+    stdin_command: "sudo -u postgres pg_dump -U postgres -Fc {{ n8n_db_name }}"
     stdin_filename: "n8n_database.dump"
     schedule: "*-*-* 02:30:00" # Daily at 2:30 AM (before data backup)
     keep_daily: 7
     keep_weekly: 4
     keep_monthly: 3
     prune: true
-
 # ============================================================================
 # Notes:
 # - Database backup runs before data backup (restore order matters)

@@ -22,12 +22,12 @@ restic_backups:
     copies:
       - backend: offsite_b2
         path: "n150-01"
-        repo_password: "{{ restic_b2_repo_password_secret }}"
+        password: "{{ restic_b2_repo_password_secret }}"
         schedule: "*-*-* 05:00:00"
 
   n8n_database:
     stdin: true
-    stdin_cmd: "sudo -u postgres pg_dump -U postgres -Fc {{ n8n_db_name }}"
+    stdin_command: "sudo -u postgres pg_dump -U postgres -Fc {{ n8n_db_name }}"
     stdin_filename: "n8n_database.dump"
     schedule: "*-*-* 02:30:00"
     keep_daily: 7
@@ -37,7 +37,7 @@ restic_backups:
     copies:
       - backend: offsite_b2
         path: "n150-01"
-        repo_password: "{{ restic_b2_repo_password_secret }}"
+        password: "{{ restic_b2_repo_password_secret }}"
         schedule: "*-*-* 05:30:00"
 # ============================================================================
 # Notes:
