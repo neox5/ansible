@@ -85,13 +85,17 @@
     # Backup configuration validation
     # ═══════════════════════════════════════════════════════════
 
-    - name: Verify Restic repository exists
+    - name: Verify local restic repository is accessible
       ansible.builtin.command:
-        cmd: restic -r {{ restic_repository }} cat config
-      environment:
-        RESTIC_PASSWORD_FILE: "{{ restic_password_file }}"
+        cmd: "bash -c 'source {{ restic_script_dir }}/env-local.sh && {{ restic_install_path }}/restic snapshots --json'"
       changed_when: false
-      when: restic_repository is defined
+      no_log: true
+
+    - name: Verify nightly_backup timer is active
+      ansible.builtin.systemd_service:
+        name: restic-nightly_backup.timer
+      register: backup_timer
+      failed_when: backup_timer.status.ActiveState != "active"
 
     # ═══════════════════════════════════════════════════════════
     # Validation summary

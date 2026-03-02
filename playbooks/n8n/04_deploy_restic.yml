@@ -1,0 +1,42 @@
+---
+- name: "Stage 5: Deploy Restic Backup"
+  hosts: n8n
+  become: true
+
+  pre_tasks:
+    - name: Verify n8n is running (preflight)
+      ansible.builtin.systemd_service:
+        name: n8n
+      register: n8n_status
+      failed_when: n8n_status.status.ActiveState != "active"
+
+  tasks:
+    - name: Display stage information
+      ansible.builtin.debug:
+        msg: "Deploying Restic backup automation for n8n..."
+
+    - name: Deploy restic role
+      ansible.builtin.include_role:
+        name: restic
+
+    - name: Verify local repository is accessible
+      ansible.builtin.command:
+        cmd: "bash -c 'source {{ restic_script_dir }}/env-local.sh && {{ restic_install_path }}/restic snapshots --json'"
+      changed_when: false
+      no_log: true
+
+    - name: Verify nightly_backup timer is active
+      ansible.builtin.systemd_service:
+        name: restic-nightly_backup.timer
+      register: backup_timer
+      failed_when: backup_timer.status.ActiveState != "active"
+
+    - name: Display restic deployment summary
+      ansible.builtin.debug:
+        msg:
+          - "✓ Restic deployment complete"
+          - "Sources: n8n_database, n8n_data"
+          - "Local repo: /var/backups/restic"
+          - "Nightly backup: 02:30 UTC"
+          - "Offsite copy: 05:00 UTC (B2)"
+          - "Status: Timers active"
