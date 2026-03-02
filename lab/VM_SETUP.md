@@ -4,6 +4,24 @@ Minimal Debian/Fedora VM for Ansible testing.
 
 ---
 
+## Host Prerequisites
+
+Allow QEMU to bind privileged ports (required for port forwarding on ports 80/443):
+
+```bash
+# Set capability
+sudo setcap cap_net_bind_service=+ep /usr/bin/qemu-system-x86_64
+
+# Verify
+getcap /usr/bin/qemu-system-x86_64
+# Expected: /usr/bin/qemu-system-x86_64 cap_net_bind_service=ep
+
+# Undo
+sudo setcap -r /usr/bin/qemu-system-x86_64
+```
+
+---
+
 ## Create Base Image
 
 1. Download Debian 13 Trixie Server ISO: https://www.debian.org/distrib/
