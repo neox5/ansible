@@ -8,19 +8,19 @@
 
 - name: Assert Debian 13 or later
   ansible.builtin.assert:
+    quiet: true
     that:
       - ansible_distribution == "Debian"
       - ansible_distribution_major_version | int >= 13
     fail_msg: "This role requires Debian 13 or later"
-    success_msg: "Debian {{ ansible_distribution_major_version }} detected"
 
 - name: Assert required variables are set
   ansible.builtin.assert:
+    quiet: true
     that:
       - quadlet_name | length > 0
       - quadlet_image | length > 0
     fail_msg: "quadlet_name and quadlet_image must be set by calling role"
-    success_msg: "Required variables validated"
 
 - name: Set service name variable
   ansible.builtin.set_fact:

@@ -8,55 +8,58 @@
 
 - name: Assert Debian 13 or later
   ansible.builtin.assert:
+    quiet: true
     that:
       - ansible_distribution == "Debian"
       - ansible_distribution_major_version | int >= 13
     fail_msg: "This role requires Debian 13 or later"
-    success_msg: "Debian {{ ansible_distribution_major_version }} detected"
 
 - name: Assert sources are configured
   ansible.builtin.assert:
+    quiet: true
     that:
       - restic_sources | length > 0
     fail_msg: "restic_sources must define at least one source"
 
 - name: Assert repositories are configured
   ansible.builtin.assert:
+    quiet: true
     that:
       - restic_repos | length > 0
     fail_msg: "restic_repos must define at least one repository"
 
 - name: Assert jobs are configured
   ansible.builtin.assert:
+    quiet: true
     that:
       - restic_jobs | length > 0
     fail_msg: "restic_jobs must define at least one job"
 
 - name: Assert exactly one primary repository
   ansible.builtin.assert:
+    quiet: true
     that:
       - restic_repos | dict2items | selectattr('value.primary', 'defined') | selectattr('value.primary', 'equalto', true) | list | length == 1
     fail_msg: "Exactly one repository must have primary: true"
-    success_msg: "Primary repository validated"
 
 - name: Validate source configurations
   ansible.builtin.assert:
+    quiet: true
     that:
       - (item.value.stdin | default(false) and item.value.stdin_command is defined and item.value.stdin_filename is defined) or
         (not (item.value.stdin | default(false)) and item.value.paths is defined)
     fail_msg: "Source '{{ item.key }}' must have either (stdin + stdin_command + stdin_filename) or (paths)"
-    success_msg: "Source '{{ item.key }}' configuration valid"
   loop: "{{ restic_sources | dict2items }}"
   loop_control:
     label: "{{ item.key }}"
 
 - name: Validate repository passwords
   ansible.builtin.assert:
+    quiet: true
     that:
       - item.value.password is defined
       - item.value.password | length > 0
     fail_msg: "Repository '{{ item.key }}' must have password set"
-    success_msg: "Repository '{{ item.key }}' password validated"
   loop: "{{ restic_repos | dict2items }}"
   loop_control:
     label: "{{ item.key }}"
@@ -64,49 +67,50 @@
 
 - name: Validate repository backends have exactly one type
   ansible.builtin.assert:
+    quiet: true
     that:
       - item.value.backend is defined
       - item.value.backend | length == 1
     fail_msg: "Repository '{{ item.key }}' backend must have exactly one type"
-    success_msg: "Repository '{{ item.key }}' backend type validated"
   loop: "{{ restic_repos | dict2items }}"
   loop_control:
     label: "{{ item.key }}"
 
 - name: Validate job types
   ansible.builtin.assert:
+    quiet: true
     that:
       - item.value.type is defined
       - item.value.type in ['backup', 'copy']
     fail_msg: "Job '{{ item.key }}' type must be 'backup' or 'copy'"
-    success_msg: "Job '{{ item.key }}' type validated"
   loop: "{{ restic_jobs | dict2items }}"
   loop_control:
     label: "{{ item.key }}"
 
 - name: Validate job source references
   ansible.builtin.assert:
+    quiet: true
     that:
       - item.1 in restic_sources
     fail_msg: "Job '{{ item.0.key }}' references undefined source '{{ item.1 }}'"
-    success_msg: "Job '{{ item.0.key }}' source '{{ item.1 }}' validated"
   loop: "{{ restic_jobs | dict2items | subelements('value.sources') }}"
   loop_control:
     label: "{{ item.0.key }}-{{ item.1 }}"
 
 - name: Validate backup job repo references
   ansible.builtin.assert:
+    quiet: true
     that:
       - item.value.repo is defined
       - item.value.repo in restic_repos
     fail_msg: "Backup job '{{ item.key }}' references undefined repository '{{ item.value.repo | default('undefined') }}'"
-    success_msg: "Backup job '{{ item.key }}' repo validated"
   loop: "{{ restic_jobs | dict2items | selectattr('value.type', 'equalto', 'backup') | list }}"
   loop_control:
     label: "{{ item.key }}"
 
 - name: Validate copy job repo references
   ansible.builtin.assert:
+    quiet: true
     that:
       - item.value.from is defined
       - item.value.from in restic_repos
@@ -114,17 +118,16 @@
       - item.value.to in restic_repos
       - item.value.from != item.value.to
     fail_msg: "Copy job '{{ item.key }}' must have valid and different 'from' and 'to' repositories"
-    success_msg: "Copy job '{{ item.key }}' repos validated"
   loop: "{{ restic_jobs | dict2items | selectattr('value.type', 'equalto', 'copy') | list }}"
   loop_control:
     label: "{{ item.key }}"
 
 - name: Validate on_failure values
   ansible.builtin.assert:
+    quiet: true
     that:
       - item.value.on_failure | default('continue') in ['continue', 'stop']
     fail_msg: "Job '{{ item.key }}' on_failure must be 'continue' or 'stop'"
-    success_msg: "Job '{{ item.key }}' on_failure validated"
   loop: "{{ restic_jobs | dict2items }}"
   loop_control:
     label: "{{ item.key }}"

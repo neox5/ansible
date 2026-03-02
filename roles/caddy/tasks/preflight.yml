@@ -8,20 +8,22 @@
 
 - name: Assert Debian 13 or later
   ansible.builtin.assert:
+    quiet: true
     that:
       - ansible_distribution == "Debian"
       - ansible_distribution_major_version | int >= 13
     fail_msg: "This role requires Debian 13 or later"
-    success_msg: "Debian {{ ansible_distribution_major_version }} detected"
 
 - name: Assert caddy_email is configured
   ansible.builtin.assert:
+    quiet: true
     that:
       - caddy_email | length > 0
     fail_msg: "caddy_email must be configured for Let's Encrypt"
 
 - name: Assert caddy_sites is not empty
   ansible.builtin.assert:
+    quiet: true
     that:
       - caddy_sites | length > 0
     fail_msg: "caddy_sites must contain at least one site configuration"

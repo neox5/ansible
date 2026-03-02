@@ -8,20 +8,24 @@
 
 - name: Assert Debian 13 or later
   ansible.builtin.assert:
+    quiet: true
     that:
       - ansible_distribution == "Debian"
       - ansible_distribution_major_version | int >= 13
     fail_msg: "This role requires Debian 13 or later"
-    success_msg: "Debian {{ ansible_distribution_major_version }} detected"
 
 - name: Assert PostgreSQL version is configured
   ansible.builtin.assert:
+    quiet: true
     that:
       - postgresql_version is defined
       - postgresql_version | int > 0
     fail_msg: "postgresql_version must be configured"
-    success_msg: "PostgreSQL {{ postgresql_version }} configuration detected"
 
-- name: Display role information
-  ansible.builtin.debug:
-    msg: "PostgreSQL role - Debian {{ ansible_distribution_major_version }}"
+- name: Assert databases and users are configured
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - postgresql_databases | length > 0
+      - postgresql_users | length > 0
+    fail_msg: "postgresql_databases and postgresql_users must each contain at least one entry"
