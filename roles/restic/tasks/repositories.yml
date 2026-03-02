@@ -47,9 +47,10 @@
 - name: Initialize non-primary repositories with copy-chunker-params
   ansible.builtin.command:
     cmd: >
-      bash -c 'source {{ restic_script_dir }}/env-{{ item.item.key }}.sh &&
+      bash -c '
       source {{ restic_script_dir }}/env-{{ restic_primary_repo.key }}.sh &&
-      RESTIC_FROM_REPOSITORY=$RESTIC_REPOSITORY RESTIC_FROM_PASSWORD=$RESTIC_PASSWORD
+      export RESTIC_FROM_REPOSITORY="$RESTIC_REPOSITORY" &&
+      export RESTIC_FROM_PASSWORD="$RESTIC_PASSWORD" &&
       source {{ restic_script_dir }}/env-{{ item.item.key }}.sh &&
       {{ restic_install_path }}/restic init --from-repo "$RESTIC_FROM_REPOSITORY" --copy-chunker-params'
   when:

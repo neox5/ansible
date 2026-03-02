@@ -19,12 +19,6 @@
       ansible.builtin.include_role:
         name: restic
 
-    - name: Verify local repository is accessible
-      ansible.builtin.command:
-        cmd: "bash -c 'source {{ restic_script_dir }}/env-local.sh && {{ restic_install_path }}/restic snapshots --json'"
-      changed_when: false
-      no_log: true
-
     - name: Verify nightly_backup timer is active
       ansible.builtin.systemd_service:
         name: restic-nightly_backup.timer
