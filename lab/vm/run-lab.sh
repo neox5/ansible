@@ -67,7 +67,7 @@ Examples:
 
 VM Access:
   SSH: ssh -p 2222 ansible@localhost
-  HTTPS: https://n8n.lab.local (add to /etc/hosts: 127.0.0.1 n8n.lab.local)
+  HTTPS: https://n8n.zion.local (add to /etc/hosts: 127.0.0.1 n8n.zion.local)
   Shutdown: sudo poweroff (from inside VM)
   Force kill: Ctrl+C (may corrupt state)
 EOF
@@ -100,7 +100,7 @@ run_vm() {
 
   echo "[vm] starting ($DISTRO)"
   echo "[vm] ssh: ssh -p 2222 ansible@localhost"
-  echo "[vm] https: https://n8n.lab.local"
+  echo "[vm] https: https://n8n.zion.local"
   echo "[vm] shutdown: sudo poweroff (from inside VM)"
 
   qemu-system-x86_64 \
