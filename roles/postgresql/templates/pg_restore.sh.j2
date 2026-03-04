@@ -1,115 +1,135 @@
 #!/bin/bash
 # {{ ansible_managed }}
 # PostgreSQL Restore Script
-# Location: /opt/postgresql/pg_restore.sh
-# Part of postgresql role - shares inventory variables
+# Location: {{ postgresql_scripts_dir }}/pg_restore.sh
+# Part of postgresql role - shares inventory variables as defaults
 
 set -euo pipefail
 
-# Configuration from Ansible inventory
-PG_USER="{{ postgresql_admin_user }}"
-PG_PORT="{{ postgresql_port }}"
+# ---------------------------------------------------------------------------
+# Defaults (from Ansible inventory - overridable via environment variables)
+# ---------------------------------------------------------------------------
+PG_USER="${PGUSER:-{{ postgresql_admin_user }}}"
+PG_PORT="${PGPORT:-{{ postgresql_port }}}"
 
-# Script parameters
-SKIP_CONFIRM=false
-BACKUP_FILE=""
+# ---------------------------------------------------------------------------
+# Argument parsing
+# ---------------------------------------------------------------------------
 DATABASE=""
+BACKUP_FILE=""
+SKIP_CONFIRM=false
 
-# Parse arguments
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [options] <database> --dump <file>
+
+Restore a PostgreSQL database from a pg_dump backup.
+
+Arguments:
+    database         Target database name
+
+Options:
+    --dump, --file   Path to the backup dump file (required)
+    -y, --yes        Skip confirmation prompt (for automation)
+    -h, --help       Show this help message and exit
+
+Environment Variables (override compiled-in defaults):
+    PGUSER           PostgreSQL user  (default: $PG_USER)
+    PGPORT           PostgreSQL port  (default: $PG_PORT)
+
+Notes:
+    - Target database must already exist
+    - This will DROP and recreate all objects in the database
+    - Use with caution on production systems
+
+Examples:
+    $(basename "$0") n8n --dump {{ postgresql_backup_dir }}/n150-01-n8n-20260215T120000.dump
+    $(basename "$0") n8n --dump /tmp/backup.dump --yes
+    PGUSER=postgres $(basename "$0") n8n --dump /tmp/backup.dump
+EOF
+}
+
 while [[ $# -gt 0 ]]; do
     case $1 in
+        -h|--help)
+            usage
+            exit 0
+            ;;
         -y|--yes)
             SKIP_CONFIRM=true
             shift
             ;;
+        --dump|--file)
+            if [[ -z "${2:-}" ]]; then
+                echo "Error: $1 requires a file path argument" >&2
+                usage >&2
+                exit 1
+            fi
+            BACKUP_FILE="$2"
+            shift 2
+            ;;
+        -*)
+            echo "Error: Unknown option: $1" >&2
+            usage >&2
+            exit 1
+            ;;
         *)
-            if [[ -z "$BACKUP_FILE" ]]; then
-                BACKUP_FILE="$1"
-            elif [[ -z "$DATABASE" ]]; then
+            if [[ -z "$DATABASE" ]]; then
                 DATABASE="$1"
+            else
+                echo "Error: Unexpected argument: $1" >&2
+                usage >&2
+                exit 1
             fi
             shift
             ;;
     esac
 done
 
-usage() {
-    cat <<EOF
-Usage: $(basename "$0") [-y|--yes] <backup_file> [database]
-
-Restore a PostgreSQL database from a pg_dump backup.
-
-Arguments:
-    backup_file    Path to the backup dump file
-    database       Target database name (optional, extracted from filename if not provided)
-
-Options:
-    -y, --yes      Skip confirmation prompt (for automation)
-
-Examples:
-    $(basename "$0") /var/backups/postgresql/n150-01-n8n-20260215T120000.dump
-    $(basename "$0") /tmp/backup.dump n8n
-    $(basename "$0") -y /tmp/backup.dump testdb
-
-Notes:
-    - Target database must already exist
-    - This will DROP and recreate all objects in the database
-    - Use with caution on production systems
-EOF
+# ---------------------------------------------------------------------------
+# Validate required arguments
+# ---------------------------------------------------------------------------
+if [[ -z "$DATABASE" ]] || [[ -z "$BACKUP_FILE" ]]; then
+    echo "Error: Both <database> and --dump <file> are required" >&2
+    usage >&2
     exit 1
-}
-
-# Validate backup file
-if [[ -z "$BACKUP_FILE" ]]; then
-    echo "Error: Backup file path required"
-    usage
 fi
 
 if [[ ! -f "$BACKUP_FILE" ]]; then
-    echo "Error: Backup file not found: $BACKUP_FILE"
+    echo "Error: Backup file not found: $BACKUP_FILE" >&2
     exit 1
 fi
 
-# Extract database name from filename if not provided
-if [[ -z "$DATABASE" ]]; then
-    # Filename pattern: hostname-database-timestamp.dump
-    BASENAME=$(basename "$BACKUP_FILE" .dump)
-    # Extract middle component (database name)
-    DATABASE=$(echo "$BASENAME" | cut -d'-' -f2)
-    
-    if [[ -z "$DATABASE" ]]; then
-        echo "Error: Could not extract database name from filename"
-        echo "Please provide database name as second argument"
-        usage
-    fi
-    
-    echo "Extracted database name from filename: $DATABASE"
-fi
-
-# Display restore information
+# ---------------------------------------------------------------------------
+# Restore
+# ---------------------------------------------------------------------------
 BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
 echo "=== PostgreSQL Restore ==="
-echo "Backup file: $BACKUP_FILE"
-echo "Backup size: $BACKUP_SIZE"
+echo "Backup file:     $BACKUP_FILE"
+echo "Backup size:     $BACKUP_SIZE"
 echo "Target database: $DATABASE"
 echo ""
 
 # Verify database exists
 echo "Verifying target database exists..."
-if ! psql --username="$PG_USER" --port="$PG_PORT" --dbname=postgres \
-    --tuples-only --no-align \
+if ! psql \
+    --username="$PG_USER" \
+    --port="$PG_PORT" \
+    --dbname=postgres \
+    --tuples-only \
+    --no-align \
     --command="SELECT 1 FROM pg_database WHERE datname='$DATABASE'" | grep -q 1; then
-    echo "Error: Database '$DATABASE' does not exist"
-    echo "Create it first with: sudo -u postgres createdb $DATABASE"
+    echo "Error: Database '$DATABASE' does not exist" >&2
+    echo "Create it first with: sudo -u postgres createdb $DATABASE" >&2
     exit 1
 fi
 
 echo "Database '$DATABASE' found"
 echo ""
 
-# Confirm restore operation
+# Confirm
 if [[ "$SKIP_CONFIRM" == "false" ]]; then
-    read -p "WARNING: This will overwrite data in database '$DATABASE'. Continue? (yes/no): " CONFIRM
+    read -r -p "WARNING: This will overwrite data in '$DATABASE'. Continue? (yes/no): " CONFIRM
     if [[ "$CONFIRM" != "yes" ]]; then
         echo "Restore cancelled"
         exit 0
@@ -128,14 +148,14 @@ if pg_restore \
     --clean \
     --if-exists \
     --verbose \
-    "$BACKUP_FILE" 2>&1 | grep -v "^$"; then  # Filter empty lines
-    
+    "$BACKUP_FILE" 2>&1 | grep -v "^$"; then
+
     echo ""
     echo "=== Restore Complete ==="
     echo "Database '$DATABASE' restored from: $BACKUP_FILE"
 else
     RESTORE_EXIT=$?
     echo ""
-    echo "Error: Restore failed with exit code $RESTORE_EXIT"
+    echo "Error: Restore failed with exit code $RESTORE_EXIT" >&2
     exit $RESTORE_EXIT
 fi

@@ -1,69 +1,116 @@
 #!/bin/bash
 # {{ ansible_managed }}
 # PostgreSQL Backup Script
-# Location: /opt/postgresql/pg_backup.sh
-# Part of postgresql role - shares inventory variables
+# Location: {{ postgresql_scripts_dir }}/pg_backup.sh
+# Part of postgresql role - shares inventory variables as defaults
 
 set -euo pipefail
 
-# Configuration from Ansible inventory
-BACKUP_DIR="{{ postgresql_backup_dir }}"
-RETENTION_DAYS="{{ postgresql_backup_retention_days }}"
-FORMAT="{{ postgresql_backup_format }}"
-PG_USER="{{ postgresql_admin_user }}"
-PG_PORT="{{ postgresql_port }}"
-
-# Script parameters
-DATABASE="${1:-}"
-TIMESTAMP=$(date +%Y%m%dT%H%M%S)
+# ---------------------------------------------------------------------------
+# Defaults (from Ansible inventory - overridable via environment variables)
+# ---------------------------------------------------------------------------
+PG_USER="${PGUSER:-{{ postgresql_admin_user }}}"
+PG_PORT="${PGPORT:-{{ postgresql_port }}}"
+BACKUP_DIR="${BACKUP_DIR:-{{ postgresql_backup_dir }}}"
+RETENTION_DAYS="${RETENTION_DAYS:-{{ postgresql_backup_retention_days }}}"
+FORMAT="${FORMAT:-{{ postgresql_backup_format }}}"
 HOSTNAME="{{ inventory_hostname }}"
+
+# ---------------------------------------------------------------------------
+# Argument parsing
+# ---------------------------------------------------------------------------
+DATABASE=""
+SKIP_HELP=false
 
 usage() {
     cat <<EOF
-Usage: $(basename "$0") <database>
+Usage: $(basename "$0") [options] [<database>]
 
 Backup a PostgreSQL database using pg_dump.
 
 Arguments:
     database    Name of the database to backup
+                If omitted, lists available databases
 
-Environment Variables:
-    BACKUP_DIR           Backup directory (default: $BACKUP_DIR)
-    RETENTION_DAYS       Days to keep backups (default: $RETENTION_DAYS)
+Options:
+    -h, --help  Show this help message and exit
+
+Environment Variables (override compiled-in defaults):
+    PGUSER          PostgreSQL user       (default: $PG_USER)
+    PGPORT          PostgreSQL port       (default: $PG_PORT)
+    BACKUP_DIR      Backup directory      (default: $BACKUP_DIR)
+    RETENTION_DAYS  Days to keep backups  (default: $RETENTION_DAYS)
+    FORMAT          Dump format           (default: $FORMAT)
+
+Backup file naming: ${HOSTNAME}-<database>-<timestamp>.dump
 
 Examples:
     $(basename "$0") n8n
     $(basename "$0") postgres
-
-Backup file naming: ${HOSTNAME}-<database>-<timestamp>.dump
+    BACKUP_DIR=/tmp $(basename "$0") n8n
 EOF
-    exit 1
 }
 
-# Validate arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        -*)
+            echo "Error: Unknown option: $1" >&2
+            usage >&2
+            exit 1
+            ;;
+        *)
+            if [[ -z "$DATABASE" ]]; then
+                DATABASE="$1"
+            else
+                echo "Error: Unexpected argument: $1" >&2
+                usage >&2
+                exit 1
+            fi
+            shift
+            ;;
+    esac
+done
+
+# ---------------------------------------------------------------------------
+# No database given - list available databases
+# ---------------------------------------------------------------------------
 if [[ -z "$DATABASE" ]]; then
-    echo "Error: Database name required"
-    usage
+    echo "Available databases:"
+    psql \
+        --username="$PG_USER" \
+        --port="$PG_PORT" \
+        --tuples-only \
+        --no-align \
+        --command="SELECT datname FROM pg_database WHERE NOT datistemplate ORDER BY datname;"
+    echo ""
+    echo "Usage: $(basename "$0") <database>"
+    exit 0
 fi
+
+# ---------------------------------------------------------------------------
+# Backup
+# ---------------------------------------------------------------------------
 
 # Ensure backup directory exists
 if [[ ! -d "$BACKUP_DIR" ]]; then
     echo "Creating backup directory: $BACKUP_DIR"
     mkdir -p "$BACKUP_DIR"
-    chown postgres:postgres "$BACKUP_DIR"
     chmod 700 "$BACKUP_DIR"
 fi
 
-# Generate backup filename
+TIMESTAMP=$(date +%Y%m%dT%H%M%S)
 BACKUP_FILE="${BACKUP_DIR}/${HOSTNAME}-${DATABASE}-${TIMESTAMP}.dump"
 
 echo "=== PostgreSQL Backup ==="
-echo "Database: $DATABASE"
-echo "Format: $FORMAT"
-echo "Target: $BACKUP_FILE"
+echo "Database:  $DATABASE"
+echo "Format:    $FORMAT"
+echo "Target:    $BACKUP_FILE"
 echo ""
 
-# Perform backup
 echo "Starting backup..."
 if pg_dump \
     --username="$PG_USER" \
@@ -71,27 +118,27 @@ if pg_dump \
     --format="$FORMAT" \
     --file="$BACKUP_FILE" \
     "$DATABASE"; then
-    
-    echo "Backup completed successfully"
-    
-    # Display backup information
+
     BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
+    echo "Backup completed successfully"
     echo "Backup size: $BACKUP_SIZE"
     echo "Backup file: $BACKUP_FILE"
 else
-    echo "Error: Backup failed"
+    echo "Error: Backup failed" >&2
     exit 1
 fi
 
-# Cleanup old backups
+# ---------------------------------------------------------------------------
+# Retention cleanup
+# ---------------------------------------------------------------------------
 echo ""
-echo "Cleaning up old backups (older than ${RETENTION_DAYS} days)..."
+echo "Cleaning up backups older than ${RETENTION_DAYS} days..."
 DELETED_COUNT=0
 while IFS= read -r old_backup; do
     echo "Deleting: $old_backup"
     rm -f "$old_backup"
     ((DELETED_COUNT++))
-done < <(find "$BACKUP_DIR" -name "${HOSTNAME}-${DATABASE}-*.dump" -type f -mtime +${RETENTION_DAYS})
+done < <(find "$BACKUP_DIR" -name "${HOSTNAME}-${DATABASE}-*.dump" -type f -mtime +"${RETENTION_DAYS}")
 
 if [[ $DELETED_COUNT -gt 0 ]]; then
     echo "Removed $DELETED_COUNT old backup(s)"
