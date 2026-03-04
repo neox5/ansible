@@ -6,7 +6,7 @@ After=network-online.target
 [Service]
 Type=oneshot
 User={{ restic_user }}
-ExecStart={{ restic_script_dir }}/check-{{ item.key }}.sh
+ExecStart={{ restic_script_dir }}/check.sh {{ item.key }}
 
 [Install]
 WantedBy=multi-user.target

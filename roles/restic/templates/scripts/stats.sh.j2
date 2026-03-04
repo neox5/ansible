@@ -1,0 +1,26 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# Restic repository stats
+# Usage: stats.sh <repo>
+
+set -euo pipefail
+
+source {{ restic_script_dir }}/lib.sh
+
+REPO="${1:-}"
+
+if [[ -z "$REPO" ]]; then
+  echo "Usage: $(basename "$0") <repo>"
+  echo ""
+  echo "Repositories:"
+{% for repo_name in restic_repos %}
+  echo "  {{ repo_name }}"
+{% endfor %}
+  exit 1
+fi
+
+echo "=== Restic Stats: ${REPO} ==="
+
+env $(restic_env "$REPO") \
+  {{ restic_install_path }}/restic stats \
+  "${@:2}"

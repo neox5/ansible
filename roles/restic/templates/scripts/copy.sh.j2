@@ -1,105 +1,77 @@
 #!/bin/bash
 # {{ ansible_managed }}
-# Restic copy job: {{ item.key }}
+# Restic copy between repositories
+# Usage: copy.sh --from <repo> --to <repo> [--src <source>]
 
 set -euo pipefail
 
-# Destination repository
-source {{ restic_script_dir }}/env-{{ item.value.to }}.sh
+source {{ restic_script_dir }}/lib.sh
 
-# Source repository (as FROM variables)
-RESTIC_FROM_REPOSITORY="$RESTIC_REPOSITORY"
-RESTIC_FROM_PASSWORD="$RESTIC_PASSWORD"
-source {{ restic_script_dir }}/env-{{ item.value.to }}.sh
-export RESTIC_FROM_REPOSITORY
-export RESTIC_FROM_PASSWORD
+FROM_REPO=""
+TO_REPO=""
+SOURCE_FILTER=""
 
-OVERALL_EXIT=0
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --from) FROM_REPO="$2"; shift 2 ;;
+    --to)   TO_REPO="$2"; shift 2 ;;
+    --src)  SOURCE_FILTER="$2"; shift 2 ;;
+    -*)     echo "Unknown option: $1" >&2; exit 1 ;;
+    *)      echo "Unknown argument: $1" >&2; exit 1 ;;
+  esac
+done
 
-{% for source_name in item.value.sources %}
-{% set source = restic_sources[source_name] %}
-{% set repo = restic_repos[item.value.to] %}
-{% set retention = repo.retention | default(restic_retention) %}
-# --- Source: {{ source_name }} ---
-echo "=== Copy: {{ source_name }} {{ item.value.from }} → {{ item.value.to }} ==="
-echo "Started: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-
-COPY_LOG="{{ restic_log_dir }}/{{ item.key }}/{{ source_name }}-copy.log"
-FORGET_LOG="{{ restic_log_dir }}/{{ item.key }}/{{ source_name }}-forget.log"
-
-COPY_EXIT=0
-{{ restic_install_path }}/restic copy \
-  --from-repo "$RESTIC_FROM_REPOSITORY" \
-{% if source.stdin | default(false) %}
-  --path "/{{ source.stdin_filename }}" \
-{% elif source.paths is string %}
-  --path "{{ source.paths }}" \
-{% else %}
-{% for path in source.paths %}
-  --path "{{ path }}" \
+if [[ -z "$FROM_REPO" ]] || [[ -z "$TO_REPO" ]]; then
+  echo "Usage: $(basename "$0") --from <repo> --to <repo> [--src <source>]"
+  echo ""
+  echo "Repositories:"
+{% for repo_name in restic_repos %}
+  echo "  {{ repo_name }}"
 {% endfor %}
-{% endif %}
-  "$@" 2>&1 | tee -a "$COPY_LOG" || COPY_EXIT=$?
-
-if [ $COPY_EXIT -ne 0 ]; then
-  echo "Copy FAILED: {{ source_name }} (exit code $COPY_EXIT)" | tee -a "$COPY_LOG"
-  OVERALL_EXIT=1
-{% if item.value.on_failure | default('continue') == 'stop' %}
+  echo ""
+  echo "Sources (optional filter):"
+{% for source_name in restic_sources %}
+  echo "  {{ source_name }}"
+{% endfor %}
   exit 1
-{% endif %}
-else
-  echo "Copy SUCCESS: {{ source_name }}" | tee -a "$COPY_LOG"
-
-  FORGET_EXIT=0
-  {{ restic_install_path }}/restic forget \
-{% if source.stdin | default(false) %}
-    --path "/{{ source.stdin_filename }}" \
-{% elif source.paths is string %}
-    --path "{{ source.paths }}" \
-{% else %}
-{% for path in source.paths %}
-    --path "{{ path }}" \
-{% endfor %}
-{% endif %}
-{% if retention.keep_last is defined and retention.keep_last %}
-    --keep-last {{ retention.keep_last }} \
-{% endif %}
-{% if retention.keep_hourly is defined and retention.keep_hourly %}
-    --keep-hourly {{ retention.keep_hourly }} \
-{% endif %}
-{% if retention.keep_daily is defined and retention.keep_daily %}
-    --keep-daily {{ retention.keep_daily }} \
-{% endif %}
-{% if retention.keep_weekly is defined and retention.keep_weekly %}
-    --keep-weekly {{ retention.keep_weekly }} \
-{% endif %}
-{% if retention.keep_monthly is defined and retention.keep_monthly %}
-    --keep-monthly {{ retention.keep_monthly }} \
-{% endif %}
-{% if retention.keep_yearly is defined and retention.keep_yearly %}
-    --keep-yearly {{ retention.keep_yearly }} \
-{% endif %}
-{% if retention.keep_within is defined and retention.keep_within %}
-    --keep-within {{ retention.keep_within }} \
-{% endif %}
-{% if retention.prune | default(false) %}
-    --prune \
-{% endif %}
-    2>&1 | tee -a "$FORGET_LOG" || FORGET_EXIT=$?
-
-  if [ $FORGET_EXIT -ne 0 ]; then
-    echo "Forget FAILED: {{ source_name }} (exit code $FORGET_EXIT)" | tee -a "$FORGET_LOG"
-    OVERALL_EXIT=1
-{% if item.value.on_failure | default('continue') == 'stop' %}
-    exit 1
-{% endif %}
-  else
-    echo "Forget SUCCESS: {{ source_name }}" | tee -a "$FORGET_LOG"
-  fi
 fi
 
-echo "Completed: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-echo ""
-{% endfor %}
+echo "=== Restic Copy: ${FROM_REPO} → ${TO_REPO} ==="
+echo "Started: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
 
-exit $OVERALL_EXIT
+COPY_LOG="{{ restic_log_dir }}/copy-${FROM_REPO}-${TO_REPO}.log"
+mkdir -p "$(dirname "$COPY_LOG")"
+
+COPY_CMD=(env $(restic_from_env "$FROM_REPO") $(restic_env "$TO_REPO") \
+  {{ restic_install_path }}/restic copy)
+
+if [[ -n "$SOURCE_FILTER" ]]; then
+  case "$SOURCE_FILTER" in
+{% for source_name, source in restic_sources.items() %}
+    {{ source_name }})
+{% if source.stdin | default(false) %}
+      COPY_CMD+=(--path "/{{ source.stdin_filename }}")
+{% elif source.paths is string %}
+      COPY_CMD+=(--path "{{ source.paths }}")
+{% else %}
+{% for path in source.paths %}
+      COPY_CMD+=(--path "{{ path }}")
+{% endfor %}
+{% endif %}
+      ;;
+{% endfor %}
+    *)
+      echo "Unknown source: ${SOURCE_FILTER}" >&2; exit 1 ;;
+  esac
+fi
+
+COPY_EXIT=0
+"${COPY_CMD[@]}" 2>&1 | tee -a "$COPY_LOG" || COPY_EXIT=$?
+
+if [[ $COPY_EXIT -ne 0 ]]; then
+  echo "Copy FAILED (exit ${COPY_EXIT})" | tee -a "$COPY_LOG"
+  exit $COPY_EXIT
+fi
+
+echo "Copy SUCCESS" | tee -a "$COPY_LOG"
+echo "Completed: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"

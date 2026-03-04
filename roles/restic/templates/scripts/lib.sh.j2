@@ -1,0 +1,46 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# Restic credential library - sourced by all restic scripts
+# Provides restic_env and restic_from_env functions
+
+restic_env() {
+  local repo="$1"
+  case "$repo" in
+{% for repo_name, repo in restic_repos.items() %}
+{% set backend_type = repo.backend | first %}
+    {{ repo_name }})
+{% if backend_type == 'local' %}
+      echo "RESTIC_REPOSITORY={{ repo.backend.local.path }}"
+{% elif backend_type == 's3' %}
+      echo "RESTIC_REPOSITORY=rclone:{{ repo_name }}:{{ repo.backend.s3.bucket }}{% if repo.backend.s3.path is defined %}/{{ repo.backend.s3.path }}{% endif %}"
+{% endif %}
+      echo "RESTIC_PASSWORD={{ repo.password }}"
+      ;;
+{% endfor %}
+    *)
+      echo "restic_env: unknown repo '${repo}'" >&2
+      return 1
+      ;;
+  esac
+}
+
+restic_from_env() {
+  local repo="$1"
+  case "$repo" in
+{% for repo_name, repo in restic_repos.items() %}
+{% set backend_type = repo.backend | first %}
+    {{ repo_name }})
+{% if backend_type == 'local' %}
+      echo "RESTIC_FROM_REPOSITORY={{ repo.backend.local.path }}"
+{% elif backend_type == 's3' %}
+      echo "RESTIC_FROM_REPOSITORY=rclone:{{ repo_name }}:{{ repo.backend.s3.bucket }}{% if repo.backend.s3.path is defined %}/{{ repo.backend.s3.path }}{% endif %}"
+{% endif %}
+      echo "RESTIC_FROM_PASSWORD={{ repo.password }}"
+      ;;
+{% endfor %}
+    *)
+      echo "restic_from_env: unknown repo '${repo}'" >&2
+      return 1
+      ;;
+  esac
+}

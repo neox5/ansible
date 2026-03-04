@@ -1,10 +1,15 @@
 ---
 # Restic Custom Role - Configuration Defaults
 
-# Installation
-restic_version: "0.18.0"
+# Restic installation
+restic_version: "0.18.1"
 restic_download_path: "/opt"
 restic_install_path: "/usr/local/bin"
+
+# Rclone installation
+rclone_version: "1.73.1"
+rclone_install_path: "/usr/local/bin"
+rclone_config_path: "/root/.config/rclone/rclone.conf"
 
 # Directories
 restic_script_dir: "/opt/restic"
@@ -21,9 +26,6 @@ restic_repos: {}
 
 # Jobs (required - must be set by inventory)
 restic_jobs: {}
-
-# Restore defaults
-restic_restore_target: "/tmp/restic-restore"
 
 # Default retention (used when repository does not define retention)
 restic_retention:

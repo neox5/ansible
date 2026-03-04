@@ -1,22 +1,42 @@
 #!/bin/bash
 # {{ ansible_managed }}
-# Restic check: {{ item.key }}
+# Restic repository check
+# Usage: check.sh <repo>
 
 set -euo pipefail
 
-source {{ restic_script_dir }}/env-{{ item.key }}.sh
+source {{ restic_script_dir }}/lib.sh
 
-echo "=== Restic Repository Check: {{ item.key }} ==="
-echo "Repository: $RESTIC_REPOSITORY"
+REPO="${1:-}"
+
+if [[ -z "$REPO" ]]; then
+  echo "Usage: $(basename "$0") <repo>"
+  echo ""
+  echo "Repositories:"
+{% for repo_name, repo in restic_repos.items() %}
+  echo "  {{ repo_name }}{% if repo.check is defined and repo.check.read_data_subset is defined %} (subset: {{ repo.check.read_data_subset }}){% endif %}"
+{% endfor %}
+  exit 1
+fi
+
+echo "=== Restic Check: ${REPO} ==="
 echo "Started: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-echo ""
 
-{{ restic_install_path }}/restic check \
-{% if item.value.check is defined and item.value.check.read_data_subset is defined %}
-  --read-data-subset {{ item.value.check.read_data_subset }} \
+case "$REPO" in
+{% for repo_name, repo in restic_repos.items() %}
+  {{ repo_name }})
+    env $(restic_env "{{ repo_name }}") \
+      {{ restic_install_path }}/restic check \
+{% if repo.check is defined and repo.check.read_data_subset is defined %}
+      --read-data-subset {{ repo.check.read_data_subset }} \
 {% endif %}
-  "$@"
+      "$@"
+    ;;
+{% endfor %}
+  *)
+    echo "Unknown repo: ${REPO}" >&2; exit 1 ;;
+esac
 
 echo ""
 echo "Completed: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-echo "=== End Check: {{ item.key }} ==="
+echo "=== End Check: ${REPO} ==="

@@ -24,9 +24,3 @@
   tags:
     - restic
     - restic-jobs
-
-- name: Include check configuration
-  ansible.builtin.import_tasks: check.yml
-  tags:
-    - restic
-    - restic-check

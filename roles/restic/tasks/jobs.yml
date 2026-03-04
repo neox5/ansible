@@ -1,25 +1,70 @@
 ---
-# Job configuration - scripts and systemd units
+# Job scripts and systemd units
 
-- name: Build source-repo combinations for restore scripts
-  ansible.builtin.set_fact:
-    restic_restore_combinations: >-
-      {{ restic_restore_combinations | default([]) | union(
-        item.value.sources | product([item.value.repo]) | map('list') | list
-      ) }}
-  loop: "{{ restic_jobs | dict2items | selectattr('value.type', 'equalto', 'backup') | list }}"
-  loop_control:
-    label: "{{ item.key }}"
+- name: Deploy lib.sh (ensure present before scripts)
+  ansible.builtin.template:
+    src: scripts/lib.sh.j2
+    dest: "{{ restic_script_dir }}/lib.sh"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
 
-- name: Add copy destination restore combinations
-  ansible.builtin.set_fact:
-    restic_restore_combinations: >-
-      {{ restic_restore_combinations | default([]) | union(
-        item.value.sources | product([item.value.to]) | map('list') | list
-      ) }}
-  loop: "{{ restic_jobs | dict2items | selectattr('value.type', 'equalto', 'copy') | list }}"
-  loop_control:
-    label: "{{ item.key }}"
+- name: Deploy init.sh
+  ansible.builtin.template:
+    src: scripts/init.sh.j2
+    dest: "{{ restic_script_dir }}/init.sh"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy backup.sh
+  ansible.builtin.template:
+    src: scripts/backup.sh.j2
+    dest: "{{ restic_script_dir }}/backup.sh"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy copy.sh
+  ansible.builtin.template:
+    src: scripts/copy.sh.j2
+    dest: "{{ restic_script_dir }}/copy.sh"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy restore.sh
+  ansible.builtin.template:
+    src: scripts/restore.sh.j2
+    dest: "{{ restic_script_dir }}/restore.sh"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy check.sh
+  ansible.builtin.template:
+    src: scripts/check.sh.j2
+    dest: "{{ restic_script_dir }}/check.sh"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy snapshots.sh
+  ansible.builtin.template:
+    src: scripts/snapshots.sh.j2
+    dest: "{{ restic_script_dir }}/snapshots.sh"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy stats.sh
+  ansible.builtin.template:
+    src: scripts/stats.sh.j2
+    dest: "{{ restic_script_dir }}/stats.sh"
+    owner: root
+    group: root
+    mode: "0755"
 
 - name: Create job log directories
   ansible.builtin.file:
@@ -31,44 +76,6 @@
   loop: "{{ restic_jobs | dict2items }}"
   loop_control:
     label: "{{ item.key }}"
-
-- name: Deploy backup scripts
-  ansible.builtin.template:
-    src: scripts/backup.sh.j2
-    dest: "{{ restic_script_dir }}/backup-{{ item.key }}.sh"
-    owner: root
-    group: root
-    mode: "0755"
-  loop: "{{ restic_jobs | dict2items | selectattr('value.type', 'equalto', 'backup') | list }}"
-  loop_control:
-    label: "{{ item.key }}"
-
-- name: Deploy copy scripts
-  ansible.builtin.template:
-    src: scripts/copy.sh.j2
-    dest: "{{ restic_script_dir }}/copy-{{ item.key }}.sh"
-    owner: root
-    group: root
-    mode: "0755"
-  loop: "{{ restic_jobs | dict2items | selectattr('value.type', 'equalto', 'copy') | list }}"
-  loop_control:
-    label: "{{ item.key }}"
-
-- name: Deploy restore scripts
-  ansible.builtin.template:
-    src: scripts/restore.sh.j2
-    dest: "{{ restic_script_dir }}/restore-{{ item.0 }}-{{ item.1 }}.sh"
-    owner: root
-    group: root
-    mode: "0755"
-  loop: "{{ restic_restore_combinations | default([]) | unique }}"
-  loop_control:
-    label: "{{ item.0 }}-{{ item.1 }}"
-  vars:
-    source_name: "{{ item.0 }}"
-    source: "{{ restic_sources[item.0] }}"
-    repo_name: "{{ item.1 }}"
-    repo: "{{ restic_repos[item.1] }}"
 
 - name: Deploy job systemd service units
   ansible.builtin.template:
@@ -94,6 +101,30 @@
     label: "{{ item.key }}"
   notify: reload systemd
 
+- name: Deploy check systemd service units
+  ansible.builtin.template:
+    src: systemd/check.service.j2
+    dest: "/etc/systemd/system/restic-check-{{ item.key }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ restic_repos | dict2items | selectattr('value.check', 'defined') | list }}"
+  loop_control:
+    label: "{{ item.key }}"
+  notify: reload systemd
+
+- name: Deploy check systemd timer units
+  ansible.builtin.template:
+    src: systemd/check.timer.j2
+    dest: "/etc/systemd/system/restic-check-{{ item.key }}.timer"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ restic_repos | dict2items | selectattr('value.check', 'defined') | selectattr('value.check.schedule', 'defined') | list }}"
+  loop_control:
+    label: "{{ item.key }}"
+  notify: reload systemd
+
 - name: Flush handlers to reload systemd
   ansible.builtin.meta: flush_handlers
 
@@ -106,3 +137,17 @@
   loop: "{{ restic_jobs | dict2items | selectattr('value.schedule', 'defined') | list }}"
   loop_control:
     label: "{{ item.key }}"
+
+- name: Enable and start check timers
+  ansible.builtin.systemd:
+    name: "restic-check-{{ item.key }}.timer"
+    enabled: true
+    state: started
+    daemon_reload: true
+  loop: "{{ restic_repos | dict2items | selectattr('value.check', 'defined') | selectattr('value.check.schedule', 'defined') | list }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Display role information
+  ansible.builtin.debug:
+    msg: "Restic role - {{ restic_sources | length }} source(s), {{ restic_repos | length }} repo(s), {{ restic_jobs | length }} job(s)"

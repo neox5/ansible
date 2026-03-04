@@ -1,111 +1,117 @@
 #!/bin/bash
 # {{ ansible_managed }}
-# Restic backup job: {{ item.key }}
+# Restic backup
+# Usage: backup.sh --repo <repo> --src <source> [--src <source> ...]
 
 set -euo pipefail
 
-source {{ restic_script_dir }}/env-{{ item.value.repo }}.sh
+source {{ restic_script_dir }}/lib.sh
+
+REPO=""
+SOURCES=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --repo) REPO="$2"; shift 2 ;;
+    --src)  SOURCES+=("$2"); shift 2 ;;
+    -*)     echo "Unknown option: $1" >&2; exit 1 ;;
+    *)      echo "Unknown argument: $1" >&2; exit 1 ;;
+  esac
+done
+
+if [[ -z "$REPO" ]] || [[ ${#SOURCES[@]} -eq 0 ]]; then
+  echo "Usage: $(basename "$0") --repo <repo> --src <source> [--src <source> ...]"
+  echo ""
+  echo "Repositories:"
+{% for repo_name in restic_repos %}
+  echo "  {{ repo_name }}"
+{% endfor %}
+  echo ""
+  echo "Sources:"
+{% for source_name in restic_sources %}
+  echo "  {{ source_name }}"
+{% endfor %}
+  exit 1
+fi
 
 OVERALL_EXIT=0
 
-{% for source_name in item.value.sources %}
-{% set source = restic_sources[source_name] %}
-{% set repo = restic_repos[item.value.repo] %}
-{% set retention = repo.retention | default(restic_retention) %}
-# --- Source: {{ source_name }} ---
-echo "=== Backup: {{ source_name }} → {{ item.value.repo }} ==="
-echo "Started: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+for SOURCE_NAME in "${SOURCES[@]}"; do
+  case "$SOURCE_NAME" in
+{% for source_name, source in restic_sources.items() %}
+{% set repo_var = "REPO" %}
+    {{ source_name }})
+      BACKUP_LOG="{{ restic_log_dir }}/${REPO}/{{ source_name }}-backup.log"
+      FORGET_LOG="{{ restic_log_dir }}/${REPO}/{{ source_name }}-forget.log"
+      mkdir -p "$(dirname "$BACKUP_LOG")"
 
-BACKUP_LOG="{{ restic_log_dir }}/{{ item.key }}/{{ source_name }}-backup.log"
-FORGET_LOG="{{ restic_log_dir }}/{{ item.key }}/{{ source_name }}-forget.log"
+      echo "=== Backup: {{ source_name }} → ${REPO} ==="
+      echo "Started: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
 
-BACKUP_EXIT=0
+      BACKUP_EXIT=0
 {% if source.stdin | default(false) %}
-{{ source.stdin_command }} | {{ restic_install_path }}/restic backup \
-  --stdin \
-  --stdin-filename "{{ source.stdin_filename }}" \
+      {{ source.stdin_command }} | \
+        env $(restic_env "$REPO") \
+        {{ restic_install_path }}/restic backup \
+        --stdin \
+        --stdin-filename "{{ source.stdin_filename }}" \
 {% else %}
-{{ restic_install_path }}/restic backup \
+      env $(restic_env "$REPO") \
+        {{ restic_install_path }}/restic backup \
 {% if source.paths is string %}
-  {{ source.paths }} \
+        {{ source.paths }} \
 {% else %}
 {% for path in source.paths %}
-  {{ path }} \
+        {{ path }} \
 {% endfor %}
 {% endif %}
 {% if source.exclude is defined %}
 {% for pattern in source.exclude %}
-  --exclude "{{ pattern }}" \
+        --exclude "{{ pattern }}" \
 {% endfor %}
 {% endif %}
 {% endif %}
 {% for tag in source.tags | default([]) %}
-  --tag {{ tag }} \
+        --tag {{ tag }} \
 {% endfor %}
-{% for tag in item.value.tags | default([]) %}
-  --tag {{ tag }} \
+        2>&1 | tee -a "$BACKUP_LOG" || BACKUP_EXIT=$?
+
+      if [[ $BACKUP_EXIT -ne 0 ]]; then
+        echo "Backup FAILED: {{ source_name }} (exit ${BACKUP_EXIT})" | tee -a "$BACKUP_LOG"
+        OVERALL_EXIT=1
+      else
+        echo "Backup SUCCESS: {{ source_name }}" | tee -a "$BACKUP_LOG"
+
+        FORGET_EXIT=0
+        env $(restic_env "$REPO") \
+          {{ restic_install_path }}/restic forget \
+{% set retention = restic_repos[repo_var] | default(restic_retention) %}
+          --keep-daily "{{ restic_retention.keep_daily }}" \
+          --keep-weekly "{{ restic_retention.keep_weekly }}" \
+          --keep-monthly "{{ restic_retention.keep_monthly }}" \
+{% if restic_retention.prune | default(false) %}
+          --prune \
+{% endif %}
+          --path "/{{ source.stdin_filename if source.stdin | default(false) else (source.paths if source.paths is string else source.paths | first) }}" \
+          2>&1 | tee -a "$FORGET_LOG" || FORGET_EXIT=$?
+
+        if [[ $FORGET_EXIT -ne 0 ]]; then
+          echo "Forget FAILED: {{ source_name }} (exit ${FORGET_EXIT})" | tee -a "$FORGET_LOG"
+          OVERALL_EXIT=1
+        else
+          echo "Forget SUCCESS: {{ source_name }}" | tee -a "$FORGET_LOG"
+        fi
+      fi
+
+      echo "Completed: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+      echo ""
+      ;;
 {% endfor %}
-  "$@" 2>&1 | tee -a "$BACKUP_LOG" || BACKUP_EXIT=$?
-
-if [ $BACKUP_EXIT -ne 0 ]; then
-  echo "Backup FAILED: {{ source_name }} (exit code $BACKUP_EXIT)" | tee -a "$BACKUP_LOG"
-  OVERALL_EXIT=1
-{% if item.value.on_failure | default('continue') == 'stop' %}
-  exit 1
-{% endif %}
-else
-  echo "Backup SUCCESS: {{ source_name }}" | tee -a "$BACKUP_LOG"
-
-  FORGET_EXIT=0
-  {{ restic_install_path }}/restic forget \
-{% if source.stdin | default(false) %}
-    --path "/{{ source.stdin_filename }}" \
-{% elif source.paths is string %}
-    --path "{{ source.paths }}" \
-{% else %}
-{% for path in source.paths %}
-    --path "{{ path }}" \
-{% endfor %}
-{% endif %}
-{% if retention.keep_last is defined and retention.keep_last %}
-    --keep-last {{ retention.keep_last }} \
-{% endif %}
-{% if retention.keep_hourly is defined and retention.keep_hourly %}
-    --keep-hourly {{ retention.keep_hourly }} \
-{% endif %}
-{% if retention.keep_daily is defined and retention.keep_daily %}
-    --keep-daily {{ retention.keep_daily }} \
-{% endif %}
-{% if retention.keep_weekly is defined and retention.keep_weekly %}
-    --keep-weekly {{ retention.keep_weekly }} \
-{% endif %}
-{% if retention.keep_monthly is defined and retention.keep_monthly %}
-    --keep-monthly {{ retention.keep_monthly }} \
-{% endif %}
-{% if retention.keep_yearly is defined and retention.keep_yearly %}
-    --keep-yearly {{ retention.keep_yearly }} \
-{% endif %}
-{% if retention.keep_within is defined and retention.keep_within %}
-    --keep-within {{ retention.keep_within }} \
-{% endif %}
-{% if retention.prune | default(false) %}
-    --prune \
-{% endif %}
-    2>&1 | tee -a "$FORGET_LOG" || FORGET_EXIT=$?
-
-  if [ $FORGET_EXIT -ne 0 ]; then
-    echo "Forget FAILED: {{ source_name }} (exit code $FORGET_EXIT)" | tee -a "$FORGET_LOG"
-    OVERALL_EXIT=1
-{% if item.value.on_failure | default('continue') == 'stop' %}
-    exit 1
-{% endif %}
-  else
-    echo "Forget SUCCESS: {{ source_name }}" | tee -a "$FORGET_LOG"
-  fi
-fi
-
-echo "Completed: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-echo ""
-{% endfor %}
+    *)
+      echo "Unknown source: ${SOURCE_NAME}" >&2
+      OVERALL_EXIT=1
+      ;;
+  esac
+done
 
 exit $OVERALL_EXIT

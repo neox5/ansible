@@ -1,7 +1,0 @@
-# {{ ansible_managed }}
-# Restic environment: {{ item.key }}
-
-export RESTIC_REPOSITORY="s3:{{ item.value.backend.s3.endpoint }}/{{ item.value.backend.s3.bucket }}"
-export RESTIC_PASSWORD="{{ item.value.password }}"
-export AWS_ACCESS_KEY_ID="{{ item.value.backend.s3.key_id }}"
-export AWS_SECRET_ACCESS_KEY="{{ item.value.backend.s3.key_secret }}"

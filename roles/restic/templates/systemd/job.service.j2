@@ -6,7 +6,12 @@ After=network-online.target
 [Service]
 Type=oneshot
 User={{ restic_user }}
-ExecStart={{ restic_script_dir }}/{{ item.value.type }}-{{ item.key }}.sh
+{% if item.value.type == 'backup' %}
+ExecStart={{ restic_script_dir }}/backup.sh --repo {{ item.value.repo }}{% for src in item.value.sources %} --src {{ src }}{% endfor %}
+
+{% elif item.value.type == 'copy' %}
+ExecStart={{ restic_script_dir }}/copy.sh --from {{ item.value.from }} --to {{ item.value.to }}
+{% endif %}
 
 [Install]
 WantedBy=multi-user.target

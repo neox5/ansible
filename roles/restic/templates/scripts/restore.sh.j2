@@ -1,58 +1,72 @@
 #!/bin/bash
 # {{ ansible_managed }}
-# Restic restore: {{ source_name }} from {{ repo_name }}
+# Restic restore
+# Usage: restore.sh --repo <repo> --src <source> [--snapshot <id>]
 
 set -euo pipefail
 
-source {{ restic_script_dir }}/env-{{ repo_name }}.sh
+source {{ restic_script_dir }}/lib.sh
 
-SNAPSHOT_ID="${1:-latest}"
+REPO=""
+SOURCE_NAME=""
+SNAPSHOT_ID="latest"
 
-{% if source.stdin | default(false) %}
-# stdin source - dump to stdout for piping
-echo "=== Restic Restore (stdout): {{ source_name }} from {{ repo_name }} ===" >&2
-echo "Repository: $RESTIC_REPOSITORY" >&2
-echo "Snapshot: $SNAPSHOT_ID" >&2
-echo "File: {{ source.stdin_filename }}" >&2
-echo "" >&2
-echo "Usage: $0 [snapshot_id] | restore_command" >&2
-echo "Example: $0 latest | sudo -u postgres pg_restore -d mydb --clean --if-exists" >&2
-echo "" >&2
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --repo)     REPO="$2"; shift 2 ;;
+    --src)      SOURCE_NAME="$2"; shift 2 ;;
+    --snapshot) SNAPSHOT_ID="$2"; shift 2 ;;
+    -*)         echo "Unknown option: $1" >&2; exit 1 ;;
+    *)          echo "Unknown argument: $1" >&2; exit 1 ;;
+  esac
+done
 
-{{ restic_install_path }}/restic dump "$SNAPSHOT_ID" "/{{ source.stdin_filename }}"
-
-{% else %}
-# directory source - restore to filesystem
-RESTORE_TARGET="${2:-{{ restic_restore_target }}}"
-
-echo "=== Restic Restore (filesystem): {{ source_name }} from {{ repo_name }} ==="
-echo "Repository: $RESTIC_REPOSITORY"
-echo "Snapshot: $SNAPSHOT_ID"
-echo "Target: $RESTORE_TARGET"
-{% if source.paths is string %}
-echo "Source: {{ source.paths }}"
-{% else %}
-echo "Sources:"
-{% for path in source.paths %}
-echo "  - {{ path }}"
+if [[ -z "$REPO" ]] || [[ -z "$SOURCE_NAME" ]]; then
+  echo "Usage: $(basename "$0") --repo <repo> --src <source> [--snapshot <id>]"
+  echo ""
+  echo "Repositories:"
+{% for repo_name in restic_repos %}
+  echo "  {{ repo_name }}"
 {% endfor %}
-{% endif %}
-echo ""
-echo "Usage: $0 [snapshot_id] [target_directory]"
-echo ""
-
-if [ ! -d "$RESTORE_TARGET" ]; then
-  mkdir -p "$RESTORE_TARGET"
+  echo ""
+  echo "Sources:"
+{% for source_name in restic_sources %}
+  echo "  {{ source_name }}"
+{% endfor %}
+  exit 1
 fi
 
-{{ restic_install_path }}/restic restore "$SNAPSHOT_ID" \
-  --target "$RESTORE_TARGET" \
+echo "=== Restic Restore: ${SOURCE_NAME} from ${REPO} ===" >&2
+echo "Snapshot: ${SNAPSHOT_ID}" >&2
+
+case "$SOURCE_NAME" in
+{% for source_name, source in restic_sources.items() %}
+  {{ source_name }})
+{% if source.stdin | default(false) %}
+    echo "Mode: stdout (pipe to restore command)" >&2
+    echo "Example: $0 --repo ${REPO} --src ${SOURCE_NAME} | sudo -u postgres pg_restore -d {{ source.stdin_filename | splitext | first }} --clean --if-exists" >&2
+    echo "" >&2
+    env $(restic_env "$REPO") \
+      {{ restic_install_path }}/restic dump "$SNAPSHOT_ID" "/{{ source.stdin_filename }}"
+{% else %}
+    RESTORE_TARGET="${RESTORE_TARGET:-/tmp/restic-restore}"
+    echo "Mode: filesystem → ${RESTORE_TARGET}" >&2
+    echo "" >&2
+    mkdir -p "$RESTORE_TARGET"
+    env $(restic_env "$REPO") \
+      {{ restic_install_path }}/restic restore "$SNAPSHOT_ID" \
+      --target "$RESTORE_TARGET" \
 {% if source.paths is string %}
-  --path "{{ source.paths }}"
+      --path "{{ source.paths }}"
 {% else %}
 {% for path in source.paths %}
-  --path "{{ path }}" \
-{% endfor %}
+      --path "{{ path }}"{% if not loop.last %} \{% endif %}
 
+{% endfor %}
 {% endif %}
 {% endif %}
+    ;;
+{% endfor %}
+  *)
+    echo "Unknown source: ${SOURCE_NAME}" >&2; exit 1 ;;
+esac

@@ -1,0 +1,46 @@
+#!/bin/bash
+# {{ ansible_managed }}
+# Restic repository initialization
+# Usage: init.sh <repo> [--from <from_repo>]
+
+set -euo pipefail
+
+source {{ restic_script_dir }}/lib.sh
+
+REPO=""
+FROM_REPO=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --from) FROM_REPO="$2"; shift 2 ;;
+    -*) echo "Unknown option: $1" >&2; exit 1 ;;
+    *) REPO="$1"; shift ;;
+  esac
+done
+
+if [[ -z "$REPO" ]]; then
+  echo "Usage: $(basename "$0") <repo> [--from <from_repo>]"
+  echo ""
+  echo "Repositories:"
+{% for repo_name in restic_repos %}
+  echo "  {{ repo_name }}"
+{% endfor %}
+  exit 1
+fi
+
+echo "=== Restic Init: ${REPO} ==="
+
+if [[ -n "$FROM_REPO" ]]; then
+  echo "Initializing with chunker params from: ${FROM_REPO}"
+  env $(restic_env "$REPO") \
+    $(restic_from_env "$FROM_REPO") \
+    {{ restic_install_path }}/restic init \
+    --from-repo "$(restic_from_env "$FROM_REPO" | grep RESTIC_FROM_REPOSITORY | cut -d= -f2-)" \
+    --copy-chunker-params
+else
+  echo "Initializing new repository"
+  env $(restic_env "$REPO") \
+    {{ restic_install_path }}/restic init
+fi
+
+echo "=== Done ==="
