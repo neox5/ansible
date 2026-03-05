@@ -32,7 +32,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -z "$REPO" ]] || [[ ${#SOURCES[@]} -eq 0 ]]; then
+if [[ -z "$REPO" ]] || [[ {% raw %}${#SOURCES[@]}{% endraw %} -eq 0 ]]; then
   echo "Usage: $(basename "$0") --repo <repo> --src <source> [--src <source> ...]" >&2
   echo "" >&2
   echo "Repositories:" >&2

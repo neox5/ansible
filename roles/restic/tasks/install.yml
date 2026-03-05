@@ -41,38 +41,7 @@
     owner: root
     group: root
 
-- name: Download rclone binary
-  ansible.builtin.get_url:
-    url: "{{ rclone_url }}"
-    dest: "{{ restic_download_path }}/rclone_{{ rclone_version }}_linux_amd64.zip"
-    mode: "0644"
-  register: rclone_download
-
-- name: Extract rclone binary
-  ansible.builtin.shell:
-    cmd: >
-      unzip -p {{ restic_download_path }}/rclone_{{ rclone_version }}_linux_amd64.zip
-      rclone-v{{ rclone_version }}-linux-amd64/rclone
-      > {{ restic_download_path }}/bin/rclone-{{ rclone_version }}
-    creates: "{{ restic_download_path }}/bin/rclone-{{ rclone_version }}"
-  when: rclone_download.changed
-
-- name: Set rclone binary permissions
-  ansible.builtin.file:
-    path: "{{ restic_download_path }}/bin/rclone-{{ rclone_version }}"
-    owner: root
-    group: root
-    mode: "0755"
-
-- name: Create rclone symlink
-  ansible.builtin.file:
-    src: "{{ restic_download_path }}/bin/rclone-{{ rclone_version }}"
-    dest: "{{ rclone_install_path }}/rclone"
-    state: link
-    owner: root
-    group: root
-
-- name: Ensure unzip is installed
+- name: Install rclone
   ansible.builtin.apt:
-    name: unzip
+    deb: "{{ rclone_url }}"
     state: present

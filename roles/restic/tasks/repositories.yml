@@ -5,6 +5,14 @@
   ansible.builtin.set_fact:
     restic_primary_repo: "{{ restic_repos | dict2items | selectattr('value.primary', 'defined') | selectattr('value.primary', 'equalto', true) | first }}"
 
+- name: Ensure rclone config directory exists
+  ansible.builtin.file:
+    path: "{{ rclone_config_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
 - name: Deploy rclone configuration
   ansible.builtin.template:
     src: rclone.conf.j2
@@ -54,7 +62,12 @@
   register: restic_repo_checks
   changed_when: false
   failed_when: false
-  loop: "{{ restic_repos | dict2items | rejectattr('value.primary', 'equalto', true) | list }}"
+  loop: >-
+    {{ restic_repos | dict2items | rejectattr('value.primary', 'defined') | list
+       | union(
+           restic_repos | dict2items | selectattr('value.primary', 'defined')
+           | rejectattr('value.primary', 'equalto', true) | list
+         ) }}
   loop_control:
     label: "{{ item.key }}"
   no_log: true
