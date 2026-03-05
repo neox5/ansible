@@ -14,22 +14,35 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --repo) REPO="$2"; shift 2 ;;
     --src)  SOURCES+=("$2"); shift 2 ;;
+    -h|--help)
+      echo "Usage: $(basename "$0") --repo <repo> --src <source> [--src <source> ...]"
+      echo ""
+      echo "Repositories:"
+{% for repo_name in restic_repos %}
+      echo "  {{ repo_name }}"
+{% endfor %}
+      echo ""
+      echo "Sources:"
+{% for source_name in restic_sources %}
+      echo "  {{ source_name }}"
+{% endfor %}
+      exit 0 ;;
     -*)     echo "Unknown option: $1" >&2; exit 1 ;;
     *)      echo "Unknown argument: $1" >&2; exit 1 ;;
   esac
 done
 
 if [[ -z "$REPO" ]] || [[ ${#SOURCES[@]} -eq 0 ]]; then
-  echo "Usage: $(basename "$0") --repo <repo> --src <source> [--src <source> ...]"
-  echo ""
-  echo "Repositories:"
+  echo "Usage: $(basename "$0") --repo <repo> --src <source> [--src <source> ...]" >&2
+  echo "" >&2
+  echo "Repositories:" >&2
 {% for repo_name in restic_repos %}
-  echo "  {{ repo_name }}"
+  echo "  {{ repo_name }}" >&2
 {% endfor %}
-  echo ""
-  echo "Sources:"
+  echo "" >&2
+  echo "Sources:" >&2
 {% for source_name in restic_sources %}
-  echo "  {{ source_name }}"
+  echo "  {{ source_name }}" >&2
 {% endfor %}
   exit 1
 fi
@@ -39,25 +52,21 @@ OVERALL_EXIT=0
 for SOURCE_NAME in "${SOURCES[@]}"; do
   case "$SOURCE_NAME" in
 {% for source_name, source in restic_sources.items() %}
-{% set repo_var = "REPO" %}
     {{ source_name }})
       BACKUP_LOG="{{ restic_log_dir }}/${REPO}/{{ source_name }}-backup.log"
       FORGET_LOG="{{ restic_log_dir }}/${REPO}/{{ source_name }}-forget.log"
       mkdir -p "$(dirname "$BACKUP_LOG")"
 
-      echo "=== Backup: {{ source_name }} → ${REPO} ==="
-      echo "Started: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+      log_start "Backup: {{ source_name }} → ${REPO}"
 
       BACKUP_EXIT=0
 {% if source.stdin | default(false) %}
       {{ source.stdin_command }} | \
-        env $(restic_env "$REPO") \
-        {{ restic_install_path }}/restic backup \
+        restic_run "$REPO" backup \
         --stdin \
         --stdin-filename "{{ source.stdin_filename }}" \
 {% else %}
-      env $(restic_env "$REPO") \
-        {{ restic_install_path }}/restic backup \
+      restic_run "$REPO" backup \
 {% if source.paths is string %}
         {{ source.paths }} \
 {% else %}
@@ -76,16 +85,11 @@ for SOURCE_NAME in "${SOURCES[@]}"; do
 {% endfor %}
         2>&1 | tee -a "$BACKUP_LOG" || BACKUP_EXIT=$?
 
-      if [[ $BACKUP_EXIT -ne 0 ]]; then
-        echo "Backup FAILED: {{ source_name }} (exit ${BACKUP_EXIT})" | tee -a "$BACKUP_LOG"
+      if ! log_result $BACKUP_EXIT "backup: {{ source_name }}" "$BACKUP_LOG"; then
         OVERALL_EXIT=1
       else
-        echo "Backup SUCCESS: {{ source_name }}" | tee -a "$BACKUP_LOG"
-
         FORGET_EXIT=0
-        env $(restic_env "$REPO") \
-          {{ restic_install_path }}/restic forget \
-{% set retention = restic_repos[repo_var] | default(restic_retention) %}
+        restic_run "$REPO" forget \
           --keep-daily "{{ restic_retention.keep_daily }}" \
           --keep-weekly "{{ restic_retention.keep_weekly }}" \
           --keep-monthly "{{ restic_retention.keep_monthly }}" \
@@ -95,15 +99,12 @@ for SOURCE_NAME in "${SOURCES[@]}"; do
           --path "/{{ source.stdin_filename if source.stdin | default(false) else (source.paths if source.paths is string else source.paths | first) }}" \
           2>&1 | tee -a "$FORGET_LOG" || FORGET_EXIT=$?
 
-        if [[ $FORGET_EXIT -ne 0 ]]; then
-          echo "Forget FAILED: {{ source_name }} (exit ${FORGET_EXIT})" | tee -a "$FORGET_LOG"
+        if ! log_result $FORGET_EXIT "forget: {{ source_name }}" "$FORGET_LOG"; then
           OVERALL_EXIT=1
-        else
-          echo "Forget SUCCESS: {{ source_name }}" | tee -a "$FORGET_LOG"
         fi
       fi
 
-      echo "Completed: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+      log_end "Backup: {{ source_name }} → ${REPO}"
       echo ""
       ;;
 {% endfor %}

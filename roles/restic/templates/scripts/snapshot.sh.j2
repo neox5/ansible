@@ -1,7 +1,7 @@
 #!/bin/bash
 # {{ ansible_managed }}
 # Restic list snapshots
-# Usage: snapshots.sh <repo>
+# Usage: snapshot.sh <repo>
 
 set -euo pipefail
 
@@ -9,18 +9,18 @@ source {{ restic_script_dir }}/lib.sh
 
 REPO="${1:-}"
 
-if [[ -z "$REPO" ]]; then
+if [[ -z "$REPO" ]] || [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
   echo "Usage: $(basename "$0") <repo>"
   echo ""
   echo "Repositories:"
 {% for repo_name in restic_repos %}
   echo "  {{ repo_name }}"
 {% endfor %}
-  exit 1
+  [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]] && exit 0 || exit 1
 fi
 
-echo "=== Restic Snapshots: ${REPO} ==="
+log_start "Snapshots: ${REPO}"
 
-env $(restic_env "$REPO") \
-  {{ restic_install_path }}/restic snapshots \
-  "${@:2}"
+restic_run "$REPO" snapshots "${@:2}"
+
+log_end "Snapshots: ${REPO}"

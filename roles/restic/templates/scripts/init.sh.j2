@@ -13,34 +13,40 @@ FROM_REPO=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --from) FROM_REPO="$2"; shift 2 ;;
+    -h|--help)
+      echo "Usage: $(basename "$0") <repo> [--from <from_repo>]"
+      echo ""
+      echo "Repositories:"
+{% for repo_name in restic_repos %}
+      echo "  {{ repo_name }}"
+{% endfor %}
+      exit 0 ;;
     -*) echo "Unknown option: $1" >&2; exit 1 ;;
-    *) REPO="$1"; shift ;;
+    *)  REPO="$1"; shift ;;
   esac
 done
 
 if [[ -z "$REPO" ]]; then
-  echo "Usage: $(basename "$0") <repo> [--from <from_repo>]"
-  echo ""
-  echo "Repositories:"
+  echo "Usage: $(basename "$0") <repo> [--from <from_repo>]" >&2
+  echo "" >&2
+  echo "Repositories:" >&2
 {% for repo_name in restic_repos %}
-  echo "  {{ repo_name }}"
+  echo "  {{ repo_name }}" >&2
 {% endfor %}
   exit 1
 fi
 
-echo "=== Restic Init: ${REPO} ==="
+log_start "Init: ${REPO}"
 
 if [[ -n "$FROM_REPO" ]]; then
-  echo "Initializing with chunker params from: ${FROM_REPO}"
-  env $(restic_env "$REPO") \
-    $(restic_from_env "$FROM_REPO") \
-    {{ restic_install_path }}/restic init \
-    --from-repo "$(restic_from_env "$FROM_REPO" | grep RESTIC_FROM_REPOSITORY | cut -d= -f2-)" \
+  echo "Initializing with chunker params from: ${FROM_REPO}" >&2
+  FROM_REPO_PATH="$(restic_from_env "$FROM_REPO" | grep RESTIC_FROM_REPOSITORY | cut -d= -f2-)"
+  restic_run_from "$FROM_REPO" "$REPO" init \
+    --from-repo "$FROM_REPO_PATH" \
     --copy-chunker-params
 else
-  echo "Initializing new repository"
-  env $(restic_env "$REPO") \
-    {{ restic_install_path }}/restic init
+  echo "Initializing new repository" >&2
+  restic_run "$REPO" init
 fi
 
-echo "=== Done ==="
+log_end "Init: ${REPO}"

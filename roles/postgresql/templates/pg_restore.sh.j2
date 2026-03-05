@@ -141,21 +141,23 @@ fi
 # Perform restore
 echo ""
 echo "Starting restore..."
-if pg_restore \
+echo "+ pg_restore --username=$PG_USER --port=$PG_PORT --dbname=$DATABASE --clean --if-exists --verbose $BACKUP_FILE" >&2
+RESTORE_EXIT=0
+pg_restore \
     --username="$PG_USER" \
     --port="$PG_PORT" \
     --dbname="$DATABASE" \
     --clean \
     --if-exists \
     --verbose \
-    "$BACKUP_FILE" 2>&1 | grep -v "^$"; then
+    "$BACKUP_FILE" 2>&1 | grep -v "^$" || RESTORE_EXIT=$?
 
-    echo ""
-    echo "=== Restore Complete ==="
-    echo "Database '$DATABASE' restored from: $BACKUP_FILE"
-else
-    RESTORE_EXIT=$?
+if [[ $RESTORE_EXIT -ne 0 ]]; then
     echo ""
     echo "Error: Restore failed with exit code $RESTORE_EXIT" >&2
     exit $RESTORE_EXIT
 fi
+
+echo ""
+echo "=== Restore Complete ==="
+echo "Database '$DATABASE' restored from: $BACKUP_FILE"

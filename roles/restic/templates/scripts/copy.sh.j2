@@ -16,46 +16,52 @@ while [[ $# -gt 0 ]]; do
     --from) FROM_REPO="$2"; shift 2 ;;
     --to)   TO_REPO="$2"; shift 2 ;;
     --src)  SOURCE_FILTER="$2"; shift 2 ;;
+    -h|--help)
+      echo "Usage: $(basename "$0") --from <repo> --to <repo> [--src <source>]"
+      echo ""
+      echo "Repositories:"
+{% for repo_name in restic_repos %}
+      echo "  {{ repo_name }}"
+{% endfor %}
+      echo ""
+      echo "Sources (optional filter):"
+{% for source_name in restic_sources %}
+      echo "  {{ source_name }}"
+{% endfor %}
+      exit 0 ;;
     -*)     echo "Unknown option: $1" >&2; exit 1 ;;
     *)      echo "Unknown argument: $1" >&2; exit 1 ;;
   esac
 done
 
 if [[ -z "$FROM_REPO" ]] || [[ -z "$TO_REPO" ]]; then
-  echo "Usage: $(basename "$0") --from <repo> --to <repo> [--src <source>]"
-  echo ""
-  echo "Repositories:"
+  echo "Usage: $(basename "$0") --from <repo> --to <repo> [--src <source>]" >&2
+  echo "" >&2
+  echo "Repositories:" >&2
 {% for repo_name in restic_repos %}
-  echo "  {{ repo_name }}"
-{% endfor %}
-  echo ""
-  echo "Sources (optional filter):"
-{% for source_name in restic_sources %}
-  echo "  {{ source_name }}"
+  echo "  {{ repo_name }}" >&2
 {% endfor %}
   exit 1
 fi
 
-echo "=== Restic Copy: ${FROM_REPO} → ${TO_REPO} ==="
-echo "Started: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+log_start "Copy: ${FROM_REPO} → ${TO_REPO}"
 
 COPY_LOG="{{ restic_log_dir }}/copy-${FROM_REPO}-${TO_REPO}.log"
 mkdir -p "$(dirname "$COPY_LOG")"
 
-COPY_CMD=(env $(restic_from_env "$FROM_REPO") $(restic_env "$TO_REPO") \
-  {{ restic_install_path }}/restic copy)
+COPY_ARGS=()
 
 if [[ -n "$SOURCE_FILTER" ]]; then
   case "$SOURCE_FILTER" in
 {% for source_name, source in restic_sources.items() %}
     {{ source_name }})
 {% if source.stdin | default(false) %}
-      COPY_CMD+=(--path "/{{ source.stdin_filename }}")
+      COPY_ARGS+=(--path "/{{ source.stdin_filename }}")
 {% elif source.paths is string %}
-      COPY_CMD+=(--path "{{ source.paths }}")
+      COPY_ARGS+=(--path "{{ source.paths }}")
 {% else %}
 {% for path in source.paths %}
-      COPY_CMD+=(--path "{{ path }}")
+      COPY_ARGS+=(--path "{{ path }}")
 {% endfor %}
 {% endif %}
       ;;
@@ -66,12 +72,9 @@ if [[ -n "$SOURCE_FILTER" ]]; then
 fi
 
 COPY_EXIT=0
-"${COPY_CMD[@]}" 2>&1 | tee -a "$COPY_LOG" || COPY_EXIT=$?
+restic_run_from "$FROM_REPO" "$TO_REPO" copy "${COPY_ARGS[@]}" \
+  2>&1 | tee -a "$COPY_LOG" || COPY_EXIT=$?
 
-if [[ $COPY_EXIT -ne 0 ]]; then
-  echo "Copy FAILED (exit ${COPY_EXIT})" | tee -a "$COPY_LOG"
-  exit $COPY_EXIT
-fi
+log_result $COPY_EXIT "copy: ${FROM_REPO} → ${TO_REPO}" "$COPY_LOG" || exit $COPY_EXIT
 
-echo "Copy SUCCESS" | tee -a "$COPY_LOG"
-echo "Completed: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+log_end "Copy: ${FROM_REPO} → ${TO_REPO}"

@@ -1,7 +1,69 @@
 #!/bin/bash
 # {{ ansible_managed }}
-# Restic credential library - sourced by all restic scripts
-# Provides restic_env and restic_from_env functions
+# Restic credential and utility library - sourced by all restic scripts
+
+# ---------------------------------------------------------------------------
+# Command execution
+# ---------------------------------------------------------------------------
+
+# Print and execute a command
+run_cmd() {
+  echo "+ $*" >&2
+  "$@"
+}
+
+# ---------------------------------------------------------------------------
+# Restic execution helpers
+# ---------------------------------------------------------------------------
+
+# Run restic with a single repo environment
+# Usage: restic_run <repo> <subcommand> [args...]
+restic_run() {
+  local repo="$1"; shift
+  run_cmd env $(restic_env "$repo") {{ restic_install_path }}/restic "$@"
+}
+
+# Run restic with dual-repo environment (for copy/init --copy-chunker-params)
+# Usage: restic_run_from <from_repo> <to_repo> <subcommand> [args...]
+restic_run_from() {
+  local from_repo="$1" to_repo="$2"; shift 2
+  run_cmd env $(restic_from_env "$from_repo") $(restic_env "$to_repo") \
+    {{ restic_install_path }}/restic "$@"
+}
+
+# ---------------------------------------------------------------------------
+# Logging helpers
+# ---------------------------------------------------------------------------
+
+# Print section header with timestamp
+log_start() {
+  echo "=== $* ==="
+  echo "Started: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+}
+
+# Print section footer with timestamp
+log_end() {
+  echo "Completed: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+  echo "=== End: $* ==="
+}
+
+# Log success or failure to stdout and a log file
+# Usage: log_result <exit_code> <label> <logfile>
+# Returns: 1 if exit_code was non-zero, 0 otherwise
+log_result() {
+  local exit_code="$1" label="$2" log="$3"
+  if [[ $exit_code -ne 0 ]]; then
+    echo "FAILED: ${label} (exit ${exit_code})" | tee -a "$log"
+    return 1
+  else
+    echo "SUCCESS: ${label}" | tee -a "$log"
+    return 0
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Repository credential helpers
+# ---------------------------------------------------------------------------
 
 restic_env() {
   local repo="$1"

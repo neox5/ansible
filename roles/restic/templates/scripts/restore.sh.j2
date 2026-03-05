@@ -1,7 +1,7 @@
 #!/bin/bash
 # {{ ansible_managed }}
 # Restic restore
-# Usage: restore.sh --repo <repo> --src <source> [--snapshot <id>]
+# Usage: restore.sh --repo <repo> --src <source> [options]
 
 set -euo pipefail
 
@@ -10,63 +10,97 @@ source {{ restic_script_dir }}/lib.sh
 REPO=""
 SOURCE_NAME=""
 SNAPSHOT_ID="latest"
+RESTORE_TARGET="${RESTORE_TARGET:-{{ restic_restore_target }}}"
+USE_STDOUT=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --repo)     REPO="$2"; shift 2 ;;
     --src)      SOURCE_NAME="$2"; shift 2 ;;
     --snapshot) SNAPSHOT_ID="$2"; shift 2 ;;
+    --target)   RESTORE_TARGET="$2"; shift 2 ;;
+    --stdout)   USE_STDOUT=true; shift ;;
+    -h|--help)
+      echo "Usage: $(basename "$0") --repo <repo> --src <source> [options]"
+      echo ""
+      echo "Options:"
+      echo "  --snapshot <id>    Snapshot to restore (default: latest)"
+      echo "  --target <dir>     Restore target directory (default: ${RESTORE_TARGET})"
+      echo "  --stdout           Stream to stdout instead of writing to disk"
+      echo "                     Single file: raw content"
+      echo "                     Folder: tar archive"
+      echo "  -h, --help         Show this help"
+      echo ""
+      echo "Repositories:"
+{% for repo_name in restic_repos %}
+      echo "  {{ repo_name }}"
+{% endfor %}
+      echo ""
+      echo "Sources:"
+{% for source_name in restic_sources %}
+      echo "  {{ source_name }}"
+{% endfor %}
+      exit 0 ;;
     -*)         echo "Unknown option: $1" >&2; exit 1 ;;
     *)          echo "Unknown argument: $1" >&2; exit 1 ;;
   esac
 done
 
 if [[ -z "$REPO" ]] || [[ -z "$SOURCE_NAME" ]]; then
-  echo "Usage: $(basename "$0") --repo <repo> --src <source> [--snapshot <id>]"
-  echo ""
-  echo "Repositories:"
-{% for repo_name in restic_repos %}
-  echo "  {{ repo_name }}"
-{% endfor %}
-  echo ""
-  echo "Sources:"
-{% for source_name in restic_sources %}
-  echo "  {{ source_name }}"
-{% endfor %}
+  echo "Usage: $(basename "$0") --repo <repo> --src <source> [options]" >&2
+  echo "Run with --help for full usage." >&2
   exit 1
 fi
 
-echo "=== Restic Restore: ${SOURCE_NAME} from ${REPO} ===" >&2
+log_start "Restore: ${SOURCE_NAME} from ${REPO}"
 echo "Snapshot: ${SNAPSHOT_ID}" >&2
+echo "Mode:     $([[ "$USE_STDOUT" == "true" ]] && echo "stdout" || echo "filesystem → ${RESTORE_TARGET}")" >&2
+echo "" >&2
 
 case "$SOURCE_NAME" in
 {% for source_name, source in restic_sources.items() %}
   {{ source_name }})
 {% if source.stdin | default(false) %}
-    echo "Mode: stdout (pipe to restore command)" >&2
-    echo "Example: $0 --repo ${REPO} --src ${SOURCE_NAME} | sudo -u postgres pg_restore -d {{ source.stdin_filename | splitext | first }} --clean --if-exists" >&2
-    echo "" >&2
-    env $(restic_env "$REPO") \
-      {{ restic_install_path }}/restic dump "$SNAPSHOT_ID" "/{{ source.stdin_filename }}"
+    if [[ "$USE_STDOUT" == "true" ]]; then
+      restic_run "$REPO" dump "$SNAPSHOT_ID" "/{{ source.stdin_filename }}"
+    else
+      mkdir -p "$RESTORE_TARGET"
+      restic_run "$REPO" restore "$SNAPSHOT_ID" \
+        --target "$RESTORE_TARGET" \
+        --path "/{{ source.stdin_filename }}"
+      echo "" >&2
+      echo "Restored to: ${RESTORE_TARGET}/{{ source.stdin_filename }}" >&2
+      echo "To restore PostgreSQL database:" >&2
+      echo "  sudo -u postgres {{ postgresql_scripts_dir | default('/opt/postgresql') }}/pg_restore.sh <db> --dump ${RESTORE_TARGET}/{{ source.stdin_filename }}" >&2
+    fi
 {% else %}
-    RESTORE_TARGET="${RESTORE_TARGET:-/tmp/restic-restore}"
-    echo "Mode: filesystem → ${RESTORE_TARGET}" >&2
-    echo "" >&2
-    mkdir -p "$RESTORE_TARGET"
-    env $(restic_env "$REPO") \
-      {{ restic_install_path }}/restic restore "$SNAPSHOT_ID" \
-      --target "$RESTORE_TARGET" \
+    if [[ "$USE_STDOUT" == "true" ]]; then
+      restic_run "$REPO" dump "$SNAPSHOT_ID" \
 {% if source.paths is string %}
-      --path "{{ source.paths }}"
+        "{{ source.paths }}"
+{% else %}
+        "{{ source.paths | first }}"
+{% endif %}
+    else
+      mkdir -p "$RESTORE_TARGET"
+      restic_run "$REPO" restore "$SNAPSHOT_ID" \
+        --target "$RESTORE_TARGET" \
+{% if source.paths is string %}
+        --path "{{ source.paths }}"
 {% else %}
 {% for path in source.paths %}
-      --path "{{ path }}"{% if not loop.last %} \{% endif %}
+        --path "{{ path }}"{% if not loop.last %} \{% endif %}
 
 {% endfor %}
 {% endif %}
+      echo "" >&2
+      echo "Restored to: ${RESTORE_TARGET}" >&2
+    fi
 {% endif %}
     ;;
 {% endfor %}
   *)
     echo "Unknown source: ${SOURCE_NAME}" >&2; exit 1 ;;
 esac
+
+log_end "Restore: ${SOURCE_NAME} from ${REPO}"

@@ -20,7 +20,6 @@ HOSTNAME="{{ inventory_hostname }}"
 # Argument parsing
 # ---------------------------------------------------------------------------
 DATABASE=""
-SKIP_HELP=false
 
 usage() {
     cat <<EOF
@@ -112,6 +111,7 @@ echo "Target:    $BACKUP_FILE"
 echo ""
 
 echo "Starting backup..."
+echo "+ pg_dump --username=$PG_USER --port=$PG_PORT --format=$FORMAT --file=$BACKUP_FILE $DATABASE" >&2
 if pg_dump \
     --username="$PG_USER" \
     --port="$PG_PORT" \

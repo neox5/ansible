@@ -9,34 +9,30 @@ source {{ restic_script_dir }}/lib.sh
 
 REPO="${1:-}"
 
-if [[ -z "$REPO" ]]; then
+if [[ -z "$REPO" ]] || [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
   echo "Usage: $(basename "$0") <repo>"
   echo ""
   echo "Repositories:"
 {% for repo_name, repo in restic_repos.items() %}
   echo "  {{ repo_name }}{% if repo.check is defined and repo.check.read_data_subset is defined %} (subset: {{ repo.check.read_data_subset }}){% endif %}"
 {% endfor %}
-  exit 1
+  [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]] && exit 0 || exit 1
 fi
 
-echo "=== Restic Check: ${REPO} ==="
-echo "Started: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+log_start "Check: ${REPO}"
 
 case "$REPO" in
 {% for repo_name, repo in restic_repos.items() %}
   {{ repo_name }})
-    env $(restic_env "{{ repo_name }}") \
-      {{ restic_install_path }}/restic check \
+    restic_run "{{ repo_name }}" check \
 {% if repo.check is defined and repo.check.read_data_subset is defined %}
       --read-data-subset {{ repo.check.read_data_subset }} \
 {% endif %}
-      "$@"
+      "${@:2}"
     ;;
 {% endfor %}
   *)
     echo "Unknown repo: ${REPO}" >&2; exit 1 ;;
 esac
 
-echo ""
-echo "Completed: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
-echo "=== End Check: ${REPO} ==="
+log_end "Check: ${REPO}"

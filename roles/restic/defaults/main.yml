@@ -33,3 +33,6 @@ restic_retention:
   keep_weekly: 4
   keep_monthly: 3
   prune: true
+
+# Restore target directory (overridable via RESTORE_TARGET env var at runtime)
+restic_restore_target: "/tmp/restic-restore"
