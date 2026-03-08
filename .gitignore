@@ -6,6 +6,7 @@
 
 # snapshot files
 **/*.snp
+**/*.snp.txt
 
 # Ansible Galaxy roles (managed by requirements.yml)
 roles/roles-ansible.restic/
