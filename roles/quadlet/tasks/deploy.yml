@@ -1,4 +1,3 @@
----
 # Container deployment via Quadlet
 
 - name: Deploy Quadlet container unit
@@ -12,6 +11,7 @@
     ports: "{{ quadlet_ports if quadlet_ports else omit }}"
     volume: "{{ quadlet_volumes if quadlet_volumes else omit }}"
     network: "{{ quadlet_network if quadlet_network else omit }}"
+    dns: "{{ quadlet_dns if quadlet_dns else omit }}"
     cap_add: "{{ quadlet_capabilities if quadlet_capabilities else omit }}"
     security_opt: "{{ quadlet_security_opt if quadlet_security_opt else omit }}"
     healthcheck: "{{ quadlet_health_cmd if quadlet_health_cmd else omit }}"
@@ -57,38 +57,3 @@
         [Install]
         WantedBy=multi-user.target
   notify: reload systemd
-
-- name: Flush handlers to reload systemd
-  ansible.builtin.meta: flush_handlers
-
-- name: Enable Quadlet service
-  ansible.builtin.systemd_service:
-    name: "{{ quadlet_service_name }}"
-    enabled: "{{ quadlet_service_enabled }}"
-    daemon_reload: true
-  when: quadlet_service_enabled
-
-- name: Start Quadlet service
-  ansible.builtin.systemd_service:
-    name: "{{ quadlet_service_name }}"
-    state: "{{ quadlet_service_state }}"
-  when: quadlet_service_state == 'started'
-
-- name: Wait for service to be active
-  ansible.builtin.systemd_service:
-    name: "{{ quadlet_service_name }}"
-  register: service_status
-  until: service_status.status.ActiveState == "active"
-  retries: 20
-  delay: 3
-  when: quadlet_service_state == 'started'
-
-- name: Display deployment summary
-  ansible.builtin.debug:
-    msg:
-      - "Quadlet deployment complete"
-      - "Container: {{ quadlet_name }}"
-      - "Image: {{ quadlet_image }}"
-      - "Service: {{ quadlet_service_name }}"
-      - "State: {{ 'enabled and started' if quadlet_service_enabled and quadlet_service_state == 'started' else 'deployed' }}"
-      - "Health check: {{ 'enabled with systemd integration' if quadlet_health_cmd and quadlet_health_notify else 'enabled' if quadlet_health_cmd else 'disabled' }}"

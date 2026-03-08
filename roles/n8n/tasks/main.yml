@@ -1,6 +1,3 @@
----
-# n8n role - Main task orchestration
-
 - name: Include preflight checks
   import_tasks: preflight.yml
   tags:
@@ -24,6 +21,7 @@
       N8N_BLOCK_ENV_ACCESS_IN_NODE: "{{ n8n_block_env_access | string | lower }}"
       GENERIC_TIMEZONE: "{{ n8n_timezone }}"
       TZ: "{{ n8n_timezone }}"
+      NODEJS_PREFER_IPV4: "true"
       DB_TYPE: postgresdb
       DB_POSTGRESDB_HOST: "{{ n8n_db_host }}"
       DB_POSTGRESDB_PORT: "{{ n8n_db_port }}"

@@ -3,6 +3,7 @@
 security_ssh_port: 22
 security_ssh_allowed_users:
   - ansible
+  - admin
 
 # Firewall (restrictive baseline)
 security_firewall_enabled: yes
