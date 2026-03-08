@@ -13,6 +13,30 @@ SNAPSHOT_ID="latest"
 RESTORE_TARGET="${RESTORE_TARGET:-{{ restic_restore_target }}}"
 USE_STDOUT=false
 
+show_usage() {
+  local out="${1:-stdout}"
+  local fd=1; [[ "$out" == "stderr" ]] && fd=2
+  echo "Usage: $(basename "$0") --repo <repo> --src <source> [options]" >&$fd
+  echo "" >&$fd
+  echo "Options:" >&$fd
+  echo "  --snapshot <id>    Snapshot to restore (default: latest)" >&$fd
+  echo "  --target <dir>     Restore target directory (default: ${RESTORE_TARGET})" >&$fd
+  echo "  --stdout           Stream to stdout instead of writing to disk" >&$fd
+  echo "                     Single file: raw content" >&$fd
+  echo "                     Folder: tar archive" >&$fd
+  echo "  -h, --help         Show this help" >&$fd
+  echo "" >&$fd
+  echo "Repositories:" >&$fd
+{% for repo_name in restic_repos %}
+  echo "  {{ repo_name }}" >&$fd
+{% endfor %}
+  echo "" >&$fd
+  echo "Sources:" >&$fd
+{% for source_name in restic_sources %}
+  echo "  {{ source_name }}" >&$fd
+{% endfor %}
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --repo)     REPO="$2"; shift 2 ;;
@@ -20,35 +44,14 @@ while [[ $# -gt 0 ]]; do
     --snapshot) SNAPSHOT_ID="$2"; shift 2 ;;
     --target)   RESTORE_TARGET="$2"; shift 2 ;;
     --stdout)   USE_STDOUT=true; shift ;;
-    -h|--help)
-      echo "Usage: $(basename "$0") --repo <repo> --src <source> [options]"
-      echo ""
-      echo "Options:"
-      echo "  --snapshot <id>    Snapshot to restore (default: latest)"
-      echo "  --target <dir>     Restore target directory (default: ${RESTORE_TARGET})"
-      echo "  --stdout           Stream to stdout instead of writing to disk"
-      echo "                     Single file: raw content"
-      echo "                     Folder: tar archive"
-      echo "  -h, --help         Show this help"
-      echo ""
-      echo "Repositories:"
-{% for repo_name in restic_repos %}
-      echo "  {{ repo_name }}"
-{% endfor %}
-      echo ""
-      echo "Sources:"
-{% for source_name in restic_sources %}
-      echo "  {{ source_name }}"
-{% endfor %}
-      exit 0 ;;
+    -h|--help)  show_usage stdout; exit 0 ;;
     -*)         echo "Unknown option: $1" >&2; exit 1 ;;
     *)          echo "Unknown argument: $1" >&2; exit 1 ;;
   esac
 done
 
 if [[ -z "$REPO" ]] || [[ -z "$SOURCE_NAME" ]]; then
-  echo "Usage: $(basename "$0") --repo <repo> --src <source> [options]" >&2
-  echo "Run with --help for full usage." >&2
+  show_usage stderr
   exit 1
 fi
 
@@ -70,8 +73,9 @@ case "$SOURCE_NAME" in
         --path "/{{ source.stdin_filename }}"
       echo "" >&2
       echo "Restored to: ${RESTORE_TARGET}/{{ source.stdin_filename }}" >&2
-      echo "To restore PostgreSQL database:" >&2
-      echo "  sudo -u postgres {{ postgresql_scripts_dir | default('/opt/postgresql') }}/pg_restore.sh <db> --dump ${RESTORE_TARGET}/{{ source.stdin_filename }}" >&2
+{% if source.restore_hint is defined %}
+      echo "Hint: {{ source.restore_hint }}" >&2
+{% endif %}
     fi
 {% else %}
     if [[ "$USE_STDOUT" == "true" ]]; then
@@ -95,6 +99,9 @@ case "$SOURCE_NAME" in
 {% endif %}
       echo "" >&2
       echo "Restored to: ${RESTORE_TARGET}" >&2
+{% if source.restore_hint is defined %}
+      echo "Hint: {{ source.restore_hint }}" >&2
+{% endif %}
     fi
 {% endif %}
     ;;

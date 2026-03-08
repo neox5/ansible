@@ -8,7 +8,19 @@
 
 # Print and execute a command
 run_cmd() {
-  echo "+ $*" >&2
+  if [[ "${RESTIC_DEBUG:-0}" == "1" ]]; then
+    echo "+ $*" >&2
+  else
+    local -a display_args=()
+    for arg in "$@"; do
+      if [[ "$arg" == *PASSWORD* || "$arg" == *SECRET* ]]; then
+        display_args+=("${arg%%=*}=<MASKED>")
+      else
+        display_args+=("$arg")
+      fi
+    done
+    echo "+ ${display_args[*]}" >&2
+  fi
   "$@"
 }
 

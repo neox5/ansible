@@ -11,36 +11,35 @@ FROM_REPO=""
 TO_REPO=""
 SOURCE_FILTER=""
 
+show_usage() {
+  local out="${1:-stdout}"
+  local fd=1; [[ "$out" == "stderr" ]] && fd=2
+  echo "Usage: $(basename "$0") --from <repo> --to <repo> [--src <source>]" >&$fd
+  echo "" >&$fd
+  echo "Repositories:" >&$fd
+{% for repo_name in restic_repos %}
+  echo "  {{ repo_name }}" >&$fd
+{% endfor %}
+  echo "" >&$fd
+  echo "Sources (optional filter):" >&$fd
+{% for source_name in restic_sources %}
+  echo "  {{ source_name }}" >&$fd
+{% endfor %}
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --from) FROM_REPO="$2"; shift 2 ;;
     --to)   TO_REPO="$2"; shift 2 ;;
     --src)  SOURCE_FILTER="$2"; shift 2 ;;
-    -h|--help)
-      echo "Usage: $(basename "$0") --from <repo> --to <repo> [--src <source>]"
-      echo ""
-      echo "Repositories:"
-{% for repo_name in restic_repos %}
-      echo "  {{ repo_name }}"
-{% endfor %}
-      echo ""
-      echo "Sources (optional filter):"
-{% for source_name in restic_sources %}
-      echo "  {{ source_name }}"
-{% endfor %}
-      exit 0 ;;
+    -h|--help) show_usage stdout; exit 0 ;;
     -*)     echo "Unknown option: $1" >&2; exit 1 ;;
     *)      echo "Unknown argument: $1" >&2; exit 1 ;;
   esac
 done
 
 if [[ -z "$FROM_REPO" ]] || [[ -z "$TO_REPO" ]]; then
-  echo "Usage: $(basename "$0") --from <repo> --to <repo> [--src <source>]" >&2
-  echo "" >&2
-  echo "Repositories:" >&2
-{% for repo_name in restic_repos %}
-  echo "  {{ repo_name }}" >&2
-{% endfor %}
+  show_usage stderr
   exit 1
 fi
 

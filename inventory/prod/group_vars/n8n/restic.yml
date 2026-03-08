@@ -17,11 +17,13 @@ restic_sources:
     stdin: true
     stdin_command: "sudo -u postgres pg_dump -U postgres -Fc {{ n8n_db_name }}"
     stdin_filename: "n8n_database.dump"
+    restore_hint: "sudo -u postgres /opt/postgresql/pg_restore.sh {{ n8n_db_name }} --dump <path from above>"
     tags:
       - database
 
   n8n_data:
     paths:
       - "{{ n8n_data_dir }}"
+    restore_hint: "sudo cp -a /tmp/restic-restore{{ n8n_data_dir }}/. {{ n8n_data_dir }}/"
     tags:
       - data
