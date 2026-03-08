@@ -1,6 +1,6 @@
 ---
 # Lab Environment Setup
-# Complete baseline configuration for lab-vm
+# Complete baseline + n8n stack for lab-vm
 # Usage: ansible-playbook -i inventory/lab playbooks/lab.yml
 
 - name: Configure lab environment baseline
@@ -21,3 +21,5 @@
     - name: Import security hardening role
       ansible.builtin.import_role:
         name: security_hardening
+
+- import_playbook: n8n/deploy_stack.yml

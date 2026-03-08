@@ -56,4 +56,15 @@
       - |
         [Install]
         WantedBy=multi-user.target
-  notify: reload systemd
+  register: quadlet_unit
+
+- name: Reload systemd daemon to process Quadlet unit
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: quadlet_unit is changed
+
+- name: Enable and start Quadlet service
+  ansible.builtin.systemd:
+    name: "{{ quadlet_service_name }}"
+    enabled: "{{ quadlet_service_enabled }}"
+    state: "{{ quadlet_service_state }}"
