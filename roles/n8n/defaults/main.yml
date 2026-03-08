@@ -26,6 +26,9 @@ n8n_timezone: "UTC"
 # Security
 n8n_block_env_access: true
 
+# Storage
+n8n_binary_data_mode: "filesystem"
+
 # Container volume
 n8n_data_volume: "n8n_data"
 
