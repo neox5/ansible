@@ -1,0 +1,10 @@
+---
+# VictoriaMetrics Deployment
+# Deploys VictoriaMetrics single-node on monitoring hosts
+# Usage: ansible-playbook -i inventory/lab playbooks/victoriametrics.yml
+
+- name: Deploy VictoriaMetrics
+  hosts: monitoring
+  become: true
+  roles:
+    - victoriametrics

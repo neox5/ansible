@@ -1,0 +1,32 @@
+---
+# VictoriaMetrics Role - Configuration Defaults
+
+# Version
+victoriametrics_version: "v1.137.0"
+
+# System identity
+victoriametrics_system_user: "victoriametrics"
+victoriametrics_system_group: "{{ victoriametrics_system_user }}"
+
+# Storage
+victoriametrics_data_dir: "/var/lib/victoria-metrics"
+
+# Network
+victoriametrics_http_listen_addr: "127.0.0.1:8428"
+
+# Retention
+victoriametrics_retention_period_months: "12"
+
+# Performance
+victoriametrics_self_scrape_interval: "30s"
+victoriametrics_search_max_unique_timeseries: "100000"
+victoriametrics_max_open_files: 2097152
+
+# Service flags - passed directly to victoriametrics binary
+victoriametrics_service_args:
+  httpListenAddr: "{{ victoriametrics_http_listen_addr }}"
+  storageDataPath: "{{ victoriametrics_data_dir }}"
+  selfScrapeInterval: "{{ victoriametrics_self_scrape_interval }}"
+  retentionPeriod: "{{ victoriametrics_retention_period_months }}"
+  maxConcurrentInserts: 32
+  "search.maxUniqueTimeseries": "{{ victoriametrics_search_max_unique_timeseries }}"

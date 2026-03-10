@@ -1,0 +1,48 @@
+---
+# Installation tasks - user, data dir, binary
+
+- name: Create VictoriaMetrics system group
+  ansible.builtin.group:
+    name: "{{ victoriametrics_system_group }}"
+    state: present
+    system: true
+
+- name: Create VictoriaMetrics system user
+  ansible.builtin.user:
+    name: "{{ victoriametrics_system_user }}"
+    group: "{{ victoriametrics_system_group }}"
+    shell: /usr/sbin/nologin
+    system: true
+    createhome: false
+
+- name: Ensure VictoriaMetrics data directory exists
+  ansible.builtin.file:
+    path: "{{ victoriametrics_data_dir }}"
+    state: directory
+    owner: "{{ victoriametrics_system_user }}"
+    group: "{{ victoriametrics_system_group }}"
+    mode: "0755"
+
+- name: Download and extract VictoriaMetrics binary
+  ansible.builtin.unarchive:
+    src: "{{ victoriametrics_download_url }}"
+    dest: /tmp
+    remote_src: true
+    extra_opts:
+      - --no-same-owner
+  when: >
+    not victoriametrics_binary.stat.exists or
+    victoriametrics_version not in (victoriametrics_current_version.stdout | default(''))
+  notify: restart victoriametrics
+
+- name: Install VictoriaMetrics binary
+  ansible.builtin.copy:
+    src: /tmp/victoria-metrics-prod
+    dest: /usr/local/bin/victoria-metrics-prod
+    owner: "{{ victoriametrics_system_user }}"
+    group: "{{ victoriametrics_system_group }}"
+    mode: "0755"
+    remote_src: true
+  when: >
+    not victoriametrics_binary.stat.exists or
+    victoriametrics_version not in (victoriametrics_current_version.stdout | default(''))

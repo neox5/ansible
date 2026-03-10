@@ -1,0 +1,17 @@
+---
+# VictoriaMetrics Role - Immutable Variables
+
+# Architecture mapping for binary download
+go_arch_map:
+  i386: "386"
+  x86_64: "amd64"
+  aarch64: "arm64"
+  armv7l: "arm"
+  armv6l: "arm6vl"
+
+go_arch: "{{ go_arch_map[ansible_facts['architecture']] | default(ansible_facts['architecture']) }}"
+
+# Binary download
+victoriametrics_platform: "{% if victoriametrics_version.replace('v', '') is version('1.79.0', '>=') %}-linux{% endif %}"
+victoriametrics_repo_url: "https://github.com/VictoriaMetrics/VictoriaMetrics"
+victoriametrics_download_url: "{{ victoriametrics_repo_url }}/releases/download/{{ victoriametrics_version }}/victoria-metrics{{ victoriametrics_platform }}-{{ go_arch }}-{{ victoriametrics_version }}.tar.gz"

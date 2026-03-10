@@ -1,0 +1,15 @@
+---
+# VictoriaMetrics role - Main task orchestration
+# Debian 13 Trixie only
+
+- name: Include preflight checks
+  ansible.builtin.import_tasks: preflight.yml
+
+- name: Include installation tasks
+  ansible.builtin.import_tasks: install.yml
+
+- name: Include configuration tasks
+  ansible.builtin.import_tasks: configure.yml
+
+- name: Include verification tasks
+  ansible.builtin.import_tasks: verify.yml

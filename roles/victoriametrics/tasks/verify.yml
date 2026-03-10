@@ -1,0 +1,26 @@
+---
+# Verification tasks - start service and confirm healthy
+
+- name: Ensure VictoriaMetrics service is started
+  ansible.builtin.systemd:
+    name: victoriametrics
+    state: started
+
+- name: Wait for VictoriaMetrics health endpoint
+  ansible.builtin.uri:
+    url: "http://{{ victoriametrics_http_listen_addr }}/health"
+    status_code: 200
+    timeout: 5
+  register: victoriametrics_health
+  retries: 10
+  delay: 3
+  until: victoriametrics_health.status == 200
+
+- name: Display deployment summary
+  ansible.builtin.debug:
+    msg:
+      - "VictoriaMetrics {{ victoriametrics_version }} deployment complete"
+      - "Listen: {{ victoriametrics_http_listen_addr }}"
+      - "Data: {{ victoriametrics_data_dir }}"
+      - "Retention: {{ victoriametrics_retention_period_months }} months"
+      - "Status: healthy"
