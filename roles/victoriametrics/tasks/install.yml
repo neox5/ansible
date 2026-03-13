@@ -38,9 +38,9 @@
 - name: Install VictoriaMetrics binary
   ansible.builtin.copy:
     src: /tmp/victoria-metrics-prod
-    dest: /usr/local/bin/victoria-metrics-prod
-    owner: "{{ victoriametrics_system_user }}"
-    group: "{{ victoriametrics_system_group }}"
+    dest: /usr/local/bin/victoriametrics
+    owner: root
+    group: root
     mode: "0755"
     remote_src: true
   when: >

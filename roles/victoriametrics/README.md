@@ -18,6 +18,13 @@ VictoriaMetrics single-node deployment for Debian 13 Trixie.
 
 ## Role Variables
 
+### Lifecycle
+
+```yaml
+victoriametrics_state: present # present | absent
+victoriametrics_remove_data: false # true removes data dir (only valid with state: absent)
+```
+
 ### Version
 
 ```yaml
@@ -34,7 +41,7 @@ victoriametrics_system_group: "victoriametrics"
 ### Storage
 
 ```yaml
-victoriametrics_data_dir: "/var/lib/victoria-metrics"
+victoriametrics_data_dir: "/var/lib/victoriametrics"
 ```
 
 ### Network
@@ -64,7 +71,21 @@ See `defaults/main.yml` for all available variables.
     - victoriametrics
 ```
 
+### Removal (preserve data)
+
+```bash
+ansible-playbook playbooks/victoriametrics.yml -e "victoriametrics_state=absent"
+```
+
+### Removal (destroy data)
+
+```bash
+ansible-playbook playbooks/victoriametrics.yml -e "victoriametrics_state=absent victoriametrics_remove_data=true"
+```
+
 ## What This Role Does
+
+### Install (`state: present`)
 
 1. Validates environment (Debian 13+, systemd)
 2. Creates system user and group
@@ -73,6 +94,15 @@ See `defaults/main.yml` for all available variables.
 5. Deploys systemd service unit
 6. Enables and starts service
 7. Verifies health endpoint responds
+
+### Remove (`state: absent`)
+
+1. Validates environment
+2. Stops and disables service
+3. Removes systemd unit file
+4. Removes binary
+5. Removes data directory (only if `victoriametrics_remove_data: true`)
+6. Removes system user and group
 
 ## License
 

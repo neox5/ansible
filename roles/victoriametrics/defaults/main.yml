@@ -4,12 +4,16 @@
 # Version
 victoriametrics_version: "v1.137.0"
 
+# Lifecycle
+victoriametrics_state: present
+victoriametrics_remove_data: false
+
 # System identity
 victoriametrics_system_user: "victoriametrics"
 victoriametrics_system_group: "{{ victoriametrics_system_user }}"
 
 # Storage
-victoriametrics_data_dir: "/var/lib/victoria-metrics"
+victoriametrics_data_dir: "/var/lib/victoriametrics"
 
 # Network
 victoriametrics_http_listen_addr: "127.0.0.1:8428"

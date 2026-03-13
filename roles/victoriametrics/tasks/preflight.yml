@@ -21,16 +21,28 @@
     that: ansible_facts['service_mgr'] == 'systemd'
     fail_msg: "This role requires systemd"
 
+- name: Assert valid state value
+  ansible.builtin.assert:
+    quiet: true
+    that: victoriametrics_state in ['present', 'absent']
+    fail_msg: "victoriametrics_state must be 'present' or 'absent'"
+
+- name: Assert remove_data only set when state is absent
+  ansible.builtin.assert:
+    quiet: true
+    that: not victoriametrics_remove_data or victoriametrics_state == 'absent'
+    fail_msg: "victoriametrics_remove_data: true requires victoriametrics_state: absent"
+
 - name: Check if VictoriaMetrics binary is already installed
   ansible.builtin.stat:
-    path: /usr/local/bin/victoria-metrics-prod
+    path: /usr/local/bin/victoriametrics
   register: victoriametrics_binary
   changed_when: false
   check_mode: false
 
 - name: Check current VictoriaMetrics version
   ansible.builtin.command:
-    cmd: /usr/local/bin/victoria-metrics-prod --version
+    cmd: /usr/local/bin/victoriametrics --version
   register: victoriametrics_current_version
   changed_when: false
   failed_when: false
@@ -39,4 +51,4 @@
 
 - name: Display role information
   ansible.builtin.debug:
-    msg: "VictoriaMetrics role - version {{ victoriametrics_version }}"
+    msg: "VictoriaMetrics role - state={{ victoriametrics_state }} version={{ victoriametrics_version }}"

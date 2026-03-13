@@ -1,0 +1,46 @@
+---
+# Removal tasks - teardown VictoriaMetrics installation
+
+- name: Stop VictoriaMetrics service
+  ansible.builtin.systemd:
+    name: victoriametrics
+    state: stopped
+  failed_when: false
+
+- name: Disable VictoriaMetrics service
+  ansible.builtin.systemd:
+    name: victoriametrics
+    enabled: false
+  failed_when: false
+
+- name: Remove VictoriaMetrics systemd service unit
+  ansible.builtin.file:
+    path: /etc/systemd/system/victoriametrics.service
+    state: absent
+  register: victoriametrics_unit_removed
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: victoriametrics_unit_removed is changed
+
+- name: Remove VictoriaMetrics binary
+  ansible.builtin.file:
+    path: /usr/local/bin/victoriametrics
+    state: absent
+
+- name: Remove VictoriaMetrics data directory
+  ansible.builtin.file:
+    path: "{{ victoriametrics_data_dir }}"
+    state: absent
+  when: victoriametrics_remove_data | bool
+
+- name: Remove VictoriaMetrics system user
+  ansible.builtin.user:
+    name: "{{ victoriametrics_system_user }}"
+    state: absent
+
+- name: Remove VictoriaMetrics system group
+  ansible.builtin.group:
+    name: "{{ victoriametrics_system_group }}"
+    state: absent

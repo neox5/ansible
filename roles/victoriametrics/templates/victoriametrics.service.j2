@@ -10,7 +10,7 @@ User={{ victoriametrics_system_user }}
 Group={{ victoriametrics_system_group }}
 LimitNOFILE={{ victoriametrics_max_open_files }}
 
-ExecStart=/usr/local/bin/victoria-metrics-prod \
+ExecStart=/usr/local/bin/victoriametrics \
 {% for flag, value in victoriametrics_service_args.items() %}
   -{{ flag }}={{ value }}{% if not loop.last %} \{% endif %}
 
