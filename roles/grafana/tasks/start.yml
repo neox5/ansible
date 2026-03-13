@@ -1,0 +1,49 @@
+---
+# Start tasks - deploy Grafana container via quadlet role
+
+- name: Build container environment
+  ansible.builtin.set_fact:
+    _grafana_container_environment:
+      GF_SERVER_HTTP_PORT: "{{ grafana_port | string }}"
+      GF_SERVER_DOMAIN: "{{ grafana_domain }}"
+      GF_PATHS_DATA: "/var/lib/grafana"
+      GF_PATHS_PLUGINS: "/var/lib/grafana/plugins"
+      GF_PATHS_PROVISIONING: "/etc/grafana/provisioning"
+      GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: >-
+        {{ grafana_datasources | map(attribute='type')
+           | select('in', grafana_plugin_map)
+           | select('in', grafana_plugin_map | dict2items
+               | selectattr('value.unsigned', 'defined')
+               | selectattr('value.unsigned')
+               | map(attribute='key') | list)
+           | list | unique | join(',') }}
+  tags:
+    - grafana
+    - grafana-start
+
+- name: Deploy Grafana container via Quadlet
+  ansible.builtin.include_role:
+    name: quadlet
+  vars:
+    quadlet_name: grafana
+    quadlet_image: "docker.io/grafana/grafana:{{ grafana_version }}"
+    quadlet_network: host
+    quadlet_environment: "{{ _grafana_container_environment }}"
+    quadlet_volumes:
+      - "{{ grafana_data_dir }}:/var/lib/grafana"
+      - "{{ grafana_plugins_dir }}:/var/lib/grafana/plugins"
+      - "{{ grafana_dashboards_dir }}:/var/lib/grafana/dashboards"
+      - "{{ grafana_datasources_dir }}:/etc/grafana/provisioning/datasources:ro"
+    quadlet_health_cmd: "wget --spider -q http://localhost:{{ grafana_port }}/api/health || exit 1"
+    quadlet_health_notify: true
+    quadlet_health_interval: "{{ grafana_health_check_interval }}"
+    quadlet_health_timeout: "{{ grafana_health_check_timeout }}"
+    quadlet_health_retries: "{{ grafana_health_check_retries }}"
+    quadlet_health_start_period: "{{ grafana_health_check_start_period }}"
+    quadlet_timeout_start_sec: "{{ grafana_systemd_timeout_start }}"
+    quadlet_restart_sec: "{{ grafana_systemd_restart_sec }}"
+    quadlet_start_limit_burst: "{{ grafana_systemd_start_limit_burst }}"
+    quadlet_start_limit_interval: "{{ grafana_systemd_start_limit_interval }}"
+  tags:
+    - grafana
+    - grafana-start

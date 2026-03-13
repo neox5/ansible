@@ -1,0 +1,40 @@
+---
+# Install a single Grafana plugin - called via include_tasks with grafana_plugin_id
+
+- name: "Check installed version of {{ grafana_plugin_id }}"
+  ansible.builtin.stat:
+    path: "{{ grafana_plugins_dir }}/{{ grafana_plugin_id }}/plugin.json"
+  register: _plugin_installed
+
+- name: "Read installed version of {{ grafana_plugin_id }}"
+  ansible.builtin.slurp:
+    src: "{{ grafana_plugins_dir }}/{{ grafana_plugin_id }}/plugin.json"
+  register: _plugin_json
+  when: _plugin_installed.stat.exists
+
+- name: "Download plugin {{ grafana_plugin_id }} {{ _version }}"
+  vars:
+    _version: "{{ grafana_plugin_versions[grafana_plugin_id] }}"
+    _archive_url: "{{ grafana_plugin_map[grafana_plugin_id].release_url }}/{{ _version }}/{{ grafana_plugin_id }}-{{ _version }}.tar.gz"
+  ansible.builtin.get_url:
+    url: "{{ _archive_url }}"
+    dest: "/tmp/{{ grafana_plugin_id }}-{{ _version }}.tar.gz"
+    mode: "0644"
+  when: >
+    not _plugin_installed.stat.exists or
+    _version not in (_plugin_json.content | default('') | b64decode)
+  notify: restart grafana
+
+- name: "Extract plugin {{ grafana_plugin_id }} {{ _version }}"
+  vars:
+    _version: "{{ grafana_plugin_versions[grafana_plugin_id] }}"
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ grafana_plugin_id }}-{{ _version }}.tar.gz"
+    dest: "{{ grafana_plugins_dir }}"
+    remote_src: true
+    owner: "{{ grafana_system_user }}"
+    group: "{{ grafana_system_group }}"
+  when: >
+    not _plugin_installed.stat.exists or
+    _version not in (_plugin_json.content | default('') | b64decode)
+  notify: restart grafana

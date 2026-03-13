@@ -1,0 +1,19 @@
+---
+galaxy_info:
+  role_name: grafana
+  author: neox5
+  description: Grafana OSS deployment via Podman Quadlet for Debian 13 Trixie
+  license: MIT
+  min_ansible_version: "2.15"
+
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+
+  galaxy_tags:
+    - monitoring
+    - grafana
+    - observability
+
+dependencies: []

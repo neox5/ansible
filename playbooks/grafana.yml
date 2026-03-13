@@ -1,0 +1,10 @@
+---
+# Grafana deployment playbook
+#
+# Usage: ansible-playbook -i inventory/lab playbooks/grafana.yml
+
+- name: Deploy Grafana
+  hosts: monitoring
+  become: true
+  roles:
+    - grafana

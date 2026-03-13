@@ -1,0 +1,12 @@
+---
+# Host variables for lab-vm
+# Role: grafana
+
+grafana_domain: "grafana.zion.local"
+
+grafana_datasources:
+  - name: "VictoriaMetrics"
+    uid: "victoriametrics"
+    type: "victoriametrics-metrics-datasource"
+    url: "http://localhost:8428"
+    is_default: true

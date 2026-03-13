@@ -1,0 +1,55 @@
+---
+# Grafana Role - Configuration Defaults
+
+# Version
+grafana_version: "11.6.0"
+
+# Plugin versions (pinned - override in inventory to upgrade)
+grafana_plugin_versions:
+  victoriametrics-metrics-datasource: "v0.23.1"
+  victoriametrics-logs-datasource: "v0.26.3"
+
+# System identity
+# UID/GID 472 matches grafana/grafana container default - avoids permission issues
+grafana_system_user: "grafana"
+grafana_system_group: "{{ grafana_system_user }}"
+grafana_uid: 472
+grafana_gid: 472
+
+# Paths
+grafana_base_dir: "/var/lib/grafana"
+grafana_data_dir: "{{ grafana_base_dir }}/data"
+grafana_plugins_dir: "{{ grafana_base_dir }}/plugins"
+grafana_dashboards_dir: "{{ grafana_base_dir }}/dashboards"
+grafana_provisioning_dir: "{{ grafana_base_dir }}/provisioning"
+grafana_datasources_dir: "{{ grafana_provisioning_dir }}/datasources"
+
+# Network
+grafana_port: 3000
+grafana_domain: "localhost"
+
+# Datasources (required - define in inventory)
+# Supported types: prometheus, victoriametrics-metrics-datasource,
+#                  loki, victoriametrics-logs-datasource,
+#                  alertmanager, postgres, elasticsearch
+# Example:
+# grafana_datasources:
+#   - name: "VictoriaMetrics"
+#     uid: "victoriametrics"
+#     type: "victoriametrics-metrics-datasource"
+#     url: "http://localhost:8428"
+#     is_default: true
+#     json_data: {}      # optional type-specific settings
+grafana_datasources: []
+
+# Health check
+grafana_health_check_interval: "30s"
+grafana_health_check_timeout: "10s"
+grafana_health_check_retries: 3
+grafana_health_check_start_period: "60s"
+
+# Systemd service tuning
+grafana_systemd_timeout_start: 120
+grafana_systemd_restart_sec: 10
+grafana_systemd_start_limit_burst: 5
+grafana_systemd_start_limit_interval: 600

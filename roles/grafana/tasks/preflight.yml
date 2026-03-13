@@ -1,0 +1,44 @@
+---
+# Preflight checks - validate environment and required variables
+
+- name: Assert Debian 13 (Trixie)
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == "Debian"
+      - ansible_distribution_major_version == "13"
+    fail_msg: "This role only supports Debian 13 (Trixie)"
+  tags:
+    - grafana
+    - grafana-preflight
+
+- name: Assert grafana_datasources is defined
+  ansible.builtin.assert:
+    that:
+      - grafana_datasources is defined
+      - grafana_datasources | length > 0
+    fail_msg: "grafana_datasources must be defined with at least one entry"
+  tags:
+    - grafana
+    - grafana-preflight
+
+- name: Assert each datasource has required fields
+  ansible.builtin.assert:
+    that:
+      - item.name is defined and item.name | length > 0
+      - item.uid is defined and item.uid | length > 0
+      - item.type is defined and item.type in grafana_supported_types
+      - item.url is defined and item.url | length > 0
+    fail_msg: "Datasource '{{ item.name | default('unknown') }}' missing required fields or unsupported type"
+  loop: "{{ grafana_datasources }}"
+  tags:
+    - grafana
+    - grafana-preflight
+
+- name: Assert exactly one default datasource
+  ansible.builtin.assert:
+    that:
+      - grafana_datasources | selectattr('is_default', 'defined') | selectattr('is_default') | list | length == 1
+    fail_msg: "Exactly one datasource must have is_default: true"
+  tags:
+    - grafana
+    - grafana-preflight

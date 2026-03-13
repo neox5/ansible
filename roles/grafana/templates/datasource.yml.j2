@@ -1,0 +1,20 @@
+# Managed by Ansible - do not edit manually
+# Datasource: {{ item.name }} ({{ item.uid }})
+apiVersion: 1
+
+datasources:
+  - name: "{{ item.name }}"
+    uid: "{{ item.uid }}"
+    type: "{{ item.type }}"
+    access: proxy
+    url: "{{ item.url }}"
+    isDefault: {{ item.is_default | default(false) | bool | lower }}
+    editable: false
+{% if item.json_data is defined and item.json_data %}
+    jsonData:
+{{ item.json_data | to_nice_yaml(indent=2) | indent(6, first=true) }}
+{% endif %}
+{% if item.secure_json_data is defined and item.secure_json_data %}
+    secureJsonData:
+{{ item.secure_json_data | to_nice_yaml(indent=2) | indent(6, first=true) }}
+{% endif %}

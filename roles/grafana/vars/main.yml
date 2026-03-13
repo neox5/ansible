@@ -1,0 +1,22 @@
+---
+# Grafana Role - Internal variables (not user-overridable)
+
+# Supported datasource types for preflight validation
+grafana_supported_types:
+  - prometheus
+  - victoriametrics-metrics-datasource
+  - loki
+  - victoriametrics-logs-datasource
+  - alertmanager
+  - postgres
+  - elasticsearch
+
+# Plugin map - defines download source and signing status per plugin type
+# Both plugins ship tar.gz - no additional extraction tooling required on target
+grafana_plugin_map:
+  victoriametrics-metrics-datasource:
+    release_url: "https://github.com/VictoriaMetrics/victoriametrics-datasource/releases/download"
+    unsigned: true
+  victoriametrics-logs-datasource:
+    release_url: "https://github.com/VictoriaMetrics/victorialogs-datasource/releases/download"
+    unsigned: true
