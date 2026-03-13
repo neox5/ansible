@@ -11,7 +11,6 @@
   loop: "{{ grafana_datasources }}"
   loop_control:
     label: "{{ item.uid }}"
-  notify: restart grafana
   tags:
     - grafana
     - grafana-configure
@@ -35,7 +34,6 @@
   when: >
     item.path | basename | replace('.yml', '')
     not in (grafana_datasources | map(attribute='uid') | list)
-  notify: restart grafana
   tags:
     - grafana
     - grafana-configure

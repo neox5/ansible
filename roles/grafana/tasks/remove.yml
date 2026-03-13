@@ -1,0 +1,41 @@
+---
+# Removal tasks - teardown Grafana installation
+
+- name: Stop Grafana service
+  ansible.builtin.systemd:
+    name: grafana
+    state: stopped
+  failed_when: false
+
+- name: Disable Grafana service
+  ansible.builtin.systemd:
+    name: grafana
+    enabled: false
+  failed_when: false
+
+- name: Remove Grafana Quadlet unit file
+  ansible.builtin.file:
+    path: /etc/containers/systemd/grafana.container
+    state: absent
+  register: _grafana_unit_removed
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: _grafana_unit_removed is changed
+
+- name: Remove Grafana base directory
+  ansible.builtin.file:
+    path: "{{ grafana_base_dir }}"
+    state: absent
+  when: grafana_remove_data | bool
+
+- name: Remove Grafana system user
+  ansible.builtin.user:
+    name: "{{ grafana_system_user }}"
+    state: absent
+
+- name: Remove Grafana system group
+  ansible.builtin.group:
+    name: "{{ grafana_system_group }}"
+    state: absent

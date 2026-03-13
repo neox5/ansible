@@ -57,3 +57,25 @@
   tags:
     - grafana
     - grafana-install
+
+- name: Find installed plugin directories
+  ansible.builtin.find:
+    paths: "{{ grafana_plugins_dir }}"
+    file_type: directory
+    depth: 1
+  register: _installed_plugin_dirs
+  tags:
+    - grafana
+    - grafana-install
+
+- name: Remove orphaned plugin directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ _installed_plugin_dirs.files }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  when: item.path | basename not in _grafana_required_plugins
+  tags:
+    - grafana
+    - grafana-install

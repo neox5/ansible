@@ -6,9 +6,16 @@
 
 - name: Include install tasks
   ansible.builtin.import_tasks: install.yml
+  when: grafana_state == 'present'
 
 - name: Include configure tasks
   ansible.builtin.import_tasks: configure.yml
+  when: grafana_state == 'present'
 
 - name: Include start tasks
   ansible.builtin.import_tasks: start.yml
+  when: grafana_state == 'present'
+
+- name: Include removal tasks
+  ansible.builtin.import_tasks: remove.yml
+  when: grafana_state == 'absent'

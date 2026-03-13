@@ -74,8 +74,8 @@ pinned via `grafana_plugin_versions`.
 
 ```yaml
 grafana_plugin_versions:
-  victoriametrics-metrics-datasource: "v0.14.0"
-  victoriametrics-logs-datasource: "v0.8.0"
+  victoriametrics-metrics-datasource: "v0.23.1"
+  victoriametrics-logs-datasource: "v0.26.3"
 ```
 
 ## Directory Structure

@@ -1,7 +1,2 @@
 ---
 # Grafana role handlers
-
-- name: restart grafana
-  ansible.builtin.systemd:
-    name: grafana
-    state: restarted

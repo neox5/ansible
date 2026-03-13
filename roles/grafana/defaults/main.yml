@@ -1,6 +1,10 @@
 ---
 # Grafana Role - Configuration Defaults
 
+# Lifecycle
+grafana_state: present # present | absent
+grafana_remove_data: false # true removes base dir (only valid with state: absent)
+
 # Version
 grafana_version: "11.6.0"
 

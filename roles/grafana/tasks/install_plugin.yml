@@ -23,7 +23,6 @@
   when: >
     not _plugin_installed.stat.exists or
     _version not in (_plugin_json.content | default('') | b64decode)
-  notify: restart grafana
 
 - name: "Extract plugin {{ grafana_plugin_id }} {{ _version }}"
   vars:
@@ -37,4 +36,10 @@
   when: >
     not _plugin_installed.stat.exists or
     _version not in (_plugin_json.content | default('') | b64decode)
-  notify: restart grafana
+
+- name: "Remove plugin archive {{ grafana_plugin_id }} {{ _version }}"
+  vars:
+    _version: "{{ grafana_plugin_versions[grafana_plugin_id] }}"
+  ansible.builtin.file:
+    path: "/tmp/{{ grafana_plugin_id }}-{{ _version }}.tar.gz"
+    state: absent
