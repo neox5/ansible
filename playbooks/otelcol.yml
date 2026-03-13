@@ -1,0 +1,10 @@
+---
+# OpenTelemetry Collector Deployment
+# Deploys OTel Collector single-instance on monitoring hosts
+# Usage: ansible-playbook -i inventory/lab playbooks/otelcol.yml
+
+- name: Deploy OpenTelemetry Collector
+  hosts: monitoring
+  become: true
+  roles:
+    - otelcol

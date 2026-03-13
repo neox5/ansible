@@ -1,0 +1,65 @@
+---
+# Installation tasks - user, config dir, binary
+
+- name: Create OTel Collector system group
+  ansible.builtin.group:
+    name: "{{ otelcol_system_group }}"
+    state: present
+    system: true
+
+- name: Create OTel Collector system user
+  ansible.builtin.user:
+    name: "{{ otelcol_system_user }}"
+    group: "{{ otelcol_system_group }}"
+    shell: /usr/sbin/nologin
+    system: true
+    createhome: false
+
+- name: Ensure OTel Collector config directory exists
+  ansible.builtin.file:
+    path: "{{ otelcol_config_dir }}"
+    state: directory
+    owner: "{{ otelcol_system_user }}"
+    group: "{{ otelcol_system_group }}"
+    mode: "0750"
+
+- name: Check if OTel Collector binary is already installed
+  ansible.builtin.stat:
+    path: "/usr/local/bin/{{ otelcol_binary_name }}"
+  register: otelcol_binary
+  changed_when: false
+  check_mode: false
+
+- name: Check current OTel Collector version
+  ansible.builtin.command:
+    cmd: "/usr/local/bin/{{ otelcol_binary_name }} --version"
+  register: otelcol_current_version
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: otelcol_binary.stat.exists
+
+- name: Download and extract OTel Collector binary
+  ansible.builtin.unarchive:
+    src: "{{ otelcol_download_url }}"
+    dest: /tmp
+    remote_src: true
+    extra_opts:
+      - --no-same-owner
+  when: >
+    not otelcol_binary.stat.exists or
+    otelcol_version not in (otelcol_current_version.stdout | default(''))
+  notify: restart otelcol
+
+- name: Install OTel Collector binary
+  ansible.builtin.copy:
+    src: "/tmp/{{ otelcol_binary_name }}"
+    dest: "/usr/local/bin/{{ otelcol_binary_name }}"
+    owner: root
+    group: root
+    mode: "0755"
+    remote_src: true
+  when: >
+    not otelcol_binary.stat.exists or
+    otelcol_version not in (otelcol_current_version.stdout | default(''))
+  notify: restart otelcol

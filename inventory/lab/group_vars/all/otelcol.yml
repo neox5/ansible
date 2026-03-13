@@ -1,0 +1,5 @@
+---
+# OTel Collector: Lab Environment
+# Applied to: all lab hosts
+
+otelcol_environment: "lab"

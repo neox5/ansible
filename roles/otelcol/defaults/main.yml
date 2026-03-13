@@ -1,0 +1,25 @@
+---
+# OTel Collector Role - Configuration Defaults
+
+# Version
+otelcol_version: "v0.147.0"
+
+# Binary
+otelcol_binary_name: "otelcol-contrib"
+
+# Download (override for custom builds)
+otelcol_download_url: "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/{{ otelcol_version }}/{{ otelcol_binary_name }}_{{ otelcol_version | regex_replace('^v', '') }}_linux_{{ go_arch }}.tar.gz"
+
+# System identity
+otelcol_system_user: "otelcol"
+otelcol_system_group: "{{ otelcol_system_user }}"
+
+# Paths
+otelcol_config_dir: "/etc/otelcol"
+otelcol_config_file: "{{ otelcol_config_dir }}/config.yaml"
+
+# Network
+otelcol_health_check_endpoint: "http://127.0.0.1:13133"
+
+# Collector configuration (required - must be set in inventory)
+otelcol_config: {}

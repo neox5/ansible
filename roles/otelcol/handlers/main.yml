@@ -1,0 +1,7 @@
+---
+# OTel Collector role handlers
+
+- name: restart otelcol
+  ansible.builtin.systemd:
+    name: otelcol
+    state: restarted

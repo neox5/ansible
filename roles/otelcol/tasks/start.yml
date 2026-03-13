@@ -1,0 +1,26 @@
+---
+# Start tasks - start service and confirm healthy
+
+- name: Ensure OTel Collector service is started
+  ansible.builtin.systemd:
+    name: otelcol
+    state: started
+
+- name: Wait for OTel Collector health endpoint
+  ansible.builtin.uri:
+    url: "{{ otelcol_health_check_endpoint }}"
+    status_code: 200
+    timeout: 5
+  register: otelcol_health
+  retries: 10
+  delay: 3
+  until: otelcol_health.status == 200
+
+- name: Display deployment summary
+  ansible.builtin.debug:
+    msg:
+      - "OTel Collector {{ otelcol_version }} deployment complete"
+      - "Binary: {{ otelcol_binary_name }}"
+      - "Config: {{ otelcol_config_file }}"
+      - "Health: {{ otelcol_health_check_endpoint }}"
+      - "Status: healthy"

@@ -1,0 +1,39 @@
+---
+# Configuration tasks - config.yaml and systemd service unit
+
+- name: Deploy OTel Collector configuration
+  ansible.builtin.template:
+    src: config.yaml.j2
+    dest: "{{ otelcol_config_file }}"
+    owner: "{{ otelcol_system_user }}"
+    group: "{{ otelcol_system_group }}"
+    mode: "0640"
+  notify: restart otelcol
+
+- name: Validate OTel Collector configuration
+  ansible.builtin.command:
+    cmd: "/usr/local/bin/{{ otelcol_binary_name }} validate --config={{ otelcol_config_file }}"
+  changed_when: false
+
+- name: Deploy OTel Collector systemd service unit
+  ansible.builtin.template:
+    src: otelcol.service.j2
+    dest: /etc/systemd/system/otelcol.service
+    owner: root
+    group: root
+    mode: "0644"
+  register: otelcol_service_unit
+  notify: restart otelcol
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: otelcol_service_unit is changed
+
+- name: Enable OTel Collector service
+  ansible.builtin.systemd:
+    name: otelcol
+    enabled: true
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

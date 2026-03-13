@@ -1,0 +1,80 @@
+---
+# OTel Collector: lab-vm
+# Role: otelcol
+otelcol_config:
+  extensions:
+    health_check:
+      endpoint: "127.0.0.1:13133"
+
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "127.0.0.1:4317"
+
+    hostmetrics:
+      collection_interval: 15s
+      scrapers:
+        cpu:
+        memory:
+        disk:
+        filesystem:
+        network:
+        load:
+        paging:
+        processes:
+
+  processors:
+    batch:
+      timeout: 15s
+      send_batch_size: 1000
+
+  exporters:
+    prometheusremotewrite:
+      endpoint: "http://127.0.0.1:8428/api/v1/write"
+      tls:
+        insecure: true
+      resource_to_telemetry_conversion:
+        enabled: true
+      remote_write_queue:
+        enabled: true
+        queue_size: 1000
+      timeout: 30s
+      retry_on_failure:
+        enabled: true
+        initial_interval: 1s
+        max_interval: 30s
+        max_elapsed_time: 5m
+
+  service:
+    extensions: [health_check]
+
+    pipelines:
+      metrics/host:
+        receivers: [hostmetrics]
+        processors: [batch]
+        exporters: [prometheusremotewrite]
+
+      metrics/self:
+        receivers: [otlp]
+        processors: [batch]
+        exporters: [prometheusremotewrite]
+
+    telemetry:
+      logs:
+        level: info
+
+      metrics:
+        level: detailed
+        readers:
+          - periodic:
+              interval: 15000
+              exporter:
+                otlp:
+                  protocol: grpc
+                  endpoint: "http://127.0.0.1:4317"
+
+      resource:
+        service.name: "otelcol-{{ ansible_hostname }}"
+        service.version: "{{ otelcol_version }}"
+        deployment.environment: "{{ otelcol_environment }}"

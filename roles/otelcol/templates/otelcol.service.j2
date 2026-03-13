@@ -1,0 +1,27 @@
+# {{ ansible_managed }}
+[Unit]
+Description=OpenTelemetry Collector
+After=network.target
+
+[Service]
+Type=simple
+User={{ otelcol_system_user }}
+Group={{ otelcol_system_group }}
+
+ExecStart=/usr/local/bin/{{ otelcol_binary_name }} \
+  --config={{ otelcol_config_file }}
+
+SyslogIdentifier=otelcol
+Restart=always
+RestartSec=5
+
+PrivateTmp=yes
+ProtectHome=yes
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=yes
+
+[Install]
+WantedBy=multi-user.target
