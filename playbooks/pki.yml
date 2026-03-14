@@ -1,15 +1,9 @@
 ---
 # stepca Deployment
-# Deploys Smallstep step-ca issuing CA on pki hosts
-#
-# Usage:
 #   ansible-playbook -i inventory/lab playbooks/pki.yml
-#   ansible-playbook -i inventory/prod playbooks/pki.yml
-#
-# See roles/stepca/README.md for bootstrap process documentation.
 
 - name: Deploy stepca
-  hosts: pki
+  hosts: all
   become: true
   roles:
     - stepca

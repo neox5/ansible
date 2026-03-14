@@ -1,15 +1,16 @@
 ---
 # ============================================================================
-# Restic: n8n Sources
-# File: group_vars/n8n/restic.yml
+# Restic: n150 Backup Sources
+# File: group_vars/n150/restic.yml
 # Role: restic (custom)
 # ============================================================================
 #
-# Defines what gets backed up for all n8n hosts.
+# Defines what gets backed up on all n150 hosts.
 # Repos and jobs are host-specific (host_vars/<host>/restic.yml).
 #
-# Applied to: All hosts in 'n8n' group
-# Variable precedence: Overrides all/, overridden by host_vars/
+# Applied to: All hosts in 'n150' group
+# Variable precedence: all < n150 (this file) < host_vars
+#
 # ============================================================================
 
 restic_sources:

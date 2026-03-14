@@ -1,5 +1,5 @@
 ---
-# Certificate deployment for n8n production
+# Certificate deployment for n150 production hosts
 certs:
   - name: n8n
     cert: "{{ n8n_cert }}"

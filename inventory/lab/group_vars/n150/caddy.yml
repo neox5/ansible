@@ -1,21 +1,20 @@
 ---
 # ============================================================================
 # Caddy: Lab Configuration
-# File: group_vars/n8n/caddy.yml
+# File: group_vars/n150/caddy.yml
 # Role: caddy (custom)
 # ============================================================================
 #
 # Lab environment configuration for Caddy reverse proxy.
 # Proxies external HTTPS traffic to n8n container.
 #
-# Variable precedence:
-#   all < db < n8n (this file) < host_vars
+# Applied to: All hosts in 'n150' group
+# Variable precedence: all < n150 (this file) < host_vars
 #
 # ============================================================================
 
 # --- Let's Encrypt Contact Email ---
 # Required by Caddy even for self-signed lab configs
-# Production should use real email for certificate notifications
 caddy_email: "office@zion.local"
 
 # --- Caddy Sites Configuration ---
@@ -27,10 +26,7 @@ caddy_sites:
       key: /etc/ssl/private/n8n.key
 # ============================================================================
 # Notes:
-# - Lab configuration uses Caddy internal CA (tls internal)
 # - Caddy listens on 443 (HTTPS) and redirects 80 → 443
 # - Backend points to n8n container port (internal HTTP)
-# - Domain must be in /etc/hosts: 127.0.0.1 n8n.lab.local
-# - Browser will show security warning (Caddy Local Authority cert)
-# - Run 'caddy trust' on VM if curl health checks fail on HTTPS
+# - Domain must be in /etc/hosts: 127.0.0.1 n8n.zion.local
 # ============================================================================

@@ -1,14 +1,15 @@
+---
 # ============================================================================
-# n8n: Lab Configuration
-# File: group_vars/n8n/n8n.yml
+# n8n: Production Configuration
+# File: group_vars/n150/n8n.yml
 # Role: n8n (custom)
 # ============================================================================
 #
-# Lab environment configuration for n8n workflow automation.
+# Production configuration for n8n workflow automation.
 # Deployed via Podman Quadlet with PostgreSQL backend.
 #
-# Variable precedence:
-#   all → db → n8n (this file) → host_vars
+# Applied to: All hosts in 'n150' group
+# Variable precedence: all < n150 (this file) < host_vars
 #
 # ============================================================================
 
@@ -40,13 +41,6 @@ n8n_container_name: "n8n"
 n8n_data_volume: "n8n_data"
 n8n_data_dir: "/var/lib/containers/storage/volumes/n8n_data/_data"
 
-# --- DNS Configuration ---
-# Required in lab (QEMU NAT produces empty resolv.conf in container)
-quadlet_dns:
-  - "9.9.9.9"
-  - "1.1.1.1"
-  - "8.8.8.8"
-
 # --- Health Check Configuration ---
 n8n_health_check_interval: "30s"
 n8n_health_check_timeout: "10s"
@@ -67,13 +61,3 @@ n8n_readiness_delay: 5
 # --- PostgreSQL Readiness Check ---
 postgres_ready_retries: 10
 postgres_ready_delay: 3
-# ============================================================================
-# Notes:
-# - Lab configuration uses HTTPS with self-signed certificates
-# - Access via: https://n8n.lab.local (browser security warning expected)
-# - Caddy terminates HTTPS, proxies to n8n via HTTP on localhost
-# - Database credentials referenced from host_vars secrets.sops.yml
-# - Encryption key referenced from host_vars secrets.sops.yml
-# - PostgreSQL database created via postgresql role configuration
-# - Container deployed via quadlet role (called by n8n role)
-# ============================================================================

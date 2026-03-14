@@ -1,6 +1,9 @@
 ---
-- name: "Stage 2: Deploy n8n Application"
-  hosts: n8n
+# n8n Application Deployment
+# Usage: ansible-playbook -i inventory/lab playbooks/n8n.yml
+
+- name: Deploy n8n Application
+  hosts: all
   become: true
 
   pre_tasks:
@@ -11,10 +14,6 @@
       failed_when: pg_status.status.ActiveState != "active"
 
   tasks:
-    - name: Display stage information
-      ansible.builtin.debug:
-        msg: "Deploying n8n workflow automation container..."
-
     - name: Deploy n8n role
       ansible.builtin.include_role:
         name: n8n
@@ -43,5 +42,5 @@
           - "✓ n8n deployment complete"
           - "Version: {{ n8n_version }}"
           - "URL: http://{{ n8n_db_host }}:{{ n8n_port }}"
-          - "Health: Passing (connected to database)"
+          - "Health: Passing"
           - "Status: Ready for use"

@@ -1,6 +1,9 @@
 ---
-- name: "Stage 3: Deploy Caddy Reverse Proxy"
-  hosts: n8n
+# Caddy Reverse Proxy Deployment
+# Usage: ansible-playbook -i inventory/lab playbooks/caddy.yml
+
+- name: Deploy Caddy Reverse Proxy
+  hosts: all
   become: true
 
   pre_tasks:
@@ -13,10 +16,6 @@
       failed_when: n8n_health.status != 200
 
   tasks:
-    - name: Display stage information
-      ansible.builtin.debug:
-        msg: "Configuring Caddy reverse proxy for n8n..."
-
     - name: Deploy Caddy role
       ansible.builtin.include_role:
         name: caddy

@@ -1,0 +1,9 @@
+---
+# Restic Backup Deployment
+# Usage: ansible-playbook -i inventory/lab playbooks/restic.yml
+
+- name: Deploy Restic
+  hosts: all
+  become: yes
+  roles:
+    - restic

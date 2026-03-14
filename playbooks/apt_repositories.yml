@@ -1,14 +1,9 @@
 ---
-- name: Test apt_repositories role
+# APT Repositories Configuration
+# Usage: ansible-playbook -i inventory/lab playbooks/apt_repositories.yml
+
+- name: Configure APT repositories
   hosts: all
   become: yes
-
   roles:
     - apt_repositories
-
-  post_tasks:
-    - name: Verify debian.sources exists
-      ansible.builtin.stat:
-        path: /etc/apt/sources.list.d/debian.sources
-      register: sources_file
-      failed_when: not sources_file.stat.exists
