@@ -1,0 +1,37 @@
+---
+# stepca role - Main task orchestration
+# Debian 13 Trixie only
+
+- name: Include preflight checks
+  ansible.builtin.import_tasks: preflight.yml
+  tags:
+    - stepca
+    - stepca-preflight
+
+- name: Include installation tasks
+  ansible.builtin.import_tasks: install.yml
+  when: stepca_state == 'present'
+  tags:
+    - stepca
+    - stepca-install
+
+- name: Include bootstrap tasks
+  ansible.builtin.import_tasks: bootstrap.yml
+  when: stepca_state == 'present'
+  tags:
+    - stepca
+    - stepca-bootstrap
+
+- name: Include service tasks
+  ansible.builtin.import_tasks: service.yml
+  when: stepca_state == 'present'
+  tags:
+    - stepca
+    - stepca-service
+
+- name: Include removal tasks
+  ansible.builtin.import_tasks: remove.yml
+  when: stepca_state == 'absent'
+  tags:
+    - stepca
+    - stepca-remove

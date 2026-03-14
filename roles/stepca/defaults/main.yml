@@ -1,0 +1,52 @@
+---
+# stepca Role - Configuration Defaults
+
+# Lifecycle
+stepca_state: "present"
+
+# Version (pinned - override in inventory to upgrade)
+stepca_version: "0.29.0"
+step_cli_version: "0.29.0"
+
+# System identity
+stepca_system_user: "stepca"
+stepca_system_group: "stepca"
+
+# Paths
+stepca_base_dir: "/etc/stepca"
+stepca_certs_dir: "{{ stepca_base_dir }}/certs"
+stepca_secrets_dir: "{{ stepca_base_dir }}/secrets"
+stepca_config_dir: "{{ stepca_base_dir }}/config"
+stepca_db_dir: "/var/lib/stepca/db"
+
+# Config file path
+stepca_config_file: "{{ stepca_config_dir }}/ca.json"
+
+# Password file for intermediate key encryption
+stepca_password_file: "{{ stepca_secrets_dir }}/password"
+
+# Network
+stepca_address: "127.0.0.1:9443"
+stepca_dns_names: []
+
+# CA identity
+stepca_name: "Issuing CA"
+
+# Database (postgresql)
+stepca_db_type: "postgresql"
+stepca_db_datasource: ""
+
+# Intermediate key password (SOPS encrypted in inventory)
+stepca_key_password: ""
+
+# CSR fetch path on control node
+stepca_csr_fetch_path: "/tmp/stepca-issuing.csr"
+
+# Intermediate key type
+stepca_key_type: "EC"
+stepca_key_curve: "P-384"
+
+# Systemd service tuning
+stepca_systemd_restart_sec: 10
+stepca_systemd_start_limit_burst: 5
+stepca_systemd_start_limit_interval: 600

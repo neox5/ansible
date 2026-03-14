@@ -1,0 +1,13 @@
+---
+# stepca Configuration - Lab
+# Applied to: pki group
+
+stepca_name: "Zion Issuing CA G1"
+stepca_address: "127.0.0.1:9443"
+stepca_dns_names: []
+
+# PostgreSQL backend
+stepca_db_datasource: "postgresql://stepca:{{ stepca_db_password }}@localhost/stepca?sslmode=disable"
+
+# CSR will be fetched here on the control node
+stepca_csr_fetch_path: "/tmp/stepca-issuing.csr"

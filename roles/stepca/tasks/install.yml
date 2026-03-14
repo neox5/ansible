@@ -1,0 +1,130 @@
+---
+# Installation tasks - system user, directories, binaries
+
+- name: Create stepca system group
+  ansible.builtin.group:
+    name: "{{ stepca_system_group }}"
+    state: present
+    system: true
+
+- name: Create stepca system user
+  ansible.builtin.user:
+    name: "{{ stepca_system_user }}"
+    group: "{{ stepca_system_group }}"
+    shell: /usr/sbin/nologin
+    system: true
+    createhome: false
+
+- name: Create stepca directory structure
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: "{{ stepca_system_group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ stepca_base_dir }}", mode: "0750" }
+    - { path: "{{ stepca_certs_dir }}", mode: "0750" }
+    - { path: "{{ stepca_secrets_dir }}", mode: "0710" }
+    - { path: "{{ stepca_config_dir }}", mode: "0750" }
+    - { path: "{{ stepca_db_dir }}", mode: "0700" }
+
+- name: Set stepca ownership on db directory
+  ansible.builtin.file:
+    path: "{{ stepca_db_dir }}"
+    state: directory
+    owner: "{{ stepca_system_user }}"
+    group: "{{ stepca_system_group }}"
+    mode: "0700"
+
+- name: Check if step-ca binary is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/step-ca
+  register: _stepca_binary
+  changed_when: false
+  check_mode: false
+
+- name: Check current step-ca version
+  ansible.builtin.command: /usr/local/bin/step-ca version
+  register: _stepca_current_version
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: _stepca_binary.stat.exists
+
+- name: Download step-ca archive
+  ansible.builtin.get_url:
+    url: "{{ stepca_download_base }}/v{{ stepca_version }}/step-ca_linux_{{ stepca_version }}_{{ stepca_arch }}.tar.gz"
+    dest: "/tmp/step-ca_{{ stepca_version }}.tar.gz"
+    mode: "0644"
+  when: >
+    not _stepca_binary.stat.exists or
+    stepca_version not in (_stepca_current_version.stdout | default(''))
+
+- name: Extract step-ca archive
+  ansible.builtin.unarchive:
+    src: "/tmp/step-ca_{{ stepca_version }}.tar.gz"
+    dest: /tmp
+    remote_src: true
+    extra_opts: [--no-same-owner]
+  when: >
+    not _stepca_binary.stat.exists or
+    stepca_version not in (_stepca_current_version.stdout | default(''))
+
+- name: Install step-ca binary
+  ansible.builtin.copy:
+    src: /tmp/step-ca
+    dest: /usr/local/bin/step-ca
+    owner: root
+    group: root
+    mode: "0755"
+    remote_src: true
+  when: >
+    not _stepca_binary.stat.exists or
+    stepca_version not in (_stepca_current_version.stdout | default(''))
+
+- name: Check if step CLI binary is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/step
+  register: _step_cli_binary
+  changed_when: false
+  check_mode: false
+
+- name: Check current step CLI version
+  ansible.builtin.command: /usr/local/bin/step version
+  register: _step_cli_current_version
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: _step_cli_binary.stat.exists
+
+- name: Download step CLI archive
+  ansible.builtin.get_url:
+    url: "{{ step_cli_download_base }}/v{{ step_cli_version }}/step_linux_{{ step_cli_version }}_{{ stepca_arch }}.tar.gz"
+    dest: "/tmp/step_{{ step_cli_version }}.tar.gz"
+    mode: "0644"
+  when: >
+    not _step_cli_binary.stat.exists or
+    step_cli_version not in (_step_cli_current_version.stdout | default(''))
+
+- name: Extract step CLI archive
+  ansible.builtin.unarchive:
+    src: "/tmp/step_{{ step_cli_version }}.tar.gz"
+    dest: /tmp
+    remote_src: true
+    extra_opts: [--no-same-owner]
+  when: >
+    not _step_cli_binary.stat.exists or
+    step_cli_version not in (_step_cli_current_version.stdout | default(''))
+
+- name: Install step CLI binary
+  ansible.builtin.copy:
+    src: "/tmp/step_{{ step_cli_version }}/bin/step"
+    dest: /usr/local/bin/step
+    owner: root
+    group: root
+    mode: "0755"
+    remote_src: true
+  when: >
+    not _step_cli_binary.stat.exists or
+    step_cli_version not in (_step_cli_current_version.stdout | default(''))

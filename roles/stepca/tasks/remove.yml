@@ -1,0 +1,55 @@
+---
+# Removal tasks - teardown stepca installation
+
+- name: Stop stepca service
+  ansible.builtin.systemd:
+    name: stepca
+    state: stopped
+  failed_when: false
+
+- name: Disable stepca service
+  ansible.builtin.systemd:
+    name: stepca
+    enabled: false
+  failed_when: false
+
+- name: Remove stepca systemd unit
+  ansible.builtin.file:
+    path: /etc/systemd/system/stepca.service
+    state: absent
+  register: _stepca_unit_removed
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: _stepca_unit_removed is changed
+
+- name: Remove step-ca binary
+  ansible.builtin.file:
+    path: /usr/local/bin/step-ca
+    state: absent
+
+- name: Remove step CLI binary
+  ansible.builtin.file:
+    path: /usr/local/bin/step
+    state: absent
+
+- name: Remove stepca base directory
+  ansible.builtin.file:
+    path: "{{ stepca_base_dir }}"
+    state: absent
+
+- name: Remove stepca db directory
+  ansible.builtin.file:
+    path: "{{ stepca_db_dir }}"
+    state: absent
+
+- name: Remove stepca system user
+  ansible.builtin.user:
+    name: "{{ stepca_system_user }}"
+    state: absent
+
+- name: Remove stepca system group
+  ansible.builtin.group:
+    name: "{{ stepca_system_group }}"
+    state: absent

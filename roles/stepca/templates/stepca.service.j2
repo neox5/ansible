@@ -1,0 +1,34 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Smallstep step-ca Certificate Authority
+Documentation=https://smallstep.com/docs/step-ca
+After=network.target postgresql.service
+StartLimitBurst={{ stepca_systemd_start_limit_burst }}
+StartLimitIntervalSec={{ stepca_systemd_start_limit_interval }}
+
+[Service]
+Type=simple
+User={{ stepca_system_user }}
+Group={{ stepca_system_group }}
+Environment=STEPPATH={{ stepca_base_dir }}
+
+ExecStart=/usr/local/bin/step-ca \
+  --password-file={{ stepca_password_file }} \
+  {{ stepca_config_file }}
+
+SyslogIdentifier=stepca
+Restart=on-failure
+RestartSec={{ stepca_systemd_restart_sec }}
+
+PrivateTmp=yes
+ProtectHome=yes
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=yes
+ReadOnlyPaths={{ stepca_certs_dir }}
+ReadWritePaths={{ stepca_db_dir }}
+
+[Install]
+WantedBy=multi-user.target
