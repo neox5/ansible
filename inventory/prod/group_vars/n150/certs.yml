@@ -1,9 +1,0 @@
----
-# Certificate deployment for n150 production hosts
-certs:
-  - name: n8n
-    cert: "{{ n8n_cert }}"
-    key: "{{ n8n_key }}"
-
-certs_reload_services:
-  - caddy

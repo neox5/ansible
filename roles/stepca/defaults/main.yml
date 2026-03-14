@@ -32,6 +32,9 @@ stepca_dns_names: []
 # CA identity
 stepca_name: "Issuing CA"
 
+# ACME provisioner name (used in directory URL path segment)
+stepca_acme_provisioner_name: "acme"
+
 # Database (postgresql)
 stepca_db_type: "postgresql"
 stepca_db_datasource: ""

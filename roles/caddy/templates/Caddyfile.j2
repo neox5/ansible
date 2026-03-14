@@ -5,18 +5,14 @@
 # Global options
 {
 	email {{ caddy_email }}
+{% if caddy_acme_ca | length > 0 %}
+	acme_ca {{ caddy_acme_ca }}
+{% endif %}
 }
 
 # Virtual hosts - Reverse proxy with automatic HTTPS
 {% for site in caddy_sites %}
 {{ site.domain }} {
-{% if site.tls is defined %}
-{% if site.tls is mapping %}
-	tls {{ site.tls.cert }} {{ site.tls.key }}
-{% else %}
-	tls {{ site.tls }}
-{% endif %}
-{% endif %}
 	reverse_proxy {{ site.backend }}
 }
 

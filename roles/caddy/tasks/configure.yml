@@ -7,6 +7,26 @@
     groups: ssl-cert
     append: true
 
+- name: Install trusted CA certificate into system store
+  ansible.builtin.copy:
+    src: "{{ caddy_trusted_ca_cert }}"
+    dest: "/usr/local/share/ca-certificates/caddy-trusted-ca.crt"
+    owner: root
+    group: root
+    mode: "0644"
+    remote_src: true
+  when: caddy_trusted_ca_cert | length > 0
+  notify:
+    - update ca certificates
+    - restart caddy
+
+- name: Remove trusted CA certificate from system store
+  ansible.builtin.file:
+    path: "/usr/local/share/ca-certificates/caddy-trusted-ca.crt"
+    state: absent
+  when: caddy_trusted_ca_cert | length == 0
+  notify: update ca certificates
+
 - name: Deploy Caddyfile
   ansible.builtin.template:
     src: Caddyfile.j2
@@ -44,5 +64,5 @@
     msg:
       - "Caddy {{ caddy_version }}.x deployment complete"
       - "Sites configured: {{ caddy_sites | map(attribute='domain') | list | join(', ') }}"
-      - "Automatic HTTPS enabled via Let's Encrypt"
+      - "ACME CA: {{ caddy_acme_ca if caddy_acme_ca | length > 0 else 'Let\\'s Encrypt (default)' }}"
       - "Contact email: {{ caddy_email }}"

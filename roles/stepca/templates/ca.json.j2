@@ -14,7 +14,12 @@
     "dataSource": "{{ stepca_db_datasource }}"
   },
   "authority": {
-    "provisioners": []
+    "provisioners": [
+      {
+        "type": "ACME",
+        "name": "{{ stepca_acme_provisioner_name }}"
+      }
+    ]
   },
   "tls": {
     "cipherSuites": [
