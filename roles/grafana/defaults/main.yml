@@ -6,7 +6,7 @@ grafana_state: present # present | absent
 grafana_remove_data: false # true removes base dir (only valid with state: absent)
 
 # Version
-grafana_version: "11.6.0"
+grafana_version: "12.3.0"
 
 # Plugin versions (pinned - override in inventory to upgrade)
 grafana_plugin_versions:

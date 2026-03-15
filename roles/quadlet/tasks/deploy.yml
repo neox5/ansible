@@ -63,6 +63,12 @@
     daemon_reload: true
   when: quadlet_unit is changed
 
+- name: Restart Quadlet service on unit change
+  ansible.builtin.systemd:
+    name: "{{ quadlet_service_name }}"
+    state: restarted
+  when: quadlet_unit is changed
+
 - name: Enable and start Quadlet service
   ansible.builtin.systemd:
     name: "{{ quadlet_service_name }}"
