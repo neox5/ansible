@@ -1,6 +1,9 @@
 ---
-# N150 Full Stack Orchestration
-# Deploys complete n150 stack in dependency order
+# N150 Full Stack Deployment
+# Deploys complete n150 stack in dependency order.
+#
+# Prerequisites: n150_init.yml must have completed and the intermediate CA
+# certificate must be in place before running this playbook.
 #
 # Usage:
 #   ansible-playbook -i inventory/lab playbooks/n150.yml
