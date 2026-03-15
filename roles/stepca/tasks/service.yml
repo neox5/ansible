@@ -3,7 +3,7 @@
 
 - name: Check if intermediate CA certificate exists
   ansible.builtin.stat:
-    path: "{{ stepca_certs_dir }}/intermediate_ca.crt"
+    path: "{{ stepca_certs_dir }}/{{ stepca_cert_name }}.crt"
   register: _stepca_intermediate_cert
   changed_when: false
   check_mode: false

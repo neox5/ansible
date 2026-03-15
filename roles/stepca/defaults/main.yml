@@ -32,8 +32,12 @@ stepca_dns_names: []
 # CA identity
 stepca_name: "Issuing CA"
 
+# Certificate and key base name (drives all artifact filenames)
+# Override in inventory to match CA identity e.g. zion_issuing_ca_g1
+stepca_cert_name: "issuing_ca"
+
 # ACME provisioner name (used in directory URL path segment)
-# Results in: https://<address>/acme/<name>/directory
+# Results in: https://<address>/acme/<n>/directory
 stepca_acme_provisioner_name: "stepca"
 
 # ACME provisioner domain allow list
@@ -52,8 +56,8 @@ stepca_db_datasource: ""
 # Intermediate key password (SOPS encrypted in inventory)
 stepca_key_password: ""
 
-# CSR fetch path on control node
-stepca_csr_fetch_path: "/tmp/stepca-issuing.csr"
+# Directory on the control node where CSRs are fetched
+stepca_csr_fetch_dir: "/tmp"
 
 # Intermediate key type
 stepca_key_type: "EC"

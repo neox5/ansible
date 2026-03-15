@@ -1,8 +1,8 @@
 {
   "root": "{{ stepca_root_ca_path }}",
   "federatedRoots": null,
-  "crt": "{{ stepca_certs_dir }}/intermediate_ca.crt",
-  "key": "{{ stepca_secrets_dir }}/intermediate_ca_key",
+  "crt": "{{ stepca_certs_dir }}/{{ stepca_cert_name }}.crt",
+  "key": "{{ stepca_secrets_dir }}/{{ stepca_cert_name }}_key",
   "address": "{{ stepca_address }}",
   "insecureAddress": "",
   "dnsNames": {{ ([stepca_address.split(':')[0]] + stepca_dns_names) | to_json }},

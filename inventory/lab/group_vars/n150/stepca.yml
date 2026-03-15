@@ -9,6 +9,7 @@
 # Variable precedence: all < n150 (this file) < host_vars
 
 stepca_name: "Zion Issuing CA G1"
+stepca_cert_name: "zion_issuing_ca_g1"
 stepca_address: "127.0.0.1:9443"
 
 # Root CA certificate path (deployed by certs role via ca_certs)
@@ -21,5 +22,5 @@ stepca_acme_allowed_domains:
 # PostgreSQL backend
 stepca_db_datasource: "postgresql://stepca:{{ stepca_db_password }}@localhost/stepca?sslmode=disable"
 
-# CSR will be fetched here on the control node
-stepca_csr_fetch_path: "/tmp/stepca-issuing.csr"
+# Directory on control node where CSRs are fetched
+stepca_csr_fetch_dir: "/tmp"
