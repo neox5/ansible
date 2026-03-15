@@ -17,7 +17,15 @@
     "provisioners": [
       {
         "type": "ACME",
-        "name": "{{ stepca_acme_provisioner_name }}"
+        "name": "{{ stepca_acme_provisioner_name }}"{% if stepca_acme_allowed_domains | length > 0 %},
+        "policy": {
+          "x509": {
+            "allow": {
+              "dns": {{ stepca_acme_allowed_domains | to_json }}
+            }
+          }
+        }{% endif %}
+
       }
     ]
   },

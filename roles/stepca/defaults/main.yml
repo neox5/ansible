@@ -33,7 +33,13 @@ stepca_dns_names: []
 stepca_name: "Issuing CA"
 
 # ACME provisioner name (used in directory URL path segment)
-stepca_acme_provisioner_name: "acme"
+# Results in: https://<address>/acme/<name>/directory
+stepca_acme_provisioner_name: "stepca"
+
+# ACME provisioner domain allow list
+# When non-empty, restricts certificate issuance to listed domains only
+# Example: ["*.zion.local"]
+stepca_acme_allowed_domains: []
 
 # Root CA certificate path (must exist on target before stepca starts)
 # Typically deployed by the certs role via ca_certs

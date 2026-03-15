@@ -6,13 +6,19 @@
 {
 	email {{ caddy_email }}
 {% if caddy_acme_ca | length > 0 %}
-	acme_ca {{ caddy_acme_ca }}
+	skip_install_trust
 {% endif %}
 }
 
 # Virtual hosts - Reverse proxy with automatic HTTPS
 {% for site in caddy_sites %}
 {{ site.domain }} {
+{% if caddy_acme_ca | length > 0 %}
+	tls {
+		ca {{ caddy_acme_ca }}
+		ca_root {{ caddy_acme_ca_root }}
+	}
+{% endif %}
 	reverse_proxy {{ site.backend }}
 }
 

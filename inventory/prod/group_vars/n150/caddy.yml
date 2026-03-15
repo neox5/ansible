@@ -1,11 +1,11 @@
 ---
 # ============================================================================
-# Caddy: Production Configuration
+# Caddy: Prod Configuration
 # File: group_vars/n150/caddy.yml
 # Role: caddy (custom)
 # ============================================================================
 #
-# Production configuration for Caddy reverse proxy.
+# Production environment configuration for Caddy reverse proxy.
 # Uses step-ca ACME for automatic certificate issuance.
 #
 # Applied to: All hosts in 'n150' group
@@ -17,7 +17,10 @@
 caddy_email: "office@zion.local"
 
 # --- Private CA ACME endpoint ---
-caddy_acme_ca: "https://127.0.0.1:9443/acme/acme/directory"
+caddy_acme_ca: "https://127.0.0.1:9443/acme/stepca/directory"
+
+# --- Root CA PEM for trusting step-ca's TLS certificate ---
+caddy_acme_ca_root: "/usr/local/share/ca-certificates/zion_root_ca_g1.crt"
 
 # --- Caddy Sites Configuration ---
 caddy_sites:

@@ -1,0 +1,11 @@
+---
+# Configuration tasks - render ca.json and restart service on change
+
+- name: Render ca.json from template
+  ansible.builtin.template:
+    src: ca.json.j2
+    dest: "{{ stepca_config_file }}"
+    owner: root
+    group: "{{ stepca_system_group }}"
+    mode: "0640"
+  notify: restart stepca

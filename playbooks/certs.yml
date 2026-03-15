@@ -9,7 +9,7 @@
   tasks:
     - name: Check if certificates are configured
       ansible.builtin.set_fact:
-        certs_configured: "{{ certs is defined and certs | length > 0 }}"
+        certs_configured: "{{ (certs is defined and certs | length > 0) or (ca_certs is defined and ca_certs | length > 0) }}"
 
     - name: Deploy certificates
       ansible.builtin.include_role:

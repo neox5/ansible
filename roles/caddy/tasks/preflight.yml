@@ -28,6 +28,14 @@
       - caddy_sites | length > 0
     fail_msg: "caddy_sites must contain at least one site configuration"
 
+- name: Assert caddy_acme_ca_root is set when using private ACME CA
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - caddy_acme_ca_root | length > 0
+    fail_msg: "caddy_acme_ca_root must be set when caddy_acme_ca is configured"
+  when: caddy_acme_ca | length > 0
+
 - name: Display role information
   ansible.builtin.debug:
     msg: "Caddy role - Debian {{ ansible_distribution_major_version }}"

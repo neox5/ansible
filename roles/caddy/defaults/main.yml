@@ -21,6 +21,12 @@ caddy_sites: []
 # Example: https://127.0.0.1:9443/acme/acme/directory
 caddy_acme_ca: ""
 
+# Path to PEM file for trusting the ACME CA's TLS certificate.
+# Required when caddy_acme_ca points to a private CA whose root
+# is not in the system trust store at Caddy's Go runtime level.
+# Example: /usr/local/share/ca-certificates/zion_root_ca_g1.crt
+caddy_acme_ca_root: ""
+
 # Service state
 caddy_service_state: started
 caddy_service_enabled: yes

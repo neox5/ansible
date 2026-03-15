@@ -1,5 +1,5 @@
 ---
-# Bootstrap tasks - generate key, CSR, and config
+# Bootstrap tasks - generate key and CSR
 # Skipped entirely if intermediate_ca.crt already present (sneakernet complete)
 
 - name: Check if intermediate CA certificate exists
@@ -41,15 +41,6 @@
     group: "{{ stepca_system_group }}"
     mode: "0640"
   when: not _stepca_intermediate_cert.stat.exists
-
-- name: Render ca.json from template
-  ansible.builtin.template:
-    src: ca.json.j2
-    dest: "{{ stepca_config_file }}"
-    owner: root
-    group: "{{ stepca_system_group }}"
-    mode: "0640"
-  notify: reload systemd
 
 - name: Fetch generated CSR to control node
   ansible.builtin.fetch:
