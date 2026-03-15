@@ -100,7 +100,7 @@
         user: "{{ bootstrap_admin_user }}"
         key: "{{ item }}"
         state: present
-      loop: "{{ bootstrap_admin_keys }}"
+      loop: "{{ bootstrap_admin_keys + bootstrap_admin_emergency_keys }}"
 
     - name: Configure temporary passwordless sudo for ansible user
       copy:
@@ -136,25 +136,10 @@
         force: yes
       when: bootstrap_temp_user is defined and bootstrap_temp_user != ""
 
+    - name: Build next steps message
+      ansible.builtin.set_fact:
+        _bootstrap_next_steps: "{{ ['Bootstrap complete!', ''] + ['Root account: Locked (no password, use admin user for console access)', ''] + ['Automation access:'] + (bootstrap_ansible_keys | map('basename') | map('replace', '.pub', '') | map('regex_replace', '^', '  ssh -i ~/.ssh/') | map('regex_replace', '$', ' ' ~ bootstrap_ansible_user ~ '@' ~ ansible_host) | list) + [''] + ['Operator access (admin):'] + (bootstrap_admin_keys | map('basename') | map('replace', '.pub', '') | map('regex_replace', '^', '  ssh -i ~/.ssh/') | map('regex_replace', '$', ' ' ~ bootstrap_admin_user ~ '@' ~ ansible_host) | list) + [''] + ['Emergency access:'] + (bootstrap_admin_emergency_keys | map('basename') | map('replace', '.pub', '') | map('regex_replace', '^', '  ssh -i ~/.ssh/') | map('regex_replace', '$', ' ' ~ bootstrap_admin_user ~ '@' ~ ansible_host) | list) + [''] + ['Temporary user removed: ' ~ bootstrap_temp_user] + ['Root SSH access: Prohibited (console access via admin user)'] }}"
+
     - name: Display next steps
-      debug:
-        msg:
-          - "Bootstrap complete!"
-          - ""
-          - "Root account: Locked (no password, use admin user for console access)"
-          - ""
-          - "Automation access:"
-          - "  ssh -i ~/.ssh/id_ed25519_ansible {{ bootstrap_ansible_user }}@{{ inventory_hostname }}"
-          - ""
-          - "Operator access (admin):"
-          - "  ssh -i ~/.ssh/id_ed25519_desktop {{ bootstrap_admin_user }}@{{ inventory_hostname }}"
-          - "  ssh -i ~/.ssh/id_ed25519_mobile {{ bootstrap_admin_user }}@{{ inventory_hostname }}"
-          - ""
-          - "Emergency access:"
-          - "  ssh -i ~/.ssh/id_ed25519_emergency {{ bootstrap_admin_user }}@{{ inventory_hostname }}"
-          - ""
-          - "Temporary user removed: {{ bootstrap_temp_user }}"
-          - "Root SSH access: Prohibited (console access via admin user)"
-          - ""
-          - "Next: Apply security hardening"
-          - "  ansible-playbook -i inventory/prod playbooks/site.yml --tags security_hardening"
+      ansible.builtin.debug:
+        msg: "{{ _bootstrap_next_steps }}"

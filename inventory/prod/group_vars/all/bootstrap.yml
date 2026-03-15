@@ -14,8 +14,11 @@ bootstrap_ssh_keys_repo_base: "{{ lookup('env', 'SSH_KEYS_REPO_BASE') | default(
 bootstrap_ansible_keys:
   - "{{ bootstrap_ssh_keys_repo_base }}/automation/id_ed25519_ansible.pub"
 
-# Admin user SSH keys (personal + emergency)
+# Admin user SSH keys (personal)
 bootstrap_admin_keys:
   - "{{ bootstrap_ssh_keys_repo_base }}/personal/id_ed25519_frwk.pub"
   - "{{ bootstrap_ssh_keys_repo_base }}/personal/id_ed25519_orion.pub"
+
+# Admin user SSH keys (emergency)
+bootstrap_admin_emergency_keys:
   - "{{ bootstrap_ssh_keys_repo_base }}/emergency/id_ed25519_emergency.pub"
