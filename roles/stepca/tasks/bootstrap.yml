@@ -68,8 +68,10 @@
       - ""
       - "Then:"
       - "  1. Place the signed certificate at {{ stepca_certs_dir }}/intermediate_ca.crt"
-      - "  2. Place the root CA certificate at {{ stepca_certs_dir }}/root_ca.crt"
-      - "  3. Re-run the playbook to start the service"
+      - "  2. Re-run the playbook to start the service"
+      - ""
+      - "Note: Root CA certificate must be deployed via the certs role (ca_certs)"
+      - "      at {{ stepca_root_ca_path }} before stepca will start."
   when: not _stepca_intermediate_cert.stat.exists
 
 - name: End play - awaiting sneakernet

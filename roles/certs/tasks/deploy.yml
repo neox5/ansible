@@ -36,3 +36,13 @@
   loop: "{{ certs }}"
   no_log: true
   notify: restart cert-dependent services
+
+- name: Deploy CA certificates to system trust store
+  ansible.builtin.copy:
+    content: "{{ item.cert }}"
+    dest: "{{ certs_ca_dir }}/{{ item.name }}.crt"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ ca_certs }}"
+  notify: update ca certificates

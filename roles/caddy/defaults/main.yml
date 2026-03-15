@@ -21,10 +21,6 @@ caddy_sites: []
 # Example: https://127.0.0.1:9443/acme/acme/directory
 caddy_acme_ca: ""
 
-# Path to trusted CA certificate to install into system trust store
-# Required when caddy_acme_ca points to a private CA (e.g. step-ca)
-caddy_trusted_ca_cert: ""
-
 # Service state
 caddy_service_state: started
 caddy_service_enabled: yes

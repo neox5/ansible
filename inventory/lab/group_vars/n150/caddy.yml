@@ -19,9 +19,6 @@ caddy_email: "office@zion.local"
 # --- Private CA ACME endpoint ---
 caddy_acme_ca: "https://127.0.0.1:9443/acme/acme/directory"
 
-# --- Root CA certificate to trust (step-ca TLS + ACME chain validation) ---
-caddy_trusted_ca_cert: "/etc/stepca/certs/root_ca.crt"
-
 # --- Caddy Sites Configuration ---
 caddy_sites:
   - domain: "n8n.zion.local"

@@ -7,3 +7,6 @@ certs_keys_dir: /etc/ssl/private
 
 # Debian standard group for private key access
 certs_group: ssl-cert
+
+# System trust store path for CA certificates
+certs_ca_dir: /usr/local/share/ca-certificates

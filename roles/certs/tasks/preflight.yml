@@ -14,12 +14,12 @@
       - ansible_distribution_major_version | int >= 13
     fail_msg: "This role requires Debian 13 or later"
 
-- name: Assert certs list is not empty
+- name: Assert certs or ca_certs list is not empty
   ansible.builtin.assert:
     quiet: true
     that:
-      - certs | length > 0
-    fail_msg: "certs must contain at least one entry"
+      - (certs | length > 0) or (ca_certs | length > 0)
+    fail_msg: "certs or ca_certs must contain at least one entry"
 
 - name: Assert each cert entry has required fields
   ansible.builtin.assert:
@@ -34,3 +34,23 @@
     fail_msg: "cert entry '{{ item.name | default('unnamed') }}' missing required fields (name, cert, key)"
   loop: "{{ certs }}"
   no_log: true
+
+- name: Assert each ca_cert entry has required fields
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - item.name is defined
+      - item.name | length > 0
+      - item.cert is defined
+      - item.cert | length > 0
+    fail_msg: "ca_cert entry '{{ item.name | default('unnamed') }}' missing required fields (name, cert)"
+  loop: "{{ ca_certs }}"
+
+- name: Assert ca_cert names are unique
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - ca_certs | map(attribute='name') | list | length ==
+        ca_certs | map(attribute='name') | unique | list | length
+    fail_msg: "ca_certs contains duplicate names"
+  when: ca_certs | length > 0

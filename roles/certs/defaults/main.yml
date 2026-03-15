@@ -13,6 +13,19 @@ certs: []
 #     cert: "{{ n8n_cert }}"
 #     key: "{{ n8n_key }}"
 
+# CA certificates to install into the system trust store.
+# Each entry requires:
+#   name: logical identifier (used as filename stem, must be unique)
+#   cert: PEM content of CA certificate (plaintext - public material)
+ca_certs: []
+# Example:
+# ca_certs:
+#   - name: root_ca_g1
+#     cert: |
+#       -----BEGIN CERTIFICATE-----
+#       ...
+#       -----END CERTIFICATE-----
+
 # Services to reload when certificates change.
 # Each entry is a systemd service name.
 certs_reload_services: []

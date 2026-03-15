@@ -35,6 +35,10 @@ stepca_name: "Issuing CA"
 # ACME provisioner name (used in directory URL path segment)
 stepca_acme_provisioner_name: "acme"
 
+# Root CA certificate path (must exist on target before stepca starts)
+# Typically deployed by the certs role via ca_certs
+stepca_root_ca_path: ""
+
 # Database (postgresql)
 stepca_db_type: "postgresql"
 stepca_db_datasource: ""
