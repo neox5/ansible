@@ -1,0 +1,9 @@
+# {{ ansible_managed }}
+# Journald operational configuration - managed by Ansible
+# Role: journald
+
+[Journal]
+Storage={{ journald_storage }}
+MaxRetentionSec={{ journald_max_retention_sec }}
+SystemMaxUse={{ journald_system_max_use }}
+SystemKeepFree={{ journald_system_keep_free }}

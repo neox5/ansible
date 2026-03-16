@@ -1,0 +1,18 @@
+---
+- name: Assert journald_system_max_use is configured
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - journald_system_max_use | length > 0
+    fail_msg: "journald_system_max_use must be configured (e.g. 512M)"
+
+- name: Assert journald_system_keep_free is configured
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - journald_system_keep_free | length > 0
+    fail_msg: "journald_system_keep_free must be configured (e.g. 2G)"
+
+- name: Display role information
+  ansible.builtin.debug:
+    msg: "journald role - conf_file={{ journald_conf_file }}"

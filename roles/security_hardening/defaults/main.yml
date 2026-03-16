@@ -16,6 +16,7 @@ security_unattended_upgrades_security_only: yes
 security_unattended_upgrades_auto_reboot: no
 
 # Logging (journald only)
+security_journald_conf_file: 10_security.conf
 security_journald_storage: persistent
 security_journald_max_retention_sec: 2592000 # 30 days
 

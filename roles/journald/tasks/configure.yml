@@ -7,10 +7,10 @@
     group: root
     mode: "0755"
 
-- name: Configure journald security drop-in
+- name: Deploy journald operational drop-in
   ansible.builtin.template:
-    src: journald-override.conf.j2
-    dest: /etc/systemd/journald.conf.d/{{ security_journald_conf_file }}
+    src: journald.conf.j2
+    dest: /etc/systemd/journald.conf.d/{{ journald_conf_file }}
     owner: root
     group: root
     mode: "0644"

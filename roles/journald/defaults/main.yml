@@ -1,0 +1,12 @@
+---
+# Journald role - operational overrides
+# Deployed as: /etc/systemd/journald.conf.d/{{ journald_conf_file }}
+
+journald_conf_file: 20_journald.conf
+
+journald_storage: persistent
+journald_max_retention_sec: 604800 # 7 days
+
+# Mandatory in inventory - no safe universal default
+journald_system_max_use: ""
+journald_system_keep_free: ""

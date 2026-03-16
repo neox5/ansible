@@ -1,0 +1,8 @@
+---
+- name: Configure journald
+  hosts: all
+  become: true
+
+  roles:
+    - role: journald
+      tags: journald

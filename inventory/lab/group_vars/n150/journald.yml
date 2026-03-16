@@ -1,0 +1,6 @@
+---
+# Journald operational configuration
+journald_storage: persistent
+journald_max_retention_sec: 604800 # 7 days
+journald_system_max_use: 512M
+journald_system_keep_free: 2G
