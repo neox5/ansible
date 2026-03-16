@@ -8,6 +8,21 @@
 {% if caddy_acme_ca | length > 0 %}
 	skip_install_trust
 {% endif %}
+{% if not caddy_admin_enabled %}
+	admin off
+{% else %}
+	admin {{ caddy_admin_address }}
+{% endif %}
+{% if caddy_metrics_enabled %}
+	metrics {
+{% if caddy_metrics_per_host %}
+		per_host
+{% endif %}
+	}
+	servers {
+		metrics
+	}
+{% endif %}
 }
 
 # Virtual hosts - Reverse proxy with automatic HTTPS

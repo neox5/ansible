@@ -27,6 +27,14 @@ caddy_acme_ca: ""
 # Example: /usr/local/share/ca-certificates/zion_root_ca_g1.crt
 caddy_acme_ca_root: ""
 
+# Admin API configuration
+caddy_admin_enabled: true
+caddy_admin_address: "localhost:2019"
+
+# Metrics configuration
+caddy_metrics_enabled: true
+caddy_metrics_per_host: true
+
 # Service state
 caddy_service_state: started
 caddy_service_enabled: yes
