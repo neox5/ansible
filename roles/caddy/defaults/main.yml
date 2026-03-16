@@ -45,3 +45,17 @@ caddy_config_file: /etc/caddy/Caddyfile
 # APT repository
 caddy_apt_key_url: https://dl.cloudsmith.io/public/caddy/stable/gpg.key
 caddy_apt_repo_url: https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt
+
+# Access log configuration
+# Opt-in flag — access logging is disabled by default
+caddy_access_log_enabled: false
+caddy_access_log_path: /var/log/caddy/access.log
+caddy_access_log_roll_size: 10MiB
+caddy_access_log_roll_keep: 5
+caddy_access_log_roll_keep_for: 7d
+# Paths to exclude from access logs (health probes, etc.)
+# Set to [] to disable log_skip entirely
+caddy_access_log_skip_paths:
+  - /health
+  - /healthz
+  - /ping

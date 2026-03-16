@@ -28,6 +28,17 @@ caddy_sites:
     backend: "localhost:5678"
   - domain: "grafana.zion.local"
     backend: "localhost:3000"
+
+# --- Access Logging ---
+caddy_access_log_enabled: true
+caddy_access_log_path: /var/log/caddy/access.log
+caddy_access_log_roll_size: 10MiB
+caddy_access_log_roll_keep: 5
+caddy_access_log_roll_keep_for: 7d
+caddy_access_log_skip_paths:
+  - /health
+  - /healthz
+  - /ping
 # ============================================================================
 # Notes:
 # - Caddy listens on 443 (HTTPS) and redirects 80 → 443

@@ -15,6 +15,15 @@
     groups: ssl-cert
     append: true
 
+- name: Ensure caddy log directory exists
+  ansible.builtin.file:
+    path: "{{ caddy_access_log_path | dirname }}"
+    state: directory
+    owner: caddy
+    group: caddy
+    mode: "0750"
+  when: caddy_access_log_enabled
+
 - name: Deploy Caddyfile
   ansible.builtin.template:
     src: Caddyfile.j2
@@ -54,3 +63,4 @@
       - "Sites configured: {{ caddy_sites | map(attribute='domain') | list | join(', ') }}"
       - "ACME CA: {{ caddy_acme_ca if caddy_acme_ca | length > 0 else 'Let\\'s Encrypt (default)' }}"
       - "Contact email: {{ caddy_email }}"
+      - "Access logging: {{ 'enabled → ' + caddy_access_log_path if caddy_access_log_enabled else 'disabled' }}"

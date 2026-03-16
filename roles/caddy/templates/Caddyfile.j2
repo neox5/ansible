@@ -35,6 +35,20 @@
 	}
 {% endif %}
 	reverse_proxy {{ site.backend }}
+{% if caddy_access_log_enabled %}
+	log {
+		output file {{ caddy_access_log_path }} {
+			roll_size     {{ caddy_access_log_roll_size }}
+			roll_keep     {{ caddy_access_log_roll_keep }}
+			roll_keep_for {{ caddy_access_log_roll_keep_for }}
+		}
+		format json
+	}
+{% if caddy_access_log_skip_paths | length > 0 %}
+	@health_probe path {{ caddy_access_log_skip_paths | join(' ') }}
+	log_skip @health_probe
+{% endif %}
+{% endif %}
 }
 
 {% endfor %}
