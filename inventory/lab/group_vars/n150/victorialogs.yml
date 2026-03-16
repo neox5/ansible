@@ -1,0 +1,16 @@
+---
+# VictoriaLogs instances for lab n150 group
+
+victorialogs_instances:
+  - victorialogs_instance_name: victorialogs-access
+    victorialogs_http_listen_port: 9428
+    victorialogs_retention_period: "14d"
+  - victorialogs_instance_name: victorialogs-app
+    victorialogs_http_listen_port: 9429
+    victorialogs_retention_period: "30d"
+  - victorialogs_instance_name: victorialogs-system
+    victorialogs_http_listen_port: 9430
+    victorialogs_retention_period: "14d"
+  - victorialogs_instance_name: victorialogs-security
+    victorialogs_http_listen_port: 9431
+    victorialogs_retention_period: "1y"

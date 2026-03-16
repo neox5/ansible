@@ -1,0 +1,7 @@
+---
+# VictoriaLogs role handlers
+
+- name: restart victorialogs
+  ansible.builtin.systemd:
+    name: "{{ victorialogs_instance_name }}"
+    state: restarted

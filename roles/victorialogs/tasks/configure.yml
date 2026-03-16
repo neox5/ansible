@@ -1,0 +1,22 @@
+---
+# Configuration tasks - systemd service unit
+
+- name: Deploy VictoriaLogs systemd service unit
+  ansible.builtin.template:
+    src: victorialogs.service.j2
+    dest: "/etc/systemd/system/{{ victorialogs_instance_name }}.service"
+    owner: root
+    group: root
+    mode: "0644"
+  register: victorialogs_service_unit
+  notify: restart victorialogs
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: victorialogs_service_unit is changed
+
+- name: Enable VictoriaLogs service
+  ansible.builtin.systemd:
+    name: "{{ victorialogs_instance_name }}"
+    enabled: true

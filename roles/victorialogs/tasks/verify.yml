@@ -1,0 +1,27 @@
+---
+# Verification tasks - start service and confirm healthy
+
+- name: Ensure VictoriaLogs service is started
+  ansible.builtin.systemd:
+    name: "{{ victorialogs_instance_name }}"
+    state: started
+
+- name: Wait for VictoriaLogs health endpoint
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ victorialogs_http_listen_port }}/health"
+    status_code: 200
+    timeout: 5
+  register: victorialogs_health
+  retries: 10
+  delay: 3
+  until: victorialogs_health.status == 200
+
+- name: Display deployment summary
+  ansible.builtin.debug:
+    msg:
+      - "VictoriaLogs {{ victorialogs_version }} deployment complete"
+      - "Instance: {{ victorialogs_instance_name }}"
+      - "Listen: 127.0.0.1:{{ victorialogs_http_listen_port }}"
+      - "Data: {{ victorialogs_data_dir }}"
+      - "Retention: {{ victorialogs_retention_period }}"
+      - "Status: healthy"

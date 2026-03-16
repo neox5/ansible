@@ -1,0 +1,66 @@
+---
+# Preflight checks - validate environment before proceeding
+
+- name: Gather distribution and service manager facts
+  ansible.builtin.setup:
+    gather_subset:
+      - distribution
+      - service_mgr
+
+- name: Assert Debian 13 or later
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - ansible_distribution == "Debian"
+      - ansible_distribution_major_version | int >= 13
+    fail_msg: "This role requires Debian 13 or later"
+
+- name: Assert systemd is the init system
+  ansible.builtin.assert:
+    quiet: true
+    that: ansible_facts['service_mgr'] == 'systemd'
+    fail_msg: "This role requires systemd"
+
+- name: Assert valid state value
+  ansible.builtin.assert:
+    quiet: true
+    that: victorialogs_state in ['present', 'absent']
+    fail_msg: "victorialogs_state must be 'present' or 'absent'"
+
+- name: Assert remove_data only set when state is absent
+  ansible.builtin.assert:
+    quiet: true
+    that: not victorialogs_remove_data or victorialogs_state == 'absent'
+    fail_msg: "victorialogs_remove_data: true requires victorialogs_state: absent"
+
+- name: Assert http listen port is set
+  ansible.builtin.assert:
+    quiet: true
+    that: victorialogs_http_listen_port is defined
+    fail_msg: "victorialogs_http_listen_port must be set"
+
+- name: Assert retention period is set
+  ansible.builtin.assert:
+    quiet: true
+    that: victorialogs_retention_period is defined and victorialogs_retention_period | length > 0
+    fail_msg: "victorialogs_retention_period must be set"
+
+- name: Check if VictoriaLogs binary is already installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/victoria-logs-prod
+  register: victorialogs_binary
+  changed_when: false
+  check_mode: false
+
+- name: Check current VictoriaLogs version
+  ansible.builtin.command:
+    cmd: /usr/local/bin/victoria-logs-prod --version
+  register: victorialogs_current_version
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  when: victorialogs_binary.stat.exists
+
+- name: Display role information
+  ansible.builtin.debug:
+    msg: "VictoriaLogs role - instance={{ victorialogs_instance_name }} state={{ victorialogs_state }} version={{ victorialogs_version }}"

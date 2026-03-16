@@ -1,0 +1,19 @@
+---
+# playbooks/victorialogs.yml
+# Usage: ansible-playbook -i inventory/lab playbooks/victorialogs.yml
+
+- name: Deploy VictoriaLogs instances
+  hosts: n150
+  become: true
+  tasks:
+    - name: Deploy VictoriaLogs instance (single)
+      ansible.builtin.include_role:
+        name: victorialogs
+      when: victorialogs_instances is not defined
+
+    - name: Deploy VictoriaLogs instances (multi)
+      ansible.builtin.include_role:
+        name: victorialogs
+      vars: "{{ item }}"
+      loop: "{{ victorialogs_instances }}"
+      when: victorialogs_instances is defined

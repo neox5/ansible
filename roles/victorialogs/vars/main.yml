@@ -1,0 +1,16 @@
+---
+# VictoriaLogs Role - Immutable Variables
+
+# Architecture mapping for binary download
+go_arch_map:
+  i386: "386"
+  x86_64: "amd64"
+  aarch64: "arm64"
+  armv7l: "arm"
+  armv6l: "arm6vl"
+
+go_arch: "{{ go_arch_map[ansible_facts['architecture']] | default(ansible_facts['architecture']) }}"
+
+# Binary download - standalone VictoriaLogs repo (separated from VictoriaMetrics since v1.25.0)
+victorialogs_repo_url: "https://github.com/VictoriaMetrics/VictoriaLogs"
+victorialogs_download_url: "{{ victorialogs_repo_url }}/releases/download/{{ victorialogs_version }}/victoria-logs-linux-{{ go_arch }}-{{ victorialogs_version }}.tar.gz"

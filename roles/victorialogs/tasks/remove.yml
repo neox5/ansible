@@ -1,0 +1,46 @@
+---
+# Removal tasks - teardown VictoriaLogs instance
+
+- name: Stop VictoriaLogs service
+  ansible.builtin.systemd:
+    name: "{{ victorialogs_instance_name }}"
+    state: stopped
+  failed_when: false
+
+- name: Disable VictoriaLogs service
+  ansible.builtin.systemd:
+    name: "{{ victorialogs_instance_name }}"
+    enabled: false
+  failed_when: false
+
+- name: Remove VictoriaLogs systemd service unit
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ victorialogs_instance_name }}.service"
+    state: absent
+  register: victorialogs_unit_removed
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: victorialogs_unit_removed is changed
+
+- name: Remove VictoriaLogs binary
+  ansible.builtin.file:
+    path: /usr/local/bin/victoria-logs-prod
+    state: absent
+
+- name: Remove VictoriaLogs data directory
+  ansible.builtin.file:
+    path: "{{ victorialogs_data_dir }}"
+    state: absent
+  when: victorialogs_remove_data | bool
+
+- name: Remove VictoriaLogs system user
+  ansible.builtin.user:
+    name: "{{ victorialogs_system_user }}"
+    state: absent
+
+- name: Remove VictoriaLogs system group
+  ansible.builtin.group:
+    name: "{{ victorialogs_system_group }}"
+    state: absent

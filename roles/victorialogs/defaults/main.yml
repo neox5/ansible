@@ -1,0 +1,28 @@
+---
+# VictoriaLogs Role - Configuration Defaults
+
+# Version
+victorialogs_version: "v1.48.0"
+
+# Lifecycle
+victorialogs_state: present
+victorialogs_remove_data: false
+
+# Instance identity
+victorialogs_instance_name: "victorialogs"
+
+# System identity - shared across all instances
+victorialogs_system_user: "victorialogs"
+victorialogs_system_group: "victorialogs"
+
+# Storage - scoped per instance
+victorialogs_data_dir: "/var/lib/{{ victorialogs_instance_name }}"
+
+# Network - no default, preflight asserts it is set
+# victorialogs_http_listen_port: ~
+
+# Retention - no default, preflight asserts it is set
+# victorialogs_retention_period: ~
+
+# Performance
+victorialogs_max_open_files: 2097152

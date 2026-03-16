@@ -1,0 +1,22 @@
+---
+# VictoriaLogs role - Main task orchestration
+# Debian 13 Trixie only
+
+- name: Include preflight checks
+  ansible.builtin.import_tasks: preflight.yml
+
+- name: Include installation tasks
+  ansible.builtin.import_tasks: install.yml
+  when: victorialogs_state == 'present'
+
+- name: Include configuration tasks
+  ansible.builtin.import_tasks: configure.yml
+  when: victorialogs_state == 'present'
+
+- name: Include verification tasks
+  ansible.builtin.import_tasks: verify.yml
+  when: victorialogs_state == 'present'
+
+- name: Include removal tasks
+  ansible.builtin.import_tasks: remove.yml
+  when: victorialogs_state == 'absent'
