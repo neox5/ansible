@@ -1,6 +1,14 @@
 ---
 # Caddy configuration tasks
 
+- name: Ensure caddy site domains are in /etc/hosts
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: "127.0.0.1 {{ item.domain }} # caddy: {{ item.domain }}"
+    regexp: "^127\\.0\\.0\\.1 {{ item.domain | regex_escape() }} "
+    state: present
+  loop: "{{ caddy_sites }}"
+
 - name: Add caddy user to ssl-cert group
   ansible.builtin.user:
     name: caddy
