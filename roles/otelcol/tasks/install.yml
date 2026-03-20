@@ -1,6 +1,3 @@
----
-# Installation tasks - user, config dir, binary
-
 - name: Create OTel Collector system group
   ansible.builtin.group:
     name: "{{ otelcol_system_group }}"
@@ -44,26 +41,43 @@
     group: "{{ otelcol_system_group }}"
     mode: "0750"
 
-- name: Apply effective ACL for otelcol on log paths
+- name: Apply traverse ACL for otelcol on log directories
   ansible.posix.acl:
     path: "{{ item }}"
     entity: "{{ otelcol_system_user }}"
     etype: user
-    permissions: rx
-    recursive: true
+    permissions: x
     state: present
   loop: "{{ otelcol_acl_paths }}"
   when: otelcol_acl_paths | length > 0
 
-- name: Apply default ACL for otelcol on log paths
+- name: Apply default read ACL for otelcol on log directories
   ansible.posix.acl:
     path: "{{ item }}"
     entity: "{{ otelcol_system_user }}"
     etype: user
-    permissions: rx
+    permissions: r
     default: true
     state: present
   loop: "{{ otelcol_acl_paths }}"
+  when: otelcol_acl_paths | length > 0
+
+- name: Find existing files in log directories
+  ansible.builtin.find:
+    paths: "{{ item }}"
+    file_type: file
+  loop: "{{ otelcol_acl_paths }}"
+  register: otelcol_acl_existing_files
+  when: otelcol_acl_paths | length > 0
+
+- name: Apply read ACL for otelcol on existing log files
+  ansible.posix.acl:
+    path: "{{ item.path }}"
+    entity: "{{ otelcol_system_user }}"
+    etype: user
+    permissions: r
+    state: present
+  loop: "{{ otelcol_acl_existing_files.results | selectattr('files', 'defined') | map(attribute='files') | flatten }}"
   when: otelcol_acl_paths | length > 0
 
 - name: Check if OTel Collector binary is already installed
@@ -92,17 +106,3 @@
   when: >
     not otelcol_binary.stat.exists or
     otelcol_version not in (otelcol_current_version.stdout | default(''))
-  notify: restart otelcol
-
-- name: Install OTel Collector binary
-  ansible.builtin.copy:
-    src: "/tmp/{{ otelcol_binary_name }}"
-    dest: "/usr/local/bin/{{ otelcol_binary_name }}"
-    owner: root
-    group: root
-    mode: "0755"
-    remote_src: true
-  when: >
-    not otelcol_binary.stat.exists or
-    otelcol_version not in (otelcol_current_version.stdout | default(''))
-  notify: restart otelcol

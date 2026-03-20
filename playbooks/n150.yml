@@ -16,9 +16,9 @@
 - import_playbook: postgresql.yml
 - import_playbook: pki.yml
 - import_playbook: n8n.yml
+- import_playbook: caddy.yml
 - import_playbook: victoriametrics.yml
 - import_playbook: victorialogs.yml
-- import_playbook: otelcol.yml
 - import_playbook: grafana.yml
-- import_playbook: caddy.yml
+- import_playbook: otelcol.yml
 - import_playbook: restic.yml
