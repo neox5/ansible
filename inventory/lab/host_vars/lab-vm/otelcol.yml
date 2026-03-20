@@ -1,10 +1,21 @@
 ---
 # OTel Collector: lab-vm
 # Role: otelcol
+
+# --- Access grants ---
+otelcol_journal_access: true
+otelcol_acl_paths:
+  - /var/log/caddy
+
+# --- Pipeline configuration ---
 otelcol_config:
   extensions:
     health_check:
       endpoint: "127.0.0.1:13133"
+
+    file_storage/checkpoint:
+      directory: /var/lib/otelcol/storage
+      timeout: 10s
 
   receivers:
     otlp:
@@ -23,6 +34,39 @@ otelcol_config:
         load:
         paging:
         processes:
+
+    filelog/caddy_access:
+      include:
+        - /var/log/caddy/access.log
+      start_at: end
+      storage: file_storage/checkpoint
+      operators:
+        - type: json_parser
+          timestamp:
+            parse_from: attributes.ts
+            layout_type: epoch
+            layout: s
+
+    journald/system:
+      units:
+        - caddy.service
+        - postgresql.service
+        - n8n.service
+        - victoriametrics.service
+        - victorialogs-access.service
+        - victorialogs-app.service
+        - victorialogs-system.service
+        - victorialogs-security.service
+        - otelcol.service
+      storage: file_storage/checkpoint
+
+    journald/security:
+      units:
+        - sshd.service
+        - sudo.service
+        - fail2ban.service
+        - systemd-logind.service
+      storage: file_storage/checkpoint
 
   processors:
     batch:
@@ -46,8 +90,23 @@ otelcol_config:
         max_interval: 30s
         max_elapsed_time: 5m
 
+    otlphttp/victorialogs_access:
+      endpoint: "http://127.0.0.1:9428/insert/opentelemetry"
+      tls:
+        insecure: true
+
+    otlphttp/victorialogs_system:
+      endpoint: "http://127.0.0.1:9430/insert/opentelemetry"
+      tls:
+        insecure: true
+
+    otlphttp/victorialogs_security:
+      endpoint: "http://127.0.0.1:9431/insert/opentelemetry"
+      tls:
+        insecure: true
+
   service:
-    extensions: [health_check]
+    extensions: [health_check, file_storage/checkpoint]
 
     pipelines:
       metrics/host:
@@ -59,6 +118,21 @@ otelcol_config:
         receivers: [otlp]
         processors: [batch]
         exporters: [prometheusremotewrite]
+
+      logs/caddy_access:
+        receivers: [filelog/caddy_access]
+        processors: [batch]
+        exporters: [otlphttp/victorialogs_access]
+
+      logs/system:
+        receivers: [journald/system]
+        processors: [batch]
+        exporters: [otlphttp/victorialogs_system]
+
+      logs/security:
+        receivers: [journald/security]
+        processors: [batch]
+        exporters: [otlphttp/victorialogs_security]
 
     telemetry:
       logs:

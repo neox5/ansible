@@ -15,6 +15,19 @@
     system: true
     createhome: false
 
+- name: Add otelcol to systemd-journal group
+  ansible.builtin.user:
+    name: "{{ otelcol_system_user }}"
+    groups: systemd-journal
+    append: true
+  when: otelcol_journal_access | bool
+
+- name: Install acl package for log path access grants
+  ansible.builtin.apt:
+    name: acl
+    state: present
+  when: otelcol_acl_paths | length > 0
+
 - name: Ensure OTel Collector config directory exists
   ansible.builtin.file:
     path: "{{ otelcol_config_dir }}"
@@ -22,6 +35,36 @@
     owner: "{{ otelcol_system_user }}"
     group: "{{ otelcol_system_group }}"
     mode: "0750"
+
+- name: Ensure OTel Collector storage directory exists
+  ansible.builtin.file:
+    path: "{{ otelcol_storage_dir }}"
+    state: directory
+    owner: "{{ otelcol_system_user }}"
+    group: "{{ otelcol_system_group }}"
+    mode: "0750"
+
+- name: Apply effective ACL for otelcol on log paths
+  ansible.posix.acl:
+    path: "{{ item }}"
+    entity: "{{ otelcol_system_user }}"
+    etype: user
+    permissions: rx
+    recursive: true
+    state: present
+  loop: "{{ otelcol_acl_paths }}"
+  when: otelcol_acl_paths | length > 0
+
+- name: Apply default ACL for otelcol on log paths
+  ansible.posix.acl:
+    path: "{{ item }}"
+    entity: "{{ otelcol_system_user }}"
+    etype: user
+    permissions: rx
+    default: true
+    state: present
+  loop: "{{ otelcol_acl_paths }}"
+  when: otelcol_acl_paths | length > 0
 
 - name: Check if OTel Collector binary is already installed
   ansible.builtin.stat:

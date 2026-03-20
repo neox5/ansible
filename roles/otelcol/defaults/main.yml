@@ -17,9 +17,21 @@ otelcol_system_group: "{{ otelcol_system_user }}"
 # Paths
 otelcol_config_dir: "/etc/otelcol"
 otelcol_config_file: "{{ otelcol_config_dir }}/config.yaml"
+otelcol_storage_dir: "/var/lib/otelcol/storage"
 
 # Network
 otelcol_health_check_endpoint: "http://127.0.0.1:13133"
+
+# Journal access - adds otelcol user to systemd-journal group
+otelcol_journal_access: false
+
+# POSIX ACL paths - list of directories otelcol needs read access to
+# Default ACLs are applied so rolled/new files inherit permissions automatically
+# Requires the acl package on the target (validated in preflight)
+# Example:
+# otelcol_acl_paths:
+#   - /var/log/caddy
+otelcol_acl_paths: []
 
 # Collector configuration (required - must be set in inventory)
 otelcol_config: {}
