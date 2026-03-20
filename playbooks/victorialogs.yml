@@ -14,6 +14,9 @@
     - name: Deploy VictoriaLogs instances (multi)
       ansible.builtin.include_role:
         name: victorialogs
-      vars: "{{ item }}"
+      vars:
+        victorialogs_instance_name: "{{ item.victorialogs_instance_name }}"
+        victorialogs_http_listen_port: "{{ item.victorialogs_http_listen_port }}"
+        victorialogs_retention_period: "{{ item.victorialogs_retention_period }}"
       loop: "{{ victorialogs_instances }}"
       when: victorialogs_instances is defined
