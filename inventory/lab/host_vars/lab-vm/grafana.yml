@@ -10,3 +10,27 @@ grafana_datasources:
     type: "victoriametrics-metrics-datasource"
     url: "http://localhost:8428"
     is_default: true
+
+  - name: "VictoriaLogs Access"
+    uid: "victorialogs-access"
+    type: "victoriametrics-logs-datasource"
+    url: "http://localhost:9428"
+    is_default: false
+
+  - name: "VictoriaLogs App"
+    uid: "victorialogs-app"
+    type: "victoriametrics-logs-datasource"
+    url: "http://localhost:9429"
+    is_default: false
+
+  - name: "VictoriaLogs System"
+    uid: "victorialogs-system"
+    type: "victoriametrics-logs-datasource"
+    url: "http://localhost:9430"
+    is_default: false
+
+  - name: "VictoriaLogs Security"
+    uid: "victorialogs-security"
+    type: "victoriametrics-logs-datasource"
+    url: "http://localhost:9431"
+    is_default: false
