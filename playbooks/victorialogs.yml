@@ -3,7 +3,7 @@
 # Usage: ansible-playbook -i inventory/lab playbooks/victorialogs.yml
 
 - name: Deploy VictoriaLogs instances
-  hosts: n150
+  hosts: all
   become: true
   tasks:
     - name: Deploy VictoriaLogs instance (single)

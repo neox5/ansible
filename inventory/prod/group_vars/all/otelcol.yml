@@ -1,0 +1,5 @@
+---
+# OTel Collector: Production Environment
+# Applied to: all prod hosts
+
+otelcol_environment: "prod"

@@ -14,6 +14,7 @@
 - import_playbook: apt_repositories.yml
 - import_playbook: update.yml
 - import_playbook: security.yml
+- import_playbook: journald.yml
 - import_playbook: certs.yml
 - import_playbook: postgresql.yml
 - import_playbook: pki.yml

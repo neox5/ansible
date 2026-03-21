@@ -106,3 +106,23 @@
   when: >
     not otelcol_binary.stat.exists or
     otelcol_version not in (otelcol_current_version.stdout | default(''))
+
+- name: Install OTel Collector binary
+  ansible.builtin.copy:
+    src: "/tmp/{{ otelcol_binary_name }}"
+    dest: "/usr/local/bin/{{ otelcol_binary_name }}"
+    owner: root
+    group: root
+    mode: "0755"
+    remote_src: true
+  when: >
+    not otelcol_binary.stat.exists or
+    otelcol_version not in (otelcol_current_version.stdout | default(''))
+
+- name: Remove OTel Collector archive from /tmp
+  ansible.builtin.file:
+    path: "/tmp/{{ otelcol_binary_name }}_{{ otelcol_version | regex_replace('^v', '') }}_linux_{{ go_arch }}.tar.gz"
+    state: absent
+  when: >
+    not otelcol_binary.stat.exists or
+    otelcol_version not in (otelcol_current_version.stdout | default(''))
