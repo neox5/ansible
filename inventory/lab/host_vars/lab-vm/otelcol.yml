@@ -75,7 +75,28 @@ otelcol_config:
             scrape_interval: 15s
             static_configs:
               - targets: ["localhost:2019"]
+                labels:
+                  instance: caddy
             metrics_path: /metrics
+
+    prometheus/victorialogs:
+      config:
+        scrape_configs:
+          - job_name: victorialogs
+            scrape_interval: 15s
+            static_configs:
+              - targets: ["localhost:9428"]
+                labels:
+                  instance: victorialogs-access
+              - targets: ["localhost:9429"]
+                labels:
+                  instance: victorialogs-app
+              - targets: ["localhost:9430"]
+                labels:
+                  instance: victorialogs-system
+              - targets: ["localhost:9431"]
+                labels:
+                  instance: victorialogs-security
 
   processors:
     batch:
@@ -128,6 +149,11 @@ otelcol_config:
 
       metrics/caddy:
         receivers: [prometheus/caddy]
+        processors: [batch]
+        exporters: [otlphttp/victoriametrics]
+
+      metrics/victorialogs:
+        receivers: [prometheus/victorialogs]
         processors: [batch]
         exporters: [otlphttp/victoriametrics]
 
