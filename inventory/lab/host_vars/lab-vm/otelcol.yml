@@ -83,13 +83,11 @@ otelcol_config:
       send_batch_size: 1000
 
   exporters:
-    prometheusremotewrite:
-      endpoint: "http://127.0.0.1:8428/api/v1/write"
+    otlphttp/victoriametrics:
+      endpoint: "http://127.0.0.1:8428/opentelemetry"
       tls:
         insecure: true
-      resource_to_telemetry_conversion:
-        enabled: true
-      remote_write_queue:
+      sending_queue:
         enabled: true
         queue_size: 1000
       timeout: 30s
@@ -121,17 +119,17 @@ otelcol_config:
       metrics/host:
         receivers: [hostmetrics]
         processors: [batch]
-        exporters: [prometheusremotewrite]
+        exporters: [otlphttp/victoriametrics]
 
       metrics/self:
         receivers: [otlp]
         processors: [batch]
-        exporters: [prometheusremotewrite]
+        exporters: [otlphttp/victoriametrics]
 
       metrics/caddy:
         receivers: [prometheus/caddy]
         processors: [batch]
-        exporters: [prometheusremotewrite]
+        exporters: [otlphttp/victoriametrics]
 
       logs/caddy_access:
         receivers: [filelog/caddy_access]
