@@ -68,6 +68,15 @@ otelcol_config:
         - systemd-logind.service
       storage: file_storage/checkpoint
 
+    prometheus/caddy:
+      config:
+        scrape_configs:
+          - job_name: caddy
+            scrape_interval: 15s
+            static_configs:
+              - targets: ["localhost:2019"]
+            metrics_path: /metrics
+
   processors:
     batch:
       timeout: 15s
@@ -116,6 +125,11 @@ otelcol_config:
 
       metrics/self:
         receivers: [otlp]
+        processors: [batch]
+        exporters: [prometheusremotewrite]
+
+      metrics/caddy:
+        receivers: [prometheus/caddy]
         processors: [batch]
         exporters: [prometheusremotewrite]
 
