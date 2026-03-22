@@ -61,8 +61,11 @@ binaries, configuration, and the systemd unit.
 | `stepca_state`               | `present`                 | `present` or `absent`                                |
 | `stepca_version`             | `0.29.0`                  | step-ca binary version                               |
 | `stepca_name`                | `Issuing CA`              | CA display name (used as CSR subject)                |
-| `stepca_address`             | `127.0.0.1:9443`          | Listen address                                       |
+| `stepca_host`                | `127.0.0.1`               | Primary listener bind address                        |
+| `stepca_port`                | `9443`                    | Primary listener port                                |
 | `stepca_dns_names`           | `[]`                      | Additional DNS names for CA                          |
+| `stepca_metrics_host`        | `127.0.0.1`               | Metrics listener bind address (always loopback)      |
+| `stepca_metrics_port`        | `9444`                    | Metrics listener port (empty to disable)             |
 | `stepca_db_datasource`       | `""`                      | PostgreSQL DSN (required)                            |
 | `stepca_key_password_secret` | `""`                      | Intermediate key password (required, SOPS encrypted) |
 | `stepca_csr_fetch_path`      | `/tmp/stepca-issuing.csr` | CSR destination on control node                      |
@@ -75,3 +78,5 @@ binaries, configuration, and the systemd unit.
 - Service starts automatically on re-run once certificates are in place
 - `stepca_key_password_secret` must be SOPS encrypted in inventory
 - Root CA key must never be present on this host
+- The metrics endpoint binds to `stepca_metrics_host` independently of `stepca_host`,
+  ensuring it remains loopback-only even when the primary listener is exposed on a network interface

@@ -25,9 +25,15 @@ stepca_config_file: "{{ stepca_config_dir }}/ca.json"
 # Password file for intermediate key encryption
 stepca_password_file: "{{ stepca_secrets_dir }}/password"
 
-# Network
-stepca_address: "127.0.0.1:9443"
+# Network - primary listener
+stepca_host: "127.0.0.1"
+stepca_port: 9443
 stepca_dns_names: []
+
+# Network - metrics listener (Prometheus /metrics endpoint)
+# Kept on loopback regardless of stepca_host to prevent unintended exposure
+stepca_metrics_host: "127.0.0.1"
+stepca_metrics_port: 9444
 
 # CA identity
 stepca_name: "Issuing CA"

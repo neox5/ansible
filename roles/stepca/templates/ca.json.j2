@@ -3,9 +3,12 @@
   "federatedRoots": null,
   "crt": "{{ stepca_certs_dir }}/{{ stepca_cert_name }}.crt",
   "key": "{{ stepca_secrets_dir }}/{{ stepca_cert_name }}_key",
-  "address": "{{ stepca_address }}",
+  "address": "{{ stepca_host }}:{{ stepca_port }}",
+{% if stepca_metrics_port %}
+  "metricsAddress": "{{ stepca_metrics_host }}:{{ stepca_metrics_port }}",
+{% endif %}
   "insecureAddress": "",
-  "dnsNames": {{ ([stepca_address.split(':')[0]] + stepca_dns_names) | to_json }},
+  "dnsNames": {{ ([stepca_host] + stepca_dns_names) | to_json }},
   "logger": {
     "format": "json"
   },
