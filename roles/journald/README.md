@@ -35,7 +35,7 @@ journald_max_retention_sec: 604800 # 7 days
 ## Example
 
 ```yaml
-# inventory/group_vars/n150/journald.yml
+# inventory/group_vars/n150/journald.yaml
 journald_storage: persistent
 journald_max_retention_sec: 604800
 journald_system_max_use: 512M

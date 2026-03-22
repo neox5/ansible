@@ -50,7 +50,7 @@ apt_repositories_security_mirror: "http://deb.debian.org/debian-security"
 ### Override components in inventory:
 
 ```yaml
-# inventory/prod/group_vars/all/apt.yml
+# inventory/prod/group_vars/all/apt.yaml
 apt_repositories_components:
   - main
   - non-free-firmware

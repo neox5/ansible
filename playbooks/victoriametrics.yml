@@ -1,9 +1,0 @@
----
-# VictoriaMetrics Deployment
-# Usage: ansible-playbook -i inventory/lab playbooks/victoriametrics.yml
-
-- name: Deploy VictoriaMetrics
-  hosts: all
-  become: true
-  roles:
-    - victoriametrics

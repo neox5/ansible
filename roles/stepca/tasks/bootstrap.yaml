@@ -1,0 +1,75 @@
+---
+# Bootstrap tasks - generate key and CSR
+# Skipped entirely if intermediate_ca.crt already present (sneakernet complete)
+
+- name: Check if intermediate CA certificate exists
+  ansible.builtin.stat:
+    path: "{{ stepca_certs_dir }}/{{ stepca_cert_name }}.crt"
+  register: _stepca_intermediate_cert
+  changed_when: false
+  check_mode: false
+
+- name: Set CSR filename with timestamp
+  ansible.builtin.set_fact:
+    _stepca_csr_filename: "{{ stepca_cert_name }}_{{ ansible_date_time.iso8601_basic_short }}.csr"
+  when: not _stepca_intermediate_cert.stat.exists
+
+- name: Write intermediate key password file
+  ansible.builtin.copy:
+    content: "{{ stepca_key_password_secret }}"
+    dest: "{{ stepca_password_file }}"
+    owner: root
+    group: "{{ stepca_system_group }}"
+    mode: "0640"
+  no_log: true
+  when: not _stepca_intermediate_cert.stat.exists
+
+- name: Generate intermediate CA key and CSR
+  ansible.builtin.command:
+    cmd: >
+      step certificate create
+      --csr
+      --kty="{{ stepca_key_type }}"
+      --curve="{{ stepca_key_curve }}"
+      --password-file="{{ stepca_password_file }}"
+      "{{ stepca_name }}"
+      "{{ stepca_base_dir }}/{{ _stepca_csr_filename }}"
+      "{{ stepca_secrets_dir }}/{{ stepca_cert_name }}_key"
+  environment:
+    STEPPATH: "{{ stepca_base_dir }}"
+  when: not _stepca_intermediate_cert.stat.exists
+
+- name: Set ownership on intermediate key
+  ansible.builtin.file:
+    path: "{{ stepca_secrets_dir }}/{{ stepca_cert_name }}_key"
+    owner: root
+    group: "{{ stepca_system_group }}"
+    mode: "0640"
+  when: not _stepca_intermediate_cert.stat.exists
+
+- name: Fetch generated CSR to control node
+  ansible.builtin.fetch:
+    src: "{{ stepca_base_dir }}/{{ _stepca_csr_filename }}"
+    dest: "{{ stepca_csr_fetch_dir }}/{{ _stepca_csr_filename }}"
+    flat: true
+  when: not _stepca_intermediate_cert.stat.exists
+
+- name: Awaiting signed certificate from root CA
+  ansible.builtin.debug:
+    msg:
+      - "CSR generated and fetched to {{ stepca_csr_fetch_dir }}/{{ _stepca_csr_filename }} on the control node."
+      - ""
+      - "Sign the CSR with your root CA using an intermediate CA profile"
+      - "(CA:true, pathlen:0, keyCertSign, cRLSign)."
+      - ""
+      - "Then:"
+      - "  1. Place the signed certificate at {{ stepca_certs_dir }}/{{ stepca_cert_name }}.crt on the target"
+      - "  2. Re-run pki.yaml to deploy the full stack"
+      - ""
+      - "Note: Root CA certificate must be deployed via the certs role (ca_certs)"
+      - "      at {{ stepca_root_ca_path }} before stepca will start."
+  when: not _stepca_intermediate_cert.stat.exists
+
+- name: End play - awaiting sneakernet
+  ansible.builtin.meta: end_host
+  when: not _stepca_intermediate_cert.stat.exists

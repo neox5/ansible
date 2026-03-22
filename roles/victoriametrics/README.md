@@ -59,7 +59,7 @@ victoriametrics_search_max_unique_timeseries: "100000"
 victoriametrics_max_open_files: 2097152
 ```
 
-See `defaults/main.yml` for all available variables.
+See `defaults/main.yaml` for all available variables.
 
 ## Example Playbook
 
@@ -74,13 +74,13 @@ See `defaults/main.yml` for all available variables.
 ### Removal (preserve data)
 
 ```bash
-ansible-playbook playbooks/victoriametrics.yml -e "victoriametrics_state=absent"
+ansible-playbook playbooks/victoriametrics.yaml -e "victoriametrics_state=absent"
 ```
 
 ### Removal (destroy data)
 
 ```bash
-ansible-playbook playbooks/victoriametrics.yml -e "victoriametrics_state=absent victoriametrics_remove_data=true"
+ansible-playbook playbooks/victoriametrics.yaml -e "victoriametrics_state=absent victoriametrics_remove_data=true"
 ```
 
 ## What This Role Does

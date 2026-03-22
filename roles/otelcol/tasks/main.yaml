@@ -1,0 +1,15 @@
+---
+# OTel Collector role - Main task orchestration
+# Debian 13 Trixie only
+
+- name: Include preflight checks
+  ansible.builtin.import_tasks: preflight.yaml
+
+- name: Include installation tasks
+  ansible.builtin.import_tasks: install.yaml
+
+- name: Include configuration tasks
+  ansible.builtin.import_tasks: configure.yaml
+
+- name: Include start tasks
+  ansible.builtin.import_tasks: start.yaml

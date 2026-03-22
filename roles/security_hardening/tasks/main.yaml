@@ -1,0 +1,27 @@
+---
+- name: Load distro-specific variables
+  include_vars: "{{ ansible_distribution }}.yaml"
+
+- name: Update package cache (Debian)
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  when: ansible_distribution == "Debian"
+
+- name: Harden SSH
+  import_tasks: ssh.yaml
+
+- name: Configure firewall
+  import_tasks: firewall.yaml
+
+- name: Setup automatic security updates
+  import_tasks: updates.yaml
+
+- name: Configure fail2ban
+  import_tasks: fail2ban.yaml
+
+- name: Configure journald
+  import_tasks: journald.yaml
+
+- name: Configure sudo
+  import_tasks: sudo.yaml

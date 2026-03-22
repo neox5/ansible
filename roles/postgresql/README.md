@@ -48,7 +48,7 @@ postgresql_random_page_cost: 1.1 # SSD
 postgresql_effective_io_concurrency: 200 # SSD
 ```
 
-See `defaults/main.yml` for all available variables.
+See `defaults/main.yaml` for all available variables.
 
 ## Database Ownership and Privileges
 
@@ -103,7 +103,7 @@ ssh ansible@host "sudo /opt/postgresql/pg_restore.sh /var/backups/postgresql/lab
 
 ## Migration from anxs.postgresql
 
-1. Remove `anxs.postgresql` from `requirements.yml`
+1. Remove `anxs.postgresql` from `requirements.yaml`
 2. Remove `postgresql_user_privileges` variable from inventory
 3. Ensure `role_attr_flags` is in `postgresql_users` (not privileges)
 4. Deploy role

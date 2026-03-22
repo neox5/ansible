@@ -1,0 +1,4 @@
+---
+- name: Configure firewall (Debian backend)
+  import_tasks: firewall_debian.yaml
+  when: ansible_distribution == "Debian"

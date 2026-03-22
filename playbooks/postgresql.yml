@@ -1,9 +1,0 @@
----
-# PostgreSQL Deployment
-# Usage: ansible-playbook -i inventory/lab playbooks/postgresql.yml
-
-- name: Deploy PostgreSQL
-  hosts: all
-  become: yes
-  roles:
-    - postgresql

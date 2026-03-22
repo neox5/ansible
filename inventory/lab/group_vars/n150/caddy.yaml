@@ -1,0 +1,48 @@
+---
+# ============================================================================
+# Caddy: Lab Configuration
+# File: group_vars/n150/caddy.yaml
+# Role: caddy (custom)
+# ============================================================================
+#
+# Lab environment configuration for Caddy reverse proxy.
+# Uses step-ca ACME for automatic certificate issuance.
+#
+# Applied to: All hosts in 'n150' group
+# Variable precedence: all < n150 (this file) < host_vars
+#
+# ============================================================================
+
+# --- Contact Email ---
+caddy_email: "office@zion.local"
+
+# --- Private CA ACME endpoint ---
+caddy_acme_ca: "https://127.0.0.1:9443/acme/stepca/directory"
+
+# --- Root CA PEM for trusting step-ca's TLS certificate ---
+caddy_acme_ca_root: "/usr/local/share/ca-certificates/zion_root_ca_g1.crt"
+
+# --- Caddy Sites Configuration ---
+caddy_sites:
+  - domain: "n8n.zion.local"
+    backend: "localhost:5678"
+  - domain: "grafana.zion.local"
+    backend: "localhost:3000"
+
+# --- Access Logging ---
+caddy_access_log_enabled: true
+caddy_access_log_path: /var/log/caddy/access.log
+caddy_access_log_roll_size: 10MiB
+caddy_access_log_roll_keep: 5
+caddy_access_log_roll_keep_for: 7d
+caddy_access_log_skip_paths:
+  - /health
+  - /healthz
+  - /ping
+# ============================================================================
+# Notes:
+# - Caddy listens on 443 (HTTPS) and redirects 80 → 443
+# - Certificates issued automatically via step-ca ACME
+# - Domains must be in /etc/hosts or local DNS
+# - Ports are hardcoded here to avoid cross-role variable dependencies
+# ============================================================================

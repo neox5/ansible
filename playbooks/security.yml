@@ -1,9 +1,0 @@
----
-# Security hardening playbook
-# Usage: ansible-playbook -i inventory/lab playbooks/security.yml
-
-- name: Apply security hardening
-  hosts: all
-  become: yes
-  roles:
-    - security_hardening

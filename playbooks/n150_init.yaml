@@ -1,0 +1,20 @@
+---
+# N150 PKI Initialization
+# Run once before n150.yaml to set up the PKI foundation.
+#
+# After this playbook completes:
+#   1. Fetch the CSR from /tmp/<stepca_cert_name>_<timestamp>.csr on the control node
+#   2. Sign it with the root CA (intermediate CA profile)
+#   3. Place the signed certificate at stepca_certs_dir/<stepca_cert_name>.crt on the target
+#   4. Run n150.yaml to deploy the full stack
+#
+# Usage:
+#   ansible-playbook -i inventory/lab playbooks/n150_init.yaml
+
+- import_playbook: apt_repositories.yaml
+- import_playbook: update.yaml
+- import_playbook: security.yaml
+- import_playbook: journald.yaml
+- import_playbook: certs.yaml
+- import_playbook: postgresql.yaml
+- import_playbook: pki.yaml

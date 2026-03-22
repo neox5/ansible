@@ -43,9 +43,9 @@ bootstrap is skipped (cert exists), service starts automatically.
 ## Certificate Rollover (e.g. G1 → G2)
 
 1. Update inventory: set `stepca_name`, `stepca_cert_name`, and `stepca_key_password_secret` to G2 values.
-2. Run `pki.yml` — bootstrap detects G2 cert absent, generates new key + CSR, halts awaiting sneakernet.
+2. Run `pki.yaml` — bootstrap detects G2 cert absent, generates new key + CSR, halts awaiting sneakernet.
 3. Sign the CSR with the root CA. Place the signed G2 certificate on the target.
-4. Run `pki.yml` again — `ca.json` is rewritten pointing to G2 cert and key, service restarts.
+4. Run `pki.yaml` again — `ca.json` is rewritten pointing to G2 cert and key, service restarts.
 
 G1 key and cert remain on disk until all G1-issued leaf certificates have expired.
 

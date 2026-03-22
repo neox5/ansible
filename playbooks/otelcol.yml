@@ -1,9 +1,0 @@
----
-# OpenTelemetry Collector Deployment
-# Usage: ansible-playbook -i inventory/lab playbooks/otelcol.yml
-
-- name: Deploy OpenTelemetry Collector
-  hosts: all
-  become: true
-  roles:
-    - otelcol

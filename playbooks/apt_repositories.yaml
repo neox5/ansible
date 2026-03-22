@@ -1,0 +1,9 @@
+---
+# APT Repositories Configuration
+# Usage: ansible-playbook -i inventory/lab playbooks/apt_repositories.yaml
+
+- name: Configure APT repositories
+  hosts: all
+  become: yes
+  roles:
+    - apt_repositories

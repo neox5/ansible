@@ -50,7 +50,7 @@ n8n_db_user: "n8n_user"
 n8n_timezone: "UTC"
 ```
 
-See `defaults/main.yml` for all available variables.
+See `defaults/main.yaml` for all available variables.
 
 ## Example Playbook
 
@@ -80,7 +80,7 @@ See `defaults/main.yml` for all available variables.
 This role does NOT create the database. Configure database creation via inventory:
 
 ```yaml
-# inventory/lab/group_vars/n8n/postgresql.yml
+# inventory/lab/group_vars/n8n/postgresql.yaml
 postgresql_databases:
   - name: n8n
     owner: n8n_user

@@ -54,11 +54,11 @@ quadlet_capabilities: [] # Container capabilities
 quadlet_security_opt: [] # Security options
 ```
 
-See `defaults/main.yml` for all available variables.
+See `defaults/main.yaml` for all available variables.
 
 ## Example Usage
 
-**In application role (roles/n8n/tasks/main.yml):**
+**In application role (roles/n8n/tasks/main.yaml):**
 
 ```yaml
 ---

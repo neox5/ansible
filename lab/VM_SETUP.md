@@ -61,14 +61,14 @@ Generate root password hash:
 
 ```bash
 openssl passwd -6 -stdin
-# Add hash to inventory/lab/host_vars/lab-vm/secrets.yml
+# Add hash to inventory/lab/host_vars/lab-vm/secrets.yaml
 # Encrypt with SOPS
 ```
 
 Bootstrap command:
 
 ```bash
-ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook playbooks/bootstrap.yml \
+ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook playbooks/bootstrap.yaml \
   -i inventory/prod -l n150-01 \
   -e ansible_user=temp \
   -k -K
@@ -106,7 +106,7 @@ Access:
 ./run-lab.sh
 
 # Deploy
-ansible-playbook -i inventory/lab playbooks/site.yml
+ansible-playbook -i inventory/lab playbooks/site.yaml
 
 # Save state
 ./run-lab.sh save <name>

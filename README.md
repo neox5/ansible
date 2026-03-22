@@ -20,7 +20,7 @@ Quick verification:
 
 ```bash
 # Verify access (must succeed):
-sops -d inventory/prod/host_vars/<host>/secrets.yml >/dev/null
+sops -d inventory/prod/host_vars/<host>/secrets.yaml >/dev/null
 ```
 
 ---
@@ -37,7 +37,7 @@ Use username `temp` for consistency.
 Bootstrap command:
 
 ```bash
-ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook playbooks/bootstrap.yml \
+ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook playbooks/bootstrap.yaml \
   -i "<TARGET_IP>," \
   -e ansible_user=temp \
   -k -K
@@ -75,11 +75,11 @@ ssh -i ~/.ssh/id_ed25519_emergency admin@<TARGET_IP>
 Full deployment:
 
 ```bash
-ansible-playbook playbooks/site.yml
+ansible-playbook playbooks/site.yaml
 ```
 
 Updates only:
 
 ```bash
-ansible-playbook playbooks/update.yml
+ansible-playbook playbooks/update.yaml
 ```

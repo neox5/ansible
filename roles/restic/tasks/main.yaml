@@ -1,0 +1,26 @@
+---
+# Restic role - Task orchestration
+
+- name: Include preflight checks
+  ansible.builtin.import_tasks: preflight.yaml
+  tags:
+    - restic
+    - restic-preflight
+
+- name: Include installation tasks
+  ansible.builtin.import_tasks: install.yaml
+  tags:
+    - restic
+    - restic-install
+
+- name: Include repository configuration
+  ansible.builtin.import_tasks: repositories.yaml
+  tags:
+    - restic
+    - restic-repositories
+
+- name: Include job configuration
+  ansible.builtin.import_tasks: jobs.yaml
+  tags:
+    - restic
+    - restic-jobs

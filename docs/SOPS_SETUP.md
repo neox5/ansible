@@ -13,7 +13,7 @@ Manual testing guide for PostgreSQL install, backup, and restore playbooks.
 cat ~/.config/sops/age/keys.txt
 
 # Verify SOPS can decrypt lab secrets
-sops -d inventory/lab/host_vars/lab-vm/secrets.sops.yml
+sops -d inventory/lab/host_vars/lab-vm/secrets.sops.yaml
 ```
 
 **Start lab VM:**
@@ -37,7 +37,7 @@ ansible -i inventory/lab lab-vm -m ping
 
 ```bash
 # Create/edit secrets file (SOPS will encrypt on save)
-sops inventory/lab/host_vars/lab-vm/secrets.sops.yml
+sops inventory/lab/host_vars/lab-vm/secrets.sops.yaml
 ```
 
 **Add test database configuration:**
@@ -45,7 +45,7 @@ sops inventory/lab/host_vars/lab-vm/secrets.sops.yml
 ```yaml
 ---
 # PostgreSQL test credentials for lab environment
-# Encrypted with SOPS - use: sops inventory/lab/host_vars/lab-vm/secrets.sops.yml
+# Encrypted with SOPS - use: sops inventory/lab/host_vars/lab-vm/secrets.sops.yaml
 
 # Test database user password
 testuser_db_password: "testpass123"
@@ -55,10 +55,10 @@ testuser_db_password: "testpass123"
 
 ```bash
 # Create unencrypted PostgreSQL configuration
-cat > inventory/lab/host_vars/lab-vm/postgresql.yml << 'EOF'
+cat > inventory/lab/host_vars/lab-vm/postgresql.yaml << 'EOF'
 ---
 # PostgreSQL test configuration for lab environment
-# Uses encrypted credentials from secrets.sops.yml
+# Uses encrypted credentials from secrets.sops.yaml
 
 # Test databases
 postgresql_databases:
@@ -88,7 +88,7 @@ postgresql_users:
 # - testdb: Primary database for general testing and queries
 # - backuptest: Secondary database for pg_dump/pg_restore workflow testing
 # - testuser: Has CREATEDB privilege for testing database operations
-# - Password referenced from secrets.sops.yml (SOPS-encrypted)
+# - Password referenced from secrets.sops.yaml (SOPS-encrypted)
 EOF
 ```
 
@@ -96,7 +96,7 @@ EOF
 
 ```bash
 # Check that secrets can be decrypted
-sops -d inventory/lab/host_vars/lab-vm/secrets.sops.yml | grep testuser_db_password
+sops -d inventory/lab/host_vars/lab-vm/secrets.sops.yaml | grep testuser_db_password
 
 # Verify Ansible can access encrypted variables
 ansible-inventory -i inventory/lab --host lab-vm | grep testuser_db_password
@@ -109,7 +109,7 @@ ansible-inventory -i inventory/lab --host lab-vm | grep testuser_db_password
 **Install PostgreSQL:**
 
 ```bash
-ansible-playbook -i inventory/lab playbooks/postgresql_install.yml --limit lab-vm
+ansible-playbook -i inventory/lab playbooks/postgresql_install.yaml --limit lab-vm
 ```
 
 **Verify installation:**
@@ -193,7 +193,7 @@ exit
 **Run backup playbook:**
 
 ```bash
-ansible-playbook -i inventory/lab playbooks/postgresql_backup.yml \
+ansible-playbook -i inventory/lab playbooks/postgresql_backup.yaml \
   --limit lab-vm \
   -e "backup_database=testdb"
 ```
@@ -310,7 +310,7 @@ ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost \
 **Run restore playbook:**
 
 ```bash
-ansible-playbook -i inventory/lab playbooks/postgresql_restore.yml \
+ansible-playbook -i inventory/lab playbooks/postgresql_restore.yaml \
   --limit lab-vm \
   -e "restore_file=/tmp/testdb_restore.dump" \
   -e "restore_database=testdb"
@@ -453,7 +453,7 @@ rm -f /tmp/testdb_backup.dump
 
 ```bash
 # Remove test databases and user via playbook
-# (Modify postgresql.yml to set state: absent, then run install playbook)
+# (Modify postgresql.yaml to set state: absent, then run install playbook)
 
 # Or manually via psql
 ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost << 'EOF'
@@ -469,10 +469,10 @@ EOF
 
 ```bash
 # Edit secrets file and remove test credentials
-sops inventory/lab/host_vars/lab-vm/secrets.sops.yml
+sops inventory/lab/host_vars/lab-vm/secrets.sops.yaml
 
-# Remove postgresql.yml if no longer needed
-rm inventory/lab/host_vars/lab-vm/postgresql.yml
+# Remove postgresql.yaml if no longer needed
+rm inventory/lab/host_vars/lab-vm/postgresql.yaml
 ```
 
 ---
@@ -488,7 +488,7 @@ set -e
 echo "=== PostgreSQL Operations Test ==="
 
 echo "1. Installing PostgreSQL..."
-ansible-playbook -i inventory/lab playbooks/postgresql_install.yml --limit lab-vm
+ansible-playbook -i inventory/lab playbooks/postgresql_install.yaml --limit lab-vm
 
 echo "2. Adding test data..."
 ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost << 'EOF'
@@ -500,7 +500,7 @@ SQL
 EOF
 
 echo "3. Creating backup..."
-ansible-playbook -i inventory/lab playbooks/postgresql_backup.yml \
+ansible-playbook -i inventory/lab playbooks/postgresql_backup.yaml \
   --limit lab-vm \
   -e "backup_database=testdb"
 
@@ -520,7 +520,7 @@ echo "7. Uploading backup..."
 scp -i ~/.ssh/id_ed25519_ansible -P 2222 /tmp/testdb_backup.dump ansible@localhost:/tmp/testdb_restore.dump
 
 echo "8. Restoring database..."
-ansible-playbook -i inventory/lab playbooks/postgresql_restore.yml \
+ansible-playbook -i inventory/lab playbooks/postgresql_restore.yaml \
   --limit lab-vm \
   -e "restore_file=/tmp/testdb_restore.dump" \
   -e "restore_database=testdb"
@@ -551,7 +551,7 @@ chmod +x test-postgresql-ops.sh
 
 ```bash
 # Solution: Run install playbook first
-ansible-playbook -i inventory/lab playbooks/postgresql_install.yml --limit lab-vm
+ansible-playbook -i inventory/lab playbooks/postgresql_install.yaml --limit lab-vm
 ```
 
 **Issue: "Backup file does not exist"**
@@ -576,5 +576,5 @@ ssh -i ~/.ssh/id_ed25519_ansible -p 2222 ansible@localhost \
 cat ~/.config/sops/age/keys.txt
 
 # Test decryption manually
-sops -d inventory/lab/host_vars/lab-vm/secrets.sops.yml
+sops -d inventory/lab/host_vars/lab-vm/secrets.sops.yaml
 ```

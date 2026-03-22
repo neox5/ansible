@@ -1,0 +1,17 @@
+---
+# Grafana Deployment
+#
+# Usage:
+#   ansible-playbook -i inventory/lab playbooks/grafana.yaml
+#
+# Removal (preserve data):
+#   ansible-playbook -i inventory/lab playbooks/grafana.yaml -e "grafana_state=absent"
+#
+# Removal (destroy data):
+#   ansible-playbook -i inventory/lab playbooks/grafana.yaml -e "grafana_state=absent grafana_remove_data=true"
+
+- name: Deploy Grafana
+  hosts: all
+  become: true
+  roles:
+    - grafana

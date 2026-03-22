@@ -78,6 +78,6 @@ If locked out (user not in `security_ssh_allowed_users`):
 
 The role maintains a multi-distro structure for future extension:
 
-1. Create `vars/{Distribution}.yml` with distro-specific variables
-2. Create `tasks/{feature}_{distribution}.yml` for distro-specific implementations
-3. Update conditionals in `tasks/{feature}.yml` to check for the new distribution
+1. Create `vars/{Distribution}.yaml` with distro-specific variables
+2. Create `tasks/{feature}_{distribution}.yaml` for distro-specific implementations
+3. Update conditionals in `tasks/{feature}.yaml` to check for the new distribution

@@ -1,0 +1,12 @@
+---
+- name: Include preflight checks
+  import_tasks: preflight.yaml
+  tags:
+    - journald
+    - journald-preflight
+
+- name: Include configuration tasks
+  import_tasks: configure.yaml
+  tags:
+    - journald
+    - journald-configure

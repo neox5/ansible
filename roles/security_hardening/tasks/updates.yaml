@@ -1,0 +1,4 @@
+---
+- name: Setup automatic updates (Debian backend)
+  import_tasks: updates_debian.yaml
+  when: ansible_distribution == "Debian"

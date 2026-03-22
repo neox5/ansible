@@ -59,7 +59,7 @@ victorialogs_max_open_files: 2097152
 Define instances in inventory, playbook handles the loop automatically:
 
 ```yaml
-# inventory/prod/group_vars/n150/victorialogs.yml
+# inventory/prod/group_vars/n150/victorialogs.yaml
 victorialogs_instances:
   - victorialogs_instance_name: victorialogs-access
     victorialogs_http_listen_port: 9428

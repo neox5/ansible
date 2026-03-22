@@ -38,7 +38,7 @@ caddy_sites:
 caddy_version: 2 # Major version pin
 ```
 
-See `defaults/main.yml` for all available variables.
+See `defaults/main.yaml` for all available variables.
 
 ## TLS Configuration
 
@@ -108,7 +108,7 @@ security_firewall_allowed_tcp_ports:
 ## Inventory Example
 
 ```yaml
-# group_vars/web/caddy.yml
+# group_vars/web/caddy.yaml
 caddy_email: "[email protected]"
 
 caddy_sites:

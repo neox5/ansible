@@ -1,0 +1,9 @@
+---
+# stepca Deployment
+#   ansible-playbook -i inventory/lab playbooks/pki.yaml
+
+- name: Deploy stepca
+  hosts: all
+  become: true
+  roles:
+    - stepca

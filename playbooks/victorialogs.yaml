@@ -1,0 +1,22 @@
+---
+# playbooks/victorialogs.yaml
+# Usage: ansible-playbook -i inventory/lab playbooks/victorialogs.yaml
+
+- name: Deploy VictoriaLogs instances
+  hosts: all
+  become: true
+  tasks:
+    - name: Deploy VictoriaLogs instance (single)
+      ansible.builtin.include_role:
+        name: victorialogs
+      when: victorialogs_instances is not defined
+
+    - name: Deploy VictoriaLogs instances (multi)
+      ansible.builtin.include_role:
+        name: victorialogs
+      vars:
+        victorialogs_instance_name: "{{ item.victorialogs_instance_name }}"
+        victorialogs_http_listen_port: "{{ item.victorialogs_http_listen_port }}"
+        victorialogs_retention_period: "{{ item.victorialogs_retention_period }}"
+      loop: "{{ victorialogs_instances }}"
+      when: victorialogs_instances is defined

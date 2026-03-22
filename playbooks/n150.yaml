@@ -1,0 +1,25 @@
+---
+# N150 Full Stack Deployment
+# Deploys complete n150 stack in dependency order.
+#
+# Prerequisites: n150_init.yaml must have completed and the intermediate CA
+# certificate must be in place before running this playbook.
+#
+# Usage:
+#   ansible-playbook -i inventory/lab playbooks/n150.yaml
+#   ansible-playbook -i inventory/prod playbooks/n150.yaml
+
+- import_playbook: apt_repositories.yaml
+- import_playbook: update.yaml
+- import_playbook: security.yaml
+- import_playbook: journald.yaml
+- import_playbook: certs.yaml
+- import_playbook: postgresql.yaml
+- import_playbook: pki.yaml
+- import_playbook: n8n.yaml
+- import_playbook: caddy.yaml
+- import_playbook: victoriametrics.yaml
+- import_playbook: victorialogs.yaml
+- import_playbook: grafana.yaml
+- import_playbook: otelcol.yaml
+- import_playbook: restic.yaml

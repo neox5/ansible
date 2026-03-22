@@ -1,8 +1,0 @@
----
-- name: Manual system updates
-  hosts: all
-  become: yes
-
-  tasks:
-    - name: Import update tasks
-      ansible.builtin.import_tasks: ../tasks/update.yml

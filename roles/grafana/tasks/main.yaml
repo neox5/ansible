@@ -1,0 +1,21 @@
+---
+# Grafana role - Main task orchestration
+
+- name: Include preflight checks
+  ansible.builtin.import_tasks: preflight.yaml
+
+- name: Include install tasks
+  ansible.builtin.import_tasks: install.yaml
+  when: grafana_state == 'present'
+
+- name: Include configure tasks
+  ansible.builtin.import_tasks: configure.yaml
+  when: grafana_state == 'present'
+
+- name: Include start tasks
+  ansible.builtin.import_tasks: start.yaml
+  when: grafana_state == 'present'
+
+- name: Include removal tasks
+  ansible.builtin.import_tasks: remove.yaml
+  when: grafana_state == 'absent'
