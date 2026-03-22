@@ -37,8 +37,8 @@
 - name: Assert key password is configured
   ansible.builtin.assert:
     quiet: true
-    that: stepca_key_password | length > 0
-    fail_msg: "stepca_key_password must be set in inventory (SOPS encrypted)"
+    that: stepca_key_password_secret | length > 0
+    fail_msg: "stepca_key_password_secret must be set in inventory (SOPS encrypted)"
   when: stepca_state == 'present'
   no_log: true
 

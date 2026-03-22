@@ -20,7 +20,7 @@ stepca_acme_allowed_domains:
   - "*.zion.local"
 
 # PostgreSQL backend
-stepca_db_datasource: "postgresql://stepca:{{ stepca_db_password }}@localhost/stepca?sslmode=disable"
+stepca_db_datasource: "postgresql://stepca:{{ stepca_db_password_secret }}@localhost/stepca?sslmode=disable"
 
 # Directory on control node where CSRs are fetched
 stepca_csr_fetch_dir: "/tmp"

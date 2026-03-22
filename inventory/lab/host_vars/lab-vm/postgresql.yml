@@ -30,12 +30,12 @@ postgresql_databases:
 # --- User Creation ---
 postgresql_users:
   - name: "{{ n8n_db_user }}"
-    password: "{{ n8n_db_password }}"
+    password: "{{ n8n_db_password_secret }}"
     encrypted: yes
     role_attr_flags: "NOCREATEDB,NOSUPERUSER"
     state: present
   - name: stepca
-    password: "{{ stepca_db_password }}"
+    password: "{{ stepca_db_password_secret }}"
     encrypted: yes
     role_attr_flags: "NOCREATEDB,NOSUPERUSER"
     state: present

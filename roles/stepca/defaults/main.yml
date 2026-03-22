@@ -54,7 +54,7 @@ stepca_db_type: "postgresql"
 stepca_db_datasource: ""
 
 # Intermediate key password (SOPS encrypted in inventory)
-stepca_key_password: ""
+stepca_key_password_secret: ""
 
 # Directory on the control node where CSRs are fetched
 stepca_csr_fetch_dir: "/tmp"

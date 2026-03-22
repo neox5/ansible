@@ -47,22 +47,22 @@ binaries, configuration, and the systemd unit.
 
 ## Key Variables
 
-| Variable                | Default                   | Description                                          |
-| ----------------------- | ------------------------- | ---------------------------------------------------- |
-| `stepca_state`          | `present`                 | `present` or `absent`                                |
-| `stepca_version`        | `0.29.0`                  | step-ca binary version                               |
-| `stepca_name`           | `Issuing CA`              | CA display name (used as CSR subject)                |
-| `stepca_address`        | `127.0.0.1:9443`          | Listen address                                       |
-| `stepca_dns_names`      | `[]`                      | Additional DNS names for CA                          |
-| `stepca_db_datasource`  | `""`                      | PostgreSQL DSN (required)                            |
-| `stepca_key_password`   | `""`                      | Intermediate key password (required, SOPS encrypted) |
-| `stepca_csr_fetch_path` | `/tmp/stepca-issuing.csr` | CSR destination on control node                      |
-| `stepca_key_type`       | `EC`                      | Intermediate key type                                |
-| `stepca_key_curve`      | `P-384`                   | Intermediate key curve                               |
+| Variable                     | Default                   | Description                                          |
+| ---------------------------- | ------------------------- | ---------------------------------------------------- |
+| `stepca_state`               | `present`                 | `present` or `absent`                                |
+| `stepca_version`             | `0.29.0`                  | step-ca binary version                               |
+| `stepca_name`                | `Issuing CA`              | CA display name (used as CSR subject)                |
+| `stepca_address`             | `127.0.0.1:9443`          | Listen address                                       |
+| `stepca_dns_names`           | `[]`                      | Additional DNS names for CA                          |
+| `stepca_db_datasource`       | `""`                      | PostgreSQL DSN (required)                            |
+| `stepca_key_password_secret` | `""`                      | Intermediate key password (required, SOPS encrypted) |
+| `stepca_csr_fetch_path`      | `/tmp/stepca-issuing.csr` | CSR destination on control node                      |
+| `stepca_key_type`            | `EC`                      | Intermediate key type                                |
+| `stepca_key_curve`           | `P-384`                   | Intermediate key curve                               |
 
 ## Notes
 
 - The intermediate CA key never leaves the online host
 - Service starts automatically on re-run once certificates are in place
-- `stepca_key_password` must be SOPS encrypted in inventory
+- `stepca_key_password_secret` must be SOPS encrypted in inventory
 - Root CA key must never be present on this host

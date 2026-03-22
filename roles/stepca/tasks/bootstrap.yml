@@ -16,7 +16,7 @@
 
 - name: Write intermediate key password file
   ansible.builtin.copy:
-    content: "{{ stepca_key_password }}"
+    content: "{{ stepca_key_password_secret }}"
     dest: "{{ stepca_password_file }}"
     owner: root
     group: "{{ stepca_system_group }}"

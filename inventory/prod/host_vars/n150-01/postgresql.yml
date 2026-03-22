@@ -19,11 +19,23 @@ postgresql_databases:
     encoding: "{{ postgresql_defaults.db.encoding }}"
     template: "{{ postgresql_defaults.db.template }}"
     state: present
+  - name: stepca
+    owner: stepca
+    lc_collate: "{{ postgresql_defaults.db.lc_collate }}"
+    lc_ctype: "{{ postgresql_defaults.db.lc_ctype }}"
+    encoding: "{{ postgresql_defaults.db.encoding }}"
+    template: "{{ postgresql_defaults.db.template }}"
+    state: present
 
 # --- User Creation ---
 postgresql_users:
   - name: "{{ n8n_db_user }}"
-    password: "{{ n8n_db_password }}"
+    password: "{{ n8n_db_password_secret }}"
+    encrypted: yes
+    role_attr_flags: "NOCREATEDB,NOSUPERUSER"
+    state: present
+  - name: stepca
+    password: "{{ stepca_db_password_secret }}"
     encrypted: yes
     role_attr_flags: "NOCREATEDB,NOSUPERUSER"
     state: present
@@ -32,4 +44,7 @@ postgresql_users:
 postgresql_user_privileges:
   - name: "{{ n8n_db_user }}"
     db: "{{ n8n_db_name }}"
+    priv: "ALL"
+  - name: stepca
+    db: stepca
     priv: "ALL"
