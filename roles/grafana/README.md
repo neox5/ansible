@@ -23,27 +23,7 @@ Grafana deployment for Debian 13 Trixie via Podman Quadlet.
 ### Version
 
 ```yaml
-grafana_version: "11.6.0"
-```
-
-### System
-
-```yaml
-grafana_system_user: "grafana"
-grafana_system_group: "grafana"
-grafana_uid: 472 # matches grafana/grafana container default
-grafana_gid: 472
-```
-
-### Paths
-
-```yaml
-grafana_base_dir: "/var/lib/grafana"
-grafana_data_dir: "{{ grafana_base_dir }}/data"
-grafana_plugins_dir: "{{ grafana_base_dir }}/plugins"
-grafana_dashboards_dir: "{{ grafana_base_dir }}/dashboards"
-grafana_provisioning_dir: "{{ grafana_base_dir }}/provisioning"
-grafana_datasources_dir: "{{ grafana_provisioning_dir }}/datasources"
+grafana_version: "12.3.0"
 ```
 
 ### Network
@@ -52,6 +32,24 @@ grafana_datasources_dir: "{{ grafana_provisioning_dir }}/datasources"
 grafana_port: 3000
 grafana_domain: "localhost"
 ```
+
+### Authentication
+
+```yaml
+grafana_auth:
+  server_admin:
+    user: "admin"
+    password: "" # required - set via SOPS secret "grafana_admin_password_secret"
+  anonymous:
+    enabled: false
+    org_role: "Viewer" # Viewer | Editor | Admin
+```
+
+`server_admin` provisions the Grafana server administrator (server-wide superadmin).
+`password` must be set in inventory via a SOPS-encrypted secret — it is required when `grafana_state: present`.
+
+`anonymous` controls unauthenticated access. When enabled, users land on dashboards
+without login. The server admin login remains accessible at `/login` regardless.
 
 ### Datasources
 
