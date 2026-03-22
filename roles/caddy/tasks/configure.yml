@@ -31,8 +31,13 @@
     owner: root
     group: root
     mode: "0644"
-    validate: caddy validate --adapter caddyfile --config %s
   notify: restart caddy
+
+- name: Validate Caddyfile
+  ansible.builtin.command:
+    cmd: caddy validate --adapter caddyfile --config {{ caddy_config_file }}
+  become_user: caddy
+  changed_when: false
 
 - name: Ensure Caddy configuration directory exists
   ansible.builtin.file:
