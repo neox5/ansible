@@ -17,6 +17,10 @@
                | selectattr('value.unsigned')
                | map(attribute='key') | list)
            | list | unique | join(',') }}
+      GF_SECURITY_ADMIN_USER: "{{ grafana_auth.server_admin.user }}"
+      GF_SECURITY_ADMIN_PASSWORD: "{{ grafana_auth.server_admin.password }}"
+      GF_AUTH_ANONYMOUS_ENABLED: "{{ grafana_auth.anonymous.enabled | bool | lower }}"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "{{ grafana_auth.anonymous.org_role }}"
   tags:
     - grafana
     - grafana-start

@@ -29,6 +29,40 @@
     - grafana
     - grafana-preflight
 
+- name: Assert server_admin user is defined
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - grafana_auth.server_admin.user is defined
+      - grafana_auth.server_admin.user | length > 0
+    fail_msg: "grafana_auth.server_admin.user must be defined and non-empty"
+  when: grafana_state == 'present'
+  tags:
+    - grafana
+    - grafana-preflight
+
+- name: Assert server_admin password is defined
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - grafana_auth.server_admin.password is defined
+      - grafana_auth.server_admin.password | length > 0
+    fail_msg: "grafana_auth.server_admin.password must be defined and non-empty - set via SOPS secret"
+  when: grafana_state == 'present'
+  tags:
+    - grafana
+    - grafana-preflight
+
+- name: Assert anonymous org_role is valid
+  ansible.builtin.assert:
+    quiet: true
+    that: grafana_auth.anonymous.org_role in ['Viewer', 'Editor', 'Admin']
+    fail_msg: "grafana_auth.anonymous.org_role must be one of: Viewer, Editor, Admin"
+  when: grafana_state == 'present'
+  tags:
+    - grafana
+    - grafana-preflight
+
 - name: Assert grafana_datasources is defined
   ansible.builtin.assert:
     that:

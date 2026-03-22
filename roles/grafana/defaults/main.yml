@@ -32,6 +32,22 @@ grafana_datasources_dir: "{{ grafana_provisioning_dir }}/datasources"
 grafana_port: 3000
 grafana_domain: "localhost"
 
+# Authentication
+# server_admin: Grafana server administrator (server-wide superadmin)
+#   - user: login username (default: admin)
+#   - password: required - must be set in inventory via SOPS secret
+# anonymous: unauthenticated access configuration
+#   - enabled: allow access without login (default: false)
+#   - org_role: role assigned to anonymous users (Viewer | Editor | Admin)
+#   - admin login remains accessible at /login regardless of this setting
+grafana_auth:
+  server_admin:
+    user: "admin"
+    password: ""
+  anonymous:
+    enabled: false
+    org_role: "Viewer"
+
 # Datasources (required - define in inventory)
 # Supported types: prometheus, victoriametrics-metrics-datasource,
 #                  loki, victoriametrics-logs-datasource,
