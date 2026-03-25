@@ -19,6 +19,12 @@ grafana_datasources:
     url: "http://localhost:8428"
     is_default: true
 
+  - name: "VictoriaMetrics (Prometheus)"
+    uid: "victoriametrics-prometheus"
+    type: "prometheus"
+    url: "http://localhost:8428"
+    is_default: false
+
   - name: "VictoriaLogs Access"
     uid: "victorialogs-access"
     type: "victoriametrics-logs-datasource"
