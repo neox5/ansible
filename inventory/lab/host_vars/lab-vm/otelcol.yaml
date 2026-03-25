@@ -98,6 +98,17 @@ otelcol_config:
                 labels:
                   instance: victorialogs-security
 
+    prometheus/stepca:
+      config:
+        scrape_configs:
+          - job_name: stepca
+            scrape_interval: 15s
+            static_configs:
+              - targets: ["localhost:9444"]
+                labels:
+                  instance: stepca
+            metrics_path: /metrics
+
   processors:
     batch:
       timeout: 15s
@@ -147,13 +158,9 @@ otelcol_config:
         processors: [batch]
         exporters: [otlphttp/victoriametrics]
 
-      metrics/caddy:
-        receivers: [prometheus/caddy]
-        processors: [batch]
-        exporters: [otlphttp/victoriametrics]
-
-      metrics/victorialogs:
-        receivers: [prometheus/victorialogs]
+      metrics/prometheus:
+        receivers:
+          [prometheus/caddy, prometheus/victorialogs, prometheus/stepca]
         processors: [batch]
         exporters: [otlphttp/victoriametrics]
 
