@@ -4,40 +4,22 @@
 
 - name: Include preflight checks
   import_tasks: preflight.yaml
-  tags:
-    - postgresql
-    - postgresql-preflight
 
 - name: Include installation tasks
   import_tasks: install.yaml
-  tags:
-    - postgresql
-    - postgresql-install
 
 - name: Include configuration tasks
   import_tasks: configure.yaml
-  tags:
-    - postgresql
-    - postgresql-configure
 
 - name: Include user tasks
   import_tasks: users.yaml
-  tags:
-    - postgresql
-    - postgresql-users
 
 - name: Include database tasks
   import_tasks: databases.yaml
-  tags:
-    - postgresql
-    - postgresql-databases
 
 - name: Include script deployment tasks
   import_tasks: scripts.yaml
   when: postgresql_install_scripts | bool
-  tags:
-    - postgresql
-    - postgresql-scripts
 
 - name: Display deployment summary
   ansible.builtin.debug:

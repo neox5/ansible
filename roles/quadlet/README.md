@@ -79,13 +79,6 @@ See `defaults/main.yaml` for all available variables.
       - "n8n_data:/home/node/.n8n"
 ```
 
-## Tags
-
-- `quadlet` - All tasks
-- `quadlet-preflight` - Environment validation
-- `quadlet-install` - Package installation
-- `quadlet-deploy` - Container deployment
-
 ## What This Role Does
 
 1. Validates Debian 13+ and Podman availability

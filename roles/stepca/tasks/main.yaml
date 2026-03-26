@@ -5,41 +5,23 @@
 - name: Include preflight checks
   ansible.builtin.import_tasks: preflight.yaml
   when: stepca_state == 'present'
-  tags:
-    - stepca
-    - stepca-preflight
 
 - name: Include installation tasks
   ansible.builtin.import_tasks: install.yaml
   when: stepca_state == 'present'
-  tags:
-    - stepca
-    - stepca-install
 
 - name: Include bootstrap tasks
   ansible.builtin.import_tasks: bootstrap.yaml
   when: stepca_state == 'present'
-  tags:
-    - stepca
-    - stepca-bootstrap
 
 - name: Include configuration tasks
   ansible.builtin.import_tasks: configure.yaml
   when: stepca_state == 'present'
-  tags:
-    - stepca
-    - stepca-configure
 
 - name: Include service tasks
   ansible.builtin.import_tasks: service.yaml
   when: stepca_state == 'present'
-  tags:
-    - stepca
-    - stepca-service
 
 - name: Include removal tasks
   ansible.builtin.import_tasks: remove.yaml
   when: stepca_state == 'absent'
-  tags:
-    - stepca
-    - stepca-remove

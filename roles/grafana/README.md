@@ -91,14 +91,6 @@ All paths are host bind mounts under a single root — simplifies backup/restore
 
 Backup scope: `/var/lib/grafana`
 
-## Tags
-
-- `grafana` - All tasks
-- `grafana-preflight` - Environment validation
-- `grafana-install` - Directory creation and plugin downloads
-- `grafana-configure` - Datasource provisioning
-- `grafana-start` - Container deployment
-
 ## What This Role Does
 
 1. Validates environment (Debian 13+) and required variables

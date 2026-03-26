@@ -1,8 +1,5 @@
 - name: Include preflight checks
   import_tasks: preflight.yaml
-  tags:
-    - n8n
-    - n8n-preflight
 
 - name: Deploy n8n container via Quadlet
   include_role:
@@ -52,5 +49,3 @@
       - postgresql.service
     quadlet_systemd_wants:
       - network-online.target
-  tags:
-    - n8n

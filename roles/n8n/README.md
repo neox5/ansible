@@ -63,11 +63,6 @@ See `defaults/main.yaml` for all available variables.
     - n8n
 ```
 
-## Tags
-
-- `n8n` - All tasks
-- `n8n-preflight` - Environment validation
-
 ## What This Role Does
 
 1. Validates environment (Debian 13+)

@@ -172,17 +172,6 @@ sudo /opt/restic/check-local.sh
 systemctl list-timers 'restic-*'
 ```
 
-## Tags
-
-| Tag                   | Scope                           |
-| --------------------- | ------------------------------- |
-| `restic`              | All tasks                       |
-| `restic-preflight`    | Validation                      |
-| `restic-install`      | Binary installation             |
-| `restic-repositories` | Repository init and environment |
-| `restic-jobs`         | Job scripts and systemd units   |
-| `restic-check`        | Check scripts and systemd units |
-
 ## Example Playbook
 
 ```yaml

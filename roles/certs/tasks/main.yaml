@@ -4,12 +4,6 @@
 
 - name: Include preflight checks
   ansible.builtin.import_tasks: preflight.yaml
-  tags:
-    - certs
-    - certs-preflight
 
 - name: Include deployment tasks
   ansible.builtin.import_tasks: deploy.yaml
-  tags:
-    - certs
-    - certs-deploy

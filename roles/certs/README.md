@@ -95,12 +95,6 @@ only (no service reload).
     - certs
 ```
 
-## Tags
-
-- `certs` - All tasks
-- `certs-preflight` - Environment validation
-- `certs-deploy` - Certificate and key deployment
-
 ## License
 
 MIT

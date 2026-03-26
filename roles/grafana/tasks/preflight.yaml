@@ -7,27 +7,18 @@
       - ansible_distribution == "Debian"
       - ansible_distribution_major_version == "13"
     fail_msg: "This role only supports Debian 13 (Trixie)"
-  tags:
-    - grafana
-    - grafana-preflight
 
 - name: Assert valid state value
   ansible.builtin.assert:
     quiet: true
     that: grafana_state in ['present', 'absent']
     fail_msg: "grafana_state must be 'present' or 'absent'"
-  tags:
-    - grafana
-    - grafana-preflight
 
 - name: Assert remove_data only set when state is absent
   ansible.builtin.assert:
     quiet: true
     that: not grafana_remove_data or grafana_state == 'absent'
     fail_msg: "grafana_remove_data: true requires grafana_state: absent"
-  tags:
-    - grafana
-    - grafana-preflight
 
 - name: Assert server_admin user is defined
   ansible.builtin.assert:
@@ -37,9 +28,6 @@
       - grafana_auth.server_admin.user | length > 0
     fail_msg: "grafana_auth.server_admin.user must be defined and non-empty"
   when: grafana_state == 'present'
-  tags:
-    - grafana
-    - grafana-preflight
 
 - name: Assert server_admin password is defined
   ansible.builtin.assert:
@@ -49,9 +37,6 @@
       - grafana_auth.server_admin.password | length > 0
     fail_msg: "grafana_auth.server_admin.password must be defined and non-empty - set via SOPS secret"
   when: grafana_state == 'present'
-  tags:
-    - grafana
-    - grafana-preflight
 
 - name: Assert anonymous org_role is valid
   ansible.builtin.assert:
@@ -59,9 +44,6 @@
     that: grafana_auth.anonymous.org_role in ['Viewer', 'Editor', 'Admin']
     fail_msg: "grafana_auth.anonymous.org_role must be one of: Viewer, Editor, Admin"
   when: grafana_state == 'present'
-  tags:
-    - grafana
-    - grafana-preflight
 
 - name: Assert grafana_datasources is defined
   ansible.builtin.assert:
@@ -70,9 +52,6 @@
       - grafana_datasources | length > 0
     fail_msg: "grafana_datasources must be defined with at least one entry"
   when: grafana_state == 'present'
-  tags:
-    - grafana
-    - grafana-preflight
 
 - name: Assert each datasource has required fields
   ansible.builtin.assert:
@@ -84,9 +63,6 @@
     fail_msg: "Datasource '{{ item.name | default('unknown') }}' missing required fields or unsupported type"
   loop: "{{ grafana_datasources }}"
   when: grafana_state == 'present'
-  tags:
-    - grafana
-    - grafana-preflight
 
 - name: Assert exactly one default datasource
   ansible.builtin.assert:
@@ -94,6 +70,3 @@
       - grafana_datasources | selectattr('is_default', 'defined') | selectattr('is_default') | list | length == 1
     fail_msg: "Exactly one datasource must have is_default: true"
   when: grafana_state == 'present'
-  tags:
-    - grafana
-    - grafana-preflight

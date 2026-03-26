@@ -116,13 +116,6 @@ caddy_sites:
     backend: localhost:5678
 ```
 
-## Tags
-
-- `caddy` - All tasks
-- `caddy-preflight` - Environment validation
-- `caddy-install` - Package installation
-- `caddy-configure` - Configuration deployment
-
 ## Certificate Management
 
 ### Let's Encrypt (Automatic)

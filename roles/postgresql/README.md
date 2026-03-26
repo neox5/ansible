@@ -92,15 +92,6 @@ ssh ansible@host "sudo /opt/postgresql/pg_backup.sh testdb"
 ssh ansible@host "sudo /opt/postgresql/pg_restore.sh /var/backups/postgresql/lab-vm-testdb-20260216T120000.dump testdb -y"
 ```
 
-## Tags
-
-- `postgresql` - All tasks
-- `postgresql-preflight` - Environment validation
-- `postgresql-install` - Package installation
-- `postgresql-configure` - Configuration deployment
-- `postgresql-databases` - Database creation
-- `postgresql-users` - User creation
-
 ## Migration from anxs.postgresql
 
 1. Remove `anxs.postgresql` from `requirements.yaml`

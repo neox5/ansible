@@ -7,9 +7,6 @@
     gid: "{{ grafana_gid }}"
     state: present
     system: true
-  tags:
-    - grafana
-    - grafana-install
 
 - name: Create grafana system user
   ansible.builtin.user:
@@ -19,9 +16,6 @@
     shell: /usr/sbin/nologin
     system: true
     createhome: false
-  tags:
-    - grafana
-    - grafana-install
 
 - name: Create grafana directory structure
   ansible.builtin.file:
@@ -37,26 +31,17 @@
     - "{{ grafana_dashboards_dir }}"
     - "{{ grafana_provisioning_dir }}"
     - "{{ grafana_datasources_dir }}"
-  tags:
-    - grafana
-    - grafana-install
 
 - name: Derive required plugins from configured datasource types
   ansible.builtin.set_fact:
     _grafana_required_plugins: >-
       {{ grafana_datasources | map(attribute='type') | select('in', grafana_plugin_map) | list | unique }}
-  tags:
-    - grafana
-    - grafana-install
 
 - name: Install required Grafana plugins
   ansible.builtin.include_tasks: install_plugin.yaml
   loop: "{{ _grafana_required_plugins }}"
   loop_control:
     loop_var: grafana_plugin_id
-  tags:
-    - grafana
-    - grafana-install
 
 - name: Find installed plugin directories
   ansible.builtin.find:
@@ -64,9 +49,6 @@
     file_type: directory
     depth: 1
   register: _installed_plugin_dirs
-  tags:
-    - grafana
-    - grafana-install
 
 - name: Remove orphaned plugin directories
   ansible.builtin.file:
@@ -76,6 +58,3 @@
   loop_control:
     label: "{{ item.path | basename }}"
   when: item.path | basename not in _grafana_required_plugins
-  tags:
-    - grafana
-    - grafana-install

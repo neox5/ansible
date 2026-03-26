@@ -12,18 +12,12 @@
   loop_control:
     label: "{{ item.uid }}"
   notify: restart grafana
-  tags:
-    - grafana
-    - grafana-configure
 
 - name: Find existing datasource files
   ansible.builtin.find:
     paths: "{{ grafana_datasources_dir }}"
     patterns: "*.yaml"
   register: _existing_datasource_files
-  tags:
-    - grafana
-    - grafana-configure
 
 - name: Remove orphaned datasource files
   ansible.builtin.file:
@@ -36,21 +30,12 @@
     item.path | basename | replace('.yaml', '')
     not in (grafana_datasources | map(attribute='uid') | list)
   notify: restart grafana
-  tags:
-    - grafana
-    - grafana-configure
 
 - name: Check if Grafana service is running
   ansible.builtin.systemd:
     name: grafana
   register: _grafana_service_state
-  tags:
-    - grafana
-    - grafana-configure
 
 - name: Flush handlers if Grafana service is running
   ansible.builtin.meta: flush_handlers
   when: _grafana_service_state.status.ActiveState == "active"
-  tags:
-    - grafana
-    - grafana-configure
