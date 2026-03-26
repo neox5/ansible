@@ -1,0 +1,25 @@
+---
+# Connection management - create or update Wi-Fi profiles via nmcli
+
+- name: Configure Wi-Fi connection profiles
+  community.general.nmcli:
+    type: wifi
+    conn_name: "{{ item.conn_name }}"
+    ifname: "{{ item.ifname | default(wifi_ifname) }}"
+    ssid: "{{ item.ssid }}"
+    wifi_sec:
+      key-mgmt: wpa-psk
+      psk: "{{ item.password }}"
+    ip4: "{{ item.ip4 }}"
+    gw4: "{{ item.gw4 }}"
+    dns4:
+      - "{{ item.dns4 | default(item.gw4) }}"
+    never_default: "{{ item.never_default | default(false) }}"
+    autoconnect: true
+    autoconnect_priority: "{{ item.priority | default(0) }}"
+    autoconnect_retries: -1
+    state: present
+  loop: "{{ wifi_connections }}"
+  loop_control:
+    label: "{{ item.conn_name }}"
+  no_log: true

@@ -1,0 +1,9 @@
+---
+# Wi-Fi Connection Management
+# Usage: ansible-playbook -i inventory/prod playbooks/wifi.yaml
+
+- name: Configure Wi-Fi connections
+  hosts: all
+  become: true
+  roles:
+    - wifi

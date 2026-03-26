@@ -1,0 +1,14 @@
+---
+# Installation tasks - NetworkManager package and service
+
+- name: Install NetworkManager
+  ansible.builtin.apt:
+    name: network-manager
+    state: present
+    update_cache: false
+
+- name: Enable and start NetworkManager service
+  ansible.builtin.systemd:
+    name: NetworkManager
+    enabled: true
+    state: started

@@ -1,0 +1,11 @@
+---
+# wifi role - Task orchestration
+
+- name: Include preflight checks
+  ansible.builtin.import_tasks: preflight.yaml
+
+- name: Include installation tasks
+  ansible.builtin.import_tasks: install.yaml
+
+- name: Include connection management tasks
+  ansible.builtin.import_tasks: connections.yaml

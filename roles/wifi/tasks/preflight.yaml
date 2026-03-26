@@ -1,0 +1,35 @@
+---
+# Preflight checks - validate environment before proceeding
+
+- name: Gather distribution facts
+  ansible.builtin.setup:
+    gather_subset:
+      - distribution
+
+- name: Assert Debian 13 or later
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - ansible_distribution == "Debian"
+      - ansible_distribution_major_version | int >= 13
+    fail_msg: "This role requires Debian 13 or later"
+
+- name: Assert wifi_connections is not empty
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - wifi_connections | length > 0
+    fail_msg: "wifi_connections must define at least one connection"
+
+- name: Assert each connection has required fields
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - item.conn_name is defined and item.conn_name | length > 0
+      - item.ssid is defined and item.ssid | length > 0
+      - item.password is defined and item.password | length > 0
+      - item.ip4 is defined and item.ip4 | length > 0
+      - item.gw4 is defined and item.gw4 | length > 0
+    fail_msg: "Connection '{{ item.conn_name | default('unnamed') }}' is missing required fields (conn_name, ssid, password, ip4, gw4)"
+  loop: "{{ wifi_connections }}"
+  no_log: true

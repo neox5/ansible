@@ -1,0 +1,8 @@
+---
+# wifi Role - Configuration Defaults
+
+# Fallback interface name if not specified per connection
+wifi_ifname: wlan0
+
+# Connections to manage (required - must be set in inventory)
+wifi_connections: []
