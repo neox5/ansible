@@ -17,6 +17,7 @@
 - import_playbook: postgresql.yaml
 - import_playbook: pki.yaml
 - import_playbook: n8n.yaml
+- import_playbook: excalidraw.yaml
 - import_playbook: caddy.yaml
 - import_playbook: victoriametrics.yaml
 - import_playbook: victorialogs.yaml

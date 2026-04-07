@@ -1,0 +1,12 @@
+---
+# Excalidraw Stack Deployment
+# Deploys excalidraw frontend + excalibar collaboration server
+#
+# Usage:
+#   ansible-playbook -i inventory/lab playbooks/excalidraw.yaml
+
+- name: Deploy Excalidraw Stack
+  hosts: all
+  become: true
+  roles:
+    - excalidraw

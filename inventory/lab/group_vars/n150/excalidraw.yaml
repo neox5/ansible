@@ -1,0 +1,26 @@
+---
+# ============================================================================
+# Excalidraw: Lab Configuration
+# File: group_vars/n150/excalidraw.yaml
+# Role: excalidraw (custom)
+# ============================================================================
+#
+# Lab environment configuration for self-hosted Excalidraw stack.
+# Deploys excalidraw frontend + excalibar collaboration server via Quadlet.
+#
+# Applied to: All hosts in 'n150' group
+# Variable precedence: all < n150 (this file) < host_vars
+#
+# ============================================================================
+
+# --- Versions ---
+excalidraw_version: "0.18.0-self-hosted"
+excalibar_version: "1.0.2"
+
+# --- Collaboration Server URL ---
+# Hostname only — injected into frontend at container startup
+excalidraw_collab_server_url: "excalibar.zion.local"
+
+# --- Ports ---
+excalidraw_port: 8080
+excalibar_port: 8085

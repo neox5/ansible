@@ -1,0 +1,26 @@
+---
+# Preflight checks - validate environment before proceeding
+
+- name: Gather distribution facts
+  ansible.builtin.setup:
+    gather_subset:
+      - distribution
+
+- name: Assert Debian 13 or later
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - ansible_distribution == "Debian"
+      - ansible_distribution_major_version | int >= 13
+    fail_msg: "This role requires Debian 13 or later"
+
+- name: Assert excalidraw_collab_server_url is set
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - excalidraw_collab_server_url | default('') | length > 0
+    fail_msg: "excalidraw_collab_server_url must be set in inventory"
+
+- name: Display role information
+  ansible.builtin.debug:
+    msg: "excalidraw role - frontend={{ excalidraw_image }}:{{ excalidraw_version }} collab={{ excalibar_image }}:{{ excalibar_version }}"

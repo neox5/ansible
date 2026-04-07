@@ -28,6 +28,10 @@ caddy_sites:
     backend: "localhost:5678"
   - domain: "grafana.zion.local"
     backend: "localhost:3000"
+  - domain: "excalidraw.zion.local"
+    backend: "localhost:8080"
+  - domain: "excalibar.zion.local"
+    backend: "localhost:8085"
 
 # --- Access Logging ---
 caddy_access_log_enabled: true

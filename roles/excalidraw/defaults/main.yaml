@@ -1,0 +1,26 @@
+---
+# Excalidraw Role - Configuration Defaults
+
+# Required - must be set in inventory
+# excalidraw_collab_server_url: ""  # hostname only, e.g. excalibar.zion.local
+
+# excalidraw frontend
+excalidraw_version: "0.18.0-self-hosted"
+excalidraw_port: 8080
+
+# systemd service configuration
+excalidraw_systemd_restart_sec: 10
+excalidraw_systemd_timeout_start: 90
+excalidraw_systemd_start_limit_burst: 5
+excalidraw_systemd_start_limit_interval: 600
+
+# excalibar collaboration room server
+excalibar_version: "1.0.2"
+excalibar_port: 8085
+excalibar_cors_origin: "*"
+
+# systemd service configuration
+excalibar_systemd_restart_sec: 10
+excalibar_systemd_timeout_start: 90
+excalibar_systemd_start_limit_burst: 5
+excalibar_systemd_start_limit_interval: 600

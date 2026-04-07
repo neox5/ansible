@@ -33,8 +33,6 @@
         Restart={{ quadlet_restart_policy }}
         RestartSec={{ quadlet_restart_sec }}
         TimeoutStartSec={{ quadlet_timeout_start_sec }}
-        StartLimitBurst={{ quadlet_start_limit_burst }}
-        StartLimitIntervalSec={{ quadlet_start_limit_interval }}
         {% if quadlet_exec_start_pre %}
         {% if quadlet_exec_start_pre_user %}
         ExecStartPre=-/usr/bin/runuser -u {{ quadlet_exec_start_pre_user }} -- {{ quadlet_exec_start_pre }}
@@ -44,6 +42,8 @@
         {% endif %}
       - |
         [Unit]
+        StartLimitBurst={{ quadlet_start_limit_burst }}
+        StartLimitIntervalSec={{ quadlet_start_limit_interval }}
         {% if quadlet_systemd_after %}
         After={{ quadlet_systemd_after | join(' ') }}
         {% endif %}

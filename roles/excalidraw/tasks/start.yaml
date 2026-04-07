@@ -1,0 +1,34 @@
+---
+# Deploy excalidraw and excalibar containers via quadlet role
+
+- name: Deploy excalidraw frontend container
+  ansible.builtin.include_role:
+    name: quadlet
+  vars:
+    quadlet_name: excalidraw
+    quadlet_image: "{{ excalidraw_image }}:{{ excalidraw_version }}"
+    quadlet_network: host
+    quadlet_environment:
+      COLLAB_SERVER_URL: "{{ excalidraw_collab_server_url }}"
+      CADDY_PORT: "{{ excalidraw_port | string }}"
+    quadlet_restart_policy: "always"
+    quadlet_restart_sec: "{{ excalidraw_systemd_restart_sec }}"
+    quadlet_timeout_start_sec: "{{ excalidraw_systemd_timeout_start }}"
+    quadlet_start_limit_burst: "{{ excalidraw_systemd_start_limit_burst }}"
+    quadlet_start_limit_interval: "{{ excalidraw_systemd_start_limit_interval }}"
+
+- name: Deploy excalibar collaboration server container
+  ansible.builtin.include_role:
+    name: quadlet
+  vars:
+    quadlet_name: excalibar
+    quadlet_image: "{{ excalibar_image }}:{{ excalibar_version }}"
+    quadlet_network: host
+    quadlet_environment:
+      CORS_ORIGIN: "{{ excalibar_cors_origin }}"
+      PORT: "{{ excalibar_port | string }}"
+    quadlet_restart_policy: "always"
+    quadlet_restart_sec: "{{ excalibar_systemd_restart_sec }}"
+    quadlet_timeout_start_sec: "{{ excalibar_systemd_timeout_start }}"
+    quadlet_start_limit_burst: "{{ excalibar_systemd_start_limit_burst }}"
+    quadlet_start_limit_interval: "{{ excalibar_systemd_start_limit_interval }}"

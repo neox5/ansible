@@ -1,0 +1,9 @@
+---
+# Excalidraw role - Main task orchestration
+# Debian 13 Trixie + Podman 5.4+ only
+
+- name: Include preflight checks
+  ansible.builtin.import_tasks: preflight.yaml
+
+- name: Deploy excalidraw frontend container
+  ansible.builtin.import_tasks: start.yaml
