@@ -1,0 +1,32 @@
+---
+# Configuration tasks - environment file and systemd service unit
+
+- name: Deploy versitygw environment file
+  ansible.builtin.template:
+    src: versitygw.env.j2
+    dest: "{{ versitygw_env_file }}"
+    owner: root
+    group: "{{ versitygw_system_group }}"
+    mode: "0640"
+  no_log: true
+  notify: restart versitygw
+
+- name: Deploy versitygw systemd service unit
+  ansible.builtin.template:
+    src: versitygw.service.j2
+    dest: /etc/systemd/system/versitygw.service
+    owner: root
+    group: root
+    mode: "0644"
+  register: versitygw_service_unit
+  notify: restart versitygw
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: versitygw_service_unit is changed
+
+- name: Enable versitygw service
+  ansible.builtin.systemd:
+    name: versitygw
+    enabled: true

@@ -1,0 +1,12 @@
+---
+# VersityGW Role - Immutable Variables
+
+# Architecture mapping for .deb package
+deb_arch_map:
+  x86_64: "amd64"
+  aarch64: "arm64"
+
+deb_arch: "{{ deb_arch_map[ansible_facts['architecture']] | default(ansible_facts['architecture']) }}"
+
+# Package download URL
+versitygw_download_url: "https://github.com/versity/versitygw/releases/download/v{{ versitygw_version }}/versitygw_{{ versitygw_version }}_linux_{{ deb_arch }}.deb"

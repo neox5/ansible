@@ -1,0 +1,22 @@
+---
+# VersityGW role - Main task orchestration
+# Debian 13 Trixie only
+
+- name: Include preflight checks
+  ansible.builtin.import_tasks: preflight.yaml
+
+- name: Include installation tasks
+  ansible.builtin.import_tasks: install.yaml
+  when: versitygw_state == 'present'
+
+- name: Include configuration tasks
+  ansible.builtin.import_tasks: configure.yaml
+  when: versitygw_state == 'present'
+
+- name: Include verification tasks
+  ansible.builtin.import_tasks: verify.yaml
+  when: versitygw_state == 'present'
+
+- name: Include removal tasks
+  ansible.builtin.import_tasks: remove.yaml
+  when: versitygw_state == 'absent'

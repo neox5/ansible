@@ -1,0 +1,9 @@
+---
+# VersityGW S3 Gateway Deployment
+# Usage: ansible-playbook -i inventory/lab playbooks/s3.yaml
+
+- name: Deploy VersityGW S3 Gateway
+  hosts: all
+  become: true
+  roles:
+    - versitygw

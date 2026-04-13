@@ -1,0 +1,54 @@
+---
+# Preflight checks - validate environment before proceeding
+
+- name: Gather distribution and service manager facts
+  ansible.builtin.setup:
+    gather_subset:
+      - distribution
+      - service_mgr
+
+- name: Assert Debian 13 or later
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - ansible_distribution == "Debian"
+      - ansible_distribution_major_version | int >= 13
+    fail_msg: "This role requires Debian 13 or later"
+
+- name: Assert systemd is the init system
+  ansible.builtin.assert:
+    quiet: true
+    that: ansible_facts['service_mgr'] == 'systemd'
+    fail_msg: "This role requires systemd"
+
+- name: Assert valid state value
+  ansible.builtin.assert:
+    quiet: true
+    that: versitygw_state in ['present', 'absent']
+    fail_msg: "versitygw_state must be 'present' or 'absent'"
+
+- name: Assert remove_data only set when state is absent
+  ansible.builtin.assert:
+    quiet: true
+    that: not versitygw_remove_data or versitygw_state == 'absent'
+    fail_msg: "versitygw_remove_data: true requires versitygw_state: absent"
+
+- name: Assert root access key is configured
+  ansible.builtin.assert:
+    quiet: true
+    that: versitygw_root_access_key_secret | length > 0
+    fail_msg: "versitygw_root_access_key_secret must be set in inventory (SOPS encrypted)"
+  when: versitygw_state == 'present'
+  no_log: true
+
+- name: Assert root secret key is configured
+  ansible.builtin.assert:
+    quiet: true
+    that: versitygw_root_secret_key_secret | length > 0
+    fail_msg: "versitygw_root_secret_key_secret must be set in inventory (SOPS encrypted)"
+  when: versitygw_state == 'present'
+  no_log: true
+
+- name: Display role information
+  ansible.builtin.debug:
+    msg: "versitygw role - state={{ versitygw_state }} version={{ versitygw_version }}"

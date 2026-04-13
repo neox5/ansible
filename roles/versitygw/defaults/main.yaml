@@ -1,0 +1,37 @@
+---
+# VersityGW Role - Configuration Defaults
+
+# Version
+versitygw_version: "1.4.0"
+
+# Lifecycle
+versitygw_state: present
+versitygw_remove_data: false
+
+# System identity
+versitygw_system_user: "versitygw"
+versitygw_system_group: "{{ versitygw_system_user }}"
+
+# Storage
+versitygw_data_dir: "/var/lib/versitygw/data"
+versitygw_iam_dir: "/var/lib/versitygw/iam"
+
+# Config
+versitygw_config_dir: "/etc/versitygw"
+versitygw_env_file: "{{ versitygw_config_dir }}/env"
+
+# Network
+versitygw_s3_listen_addr: "127.0.0.1:7070"
+versitygw_webui_listen_addr: "127.0.0.1:7071"
+
+# Public gateway URL for WebGUI (must match Caddy vhost for S3 API)
+# Required when running behind a reverse proxy
+# Example: "https://s3.zion.local"
+versitygw_webui_gateway_url: ""
+
+# Health endpoint path (unauthenticated, used for verify task)
+versitygw_health_path: "/health"
+
+# Credentials (mandatory — set in inventory, SOPS-encrypted)
+versitygw_root_access_key_secret: ""
+versitygw_root_secret_key_secret: ""

@@ -1,11 +1,11 @@
 ---
 # ============================================================================
-# Caddy: Lab Configuration
+# Caddy: Lab n150 Configuration
 # File: group_vars/n150/caddy.yaml
 # Role: caddy (custom)
 # ============================================================================
 #
-# Lab environment configuration for Caddy reverse proxy.
+# Production environment configuration for Caddy reverse proxy.
 # Uses step-ca ACME for automatic certificate issuance.
 #
 # Applied to: All hosts in 'n150' group
@@ -32,6 +32,10 @@ caddy_sites:
     backend: "localhost:8080"
   - domain: "excalibar.zion.local"
     backend: "localhost:8085"
+  - domain: "s3.zion.local"
+    backend: "localhost:7070"
+  - domain: "s3ui.zion.local"
+    backend: "localhost:7071"
 
 # --- Access Logging ---
 caddy_access_log_enabled: true

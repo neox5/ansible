@@ -1,0 +1,27 @@
+---
+# Verification tasks - start service and confirm healthy
+
+- name: Ensure versitygw service is started
+  ansible.builtin.systemd:
+    name: versitygw
+    state: started
+
+- name: Wait for versitygw health endpoint
+  ansible.builtin.uri:
+    url: "http://{{ versitygw_s3_listen_addr }}{{ versitygw_health_path }}"
+    status_code: 200
+    timeout: 5
+  register: versitygw_health
+  retries: 10
+  delay: 3
+  until: versitygw_health.status == 200
+
+- name: Display deployment summary
+  ansible.builtin.debug:
+    msg:
+      - "VersityGW {{ versitygw_version }} deployment complete"
+      - "S3 API: http://{{ versitygw_s3_listen_addr }}"
+      - "WebGUI: http://{{ versitygw_webui_listen_addr }}"
+      - "Data: {{ versitygw_data_dir }}"
+      - "IAM: {{ versitygw_iam_dir }}"
+      - "Status: healthy"

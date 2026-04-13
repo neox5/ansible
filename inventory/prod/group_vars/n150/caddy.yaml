@@ -1,6 +1,6 @@
 ---
 # ============================================================================
-# Caddy: Prod Configuration
+# Caddy: Prod n150 Configuration
 # File: group_vars/n150/caddy.yaml
 # Role: caddy (custom)
 # ============================================================================
@@ -28,6 +28,10 @@ caddy_sites:
     backend: "localhost:5678"
   - domain: "grafana.zion.local"
     backend: "localhost:3000"
+  - domain: "s3.zion.local"
+    backend: "localhost:7070"
+  - domain: "s3ui.zion.local"
+    backend: "localhost:7071"
 
 # --- Access Logging ---
 caddy_access_log_enabled: true

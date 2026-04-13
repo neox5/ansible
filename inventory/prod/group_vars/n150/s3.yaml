@@ -1,0 +1,15 @@
+---
+# ============================================================================
+# VersityGW: Prod n150 Configuration
+# File: group_vars/n150/s3.yaml
+# Role: versitygw (custom)
+# ============================================================================
+#
+# Applied to: All hosts in 'n150' group
+# Variable precedence: all < n150 (this file) < host_vars
+
+versitygw_version: "1.4.0"
+
+versitygw_s3_listen_addr: "127.0.0.1:7070"
+versitygw_webui_listen_addr: "127.0.0.1:7071"
+versitygw_webui_gateway_url: "https://s3.zion.local"

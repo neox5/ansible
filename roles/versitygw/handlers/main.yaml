@@ -1,0 +1,7 @@
+---
+# VersityGW role handlers
+
+- name: restart versitygw
+  ansible.builtin.systemd:
+    name: versitygw
+    state: restarted

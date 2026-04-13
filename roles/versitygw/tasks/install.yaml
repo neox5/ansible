@@ -1,0 +1,57 @@
+---
+# Installation tasks - user, directories, package
+
+- name: Create versitygw system group
+  ansible.builtin.group:
+    name: "{{ versitygw_system_group }}"
+    state: present
+    system: true
+
+- name: Create versitygw system user
+  ansible.builtin.user:
+    name: "{{ versitygw_system_user }}"
+    group: "{{ versitygw_system_group }}"
+    shell: /usr/sbin/nologin
+    system: true
+    createhome: false
+
+- name: Ensure versitygw config directory exists
+  ansible.builtin.file:
+    path: "{{ versitygw_config_dir }}"
+    state: directory
+    owner: root
+    group: "{{ versitygw_system_group }}"
+    mode: "0750"
+
+- name: Ensure versitygw data directory exists
+  ansible.builtin.file:
+    path: "{{ versitygw_data_dir }}"
+    state: directory
+    owner: "{{ versitygw_system_user }}"
+    group: "{{ versitygw_system_group }}"
+    mode: "0755"
+
+- name: Ensure versitygw IAM directory exists
+  ansible.builtin.file:
+    path: "{{ versitygw_iam_dir }}"
+    state: directory
+    owner: "{{ versitygw_system_user }}"
+    group: "{{ versitygw_system_group }}"
+    mode: "0750"
+
+- name: Check current versitygw version
+  ansible.builtin.command:
+    cmd: /usr/bin/versitygw --version
+  register: versitygw_current_version
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Download and install versitygw .deb package
+  ansible.builtin.apt:
+    deb: "{{ versitygw_download_url }}"
+    state: present
+  when: >
+    versitygw_current_version.rc != 0 or
+    versitygw_version not in (versitygw_current_version.stdout | default(''))
+  notify: restart versitygw

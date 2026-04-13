@@ -1,0 +1,51 @@
+---
+# Removal tasks - teardown versitygw installation
+
+- name: Stop versitygw service
+  ansible.builtin.systemd:
+    name: versitygw
+    state: stopped
+  failed_when: false
+
+- name: Disable versitygw service
+  ansible.builtin.systemd:
+    name: versitygw
+    enabled: false
+  failed_when: false
+
+- name: Remove versitygw systemd service unit
+  ansible.builtin.file:
+    path: /etc/systemd/system/versitygw.service
+    state: absent
+  register: versitygw_unit_removed
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: versitygw_unit_removed is changed
+
+- name: Remove versitygw package
+  ansible.builtin.apt:
+    name: versitygw
+    state: absent
+
+- name: Remove versitygw config directory
+  ansible.builtin.file:
+    path: "{{ versitygw_config_dir }}"
+    state: absent
+
+- name: Remove versitygw data directory
+  ansible.builtin.file:
+    path: "{{ versitygw_data_dir | dirname }}"
+    state: absent
+  when: versitygw_remove_data | bool
+
+- name: Remove versitygw system user
+  ansible.builtin.user:
+    name: "{{ versitygw_system_user }}"
+    state: absent
+
+- name: Remove versitygw system group
+  ansible.builtin.group:
+    name: "{{ versitygw_system_group }}"
+    state: absent
