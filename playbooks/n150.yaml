@@ -20,6 +20,7 @@
 - import_playbook: excalidraw.yaml
 - import_playbook: caddy.yaml
 - import_playbook: s3.yaml
+- import_playbook: matrix.yaml
 - import_playbook: victoriametrics.yaml
 - import_playbook: victorialogs.yaml
 - import_playbook: grafana.yaml

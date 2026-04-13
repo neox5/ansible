@@ -5,7 +5,7 @@
 # Role: caddy (custom)
 # ============================================================================
 #
-# Production environment configuration for Caddy reverse proxy.
+# Lab environment configuration for Caddy reverse proxy.
 # Uses step-ca ACME for automatic certificate issuance.
 #
 # Applied to: All hosts in 'n150' group
@@ -36,6 +36,8 @@ caddy_sites:
     backend: "localhost:7070"
   - domain: "s3ui.zion.local"
     backend: "localhost:7071"
+  - domain: "matrix.zion.local"
+    backend: "localhost:8008"
 
 # --- Access Logging ---
 caddy_access_log_enabled: true

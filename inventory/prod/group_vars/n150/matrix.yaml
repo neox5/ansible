@@ -1,0 +1,20 @@
+---
+# ============================================================================
+# Matrix Synapse: Prod n150 Configuration
+# File: group_vars/n150/matrix.yaml
+# Role: synapse (custom)
+# ============================================================================
+#
+# Applied to: All hosts in 'n150' group
+# Variable precedence: all < n150 (this file) < host_vars
+
+synapse_server_name: "matrix.zion.local"
+synapse_public_baseurl: "https://matrix.zion.local"
+
+synapse_db_name: "synapse"
+synapse_db_user: "synapse"
+synapse_db_host: "localhost"
+synapse_db_port: 5432
+synapse_db_password: "{{ synapse_db_password_secret }}"
+
+synapse_macaroon_secret_key: "{{ synapse_macaroon_secret_key_secret }}"

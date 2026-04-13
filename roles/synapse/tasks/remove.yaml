@@ -1,0 +1,63 @@
+---
+# Removal tasks - teardown Synapse installation
+
+- name: Stop matrix-synapse service
+  ansible.builtin.systemd:
+    name: matrix-synapse
+    state: stopped
+  failed_when: false
+
+- name: Disable matrix-synapse service
+  ansible.builtin.systemd:
+    name: matrix-synapse
+    enabled: false
+  failed_when: false
+
+- name: Remove conf.d database configuration
+  ansible.builtin.file:
+    path: "{{ synapse_confd_database }}"
+    state: absent
+
+- name: Remove conf.d listeners configuration
+  ansible.builtin.file:
+    path: "{{ synapse_confd_listeners }}"
+    state: absent
+
+- name: Remove conf.d registration configuration
+  ansible.builtin.file:
+    path: "{{ synapse_confd_registration }}"
+    state: absent
+
+- name: Remove conf.d trusted keys configuration
+  ansible.builtin.file:
+    path: "{{ synapse_confd_trusted_keys }}"
+    state: absent
+
+- name: Remove Synapse package (purge when removing data)
+  ansible.builtin.apt:
+    name: matrix-synapse-py3
+    state: absent
+    purge: "{{ synapse_remove_data | bool }}"
+
+- name: Remove Matrix.org APT repository
+  ansible.builtin.apt_repository:
+    repo: "{{ synapse_apt_repo }}"
+    state: absent
+    filename: matrix-org
+
+- name: Remove Matrix.org APT keyring
+  ansible.builtin.file:
+    path: "{{ synapse_apt_keyring_path }}"
+    state: absent
+
+- name: Remove Synapse data directory
+  ansible.builtin.file:
+    path: /var/lib/matrix-synapse
+    state: absent
+  when: synapse_remove_data | bool
+
+- name: Remove Synapse config directory
+  ansible.builtin.file:
+    path: /etc/matrix-synapse
+    state: absent
+  when: synapse_remove_data | bool

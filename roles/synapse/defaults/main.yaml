@@ -1,0 +1,31 @@
+---
+# Synapse Role - Configuration Defaults
+
+# Lifecycle
+synapse_state: present
+synapse_remove_data: false
+
+# Server identity (mandatory — set in inventory, permanent after first run)
+synapse_server_name: ""
+synapse_public_baseurl: ""
+
+# Database (mandatory — password set via SOPS secret)
+synapse_db_name: "synapse"
+synapse_db_user: "synapse"
+synapse_db_host: "localhost"
+synapse_db_port: 5432
+synapse_db_password: ""
+
+# Secrets (mandatory — set via SOPS-encrypted inventory vars)
+synapse_registration_shared_secret: ""
+synapse_macaroon_secret_key: ""
+
+# Network
+synapse_listener_port: 8008
+
+# Reporting
+synapse_report_stats: false
+
+# Service state
+synapse_service_state: started
+synapse_service_enabled: true

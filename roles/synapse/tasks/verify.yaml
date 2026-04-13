@@ -1,0 +1,22 @@
+---
+# Verification tasks - confirm service is healthy
+
+- name: Wait for Synapse health endpoint
+  ansible.builtin.uri:
+    url: "{{ synapse_health_url }}"
+    status_code: 200
+    timeout: 5
+  register: _synapse_health
+  retries: 12
+  delay: 5
+  until: _synapse_health.status == 200
+
+- name: Display deployment summary
+  ansible.builtin.debug:
+    msg:
+      - "Synapse deployment complete"
+      - "Server name: {{ synapse_server_name }}"
+      - "Public base URL: {{ synapse_public_baseurl }}"
+      - "Listener: http://127.0.0.1:{{ synapse_listener_port }}"
+      - "Health: passing"
+      - "User creation: register_new_matrix_user -c /etc/matrix-synapse/homeserver.yaml http://localhost:{{ synapse_listener_port }}"

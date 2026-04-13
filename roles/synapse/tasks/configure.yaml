@@ -1,0 +1,57 @@
+---
+# Configuration tasks - deploy conf.d overrides
+
+- name: Ensure conf.d directory exists
+  ansible.builtin.file:
+    path: /etc/matrix-synapse/conf.d
+    state: directory
+    owner: root
+    group: matrix-synapse
+    mode: "0750"
+
+- name: Deploy conf.d database configuration
+  ansible.builtin.template:
+    src: database.yaml.j2
+    dest: "{{ synapse_confd_database }}"
+    owner: root
+    group: matrix-synapse
+    mode: "0640"
+  no_log: true
+  notify: restart matrix-synapse
+
+- name: Deploy conf.d listeners configuration
+  ansible.builtin.template:
+    src: listeners.yaml.j2
+    dest: "{{ synapse_confd_listeners }}"
+    owner: root
+    group: matrix-synapse
+    mode: "0640"
+  notify: restart matrix-synapse
+
+- name: Deploy conf.d registration configuration
+  ansible.builtin.template:
+    src: registration.yaml.j2
+    dest: "{{ synapse_confd_registration }}"
+    owner: root
+    group: matrix-synapse
+    mode: "0640"
+  no_log: true
+  notify: restart matrix-synapse
+
+- name: Deploy conf.d trusted keys configuration
+  ansible.builtin.template:
+    src: trusted_keys.yaml.j2
+    dest: "{{ synapse_confd_trusted_keys }}"
+    owner: root
+    group: matrix-synapse
+    mode: "0640"
+  notify: restart matrix-synapse
+
+- name: Ensure matrix-synapse service is started
+  ansible.builtin.systemd:
+    name: matrix-synapse
+    state: "{{ synapse_service_state }}"
+    enabled: "{{ synapse_service_enabled }}"
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

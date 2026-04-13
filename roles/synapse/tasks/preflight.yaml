@@ -1,0 +1,76 @@
+---
+# Preflight checks - validate environment before proceeding
+
+- name: Gather distribution and service manager facts
+  ansible.builtin.setup:
+    gather_subset:
+      - distribution
+      - service_mgr
+
+- name: Assert Debian 13 or later
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - ansible_distribution == "Debian"
+      - ansible_distribution_major_version | int >= 13
+    fail_msg: "This role requires Debian 13 or later"
+
+- name: Assert systemd is the init system
+  ansible.builtin.assert:
+    quiet: true
+    that: ansible_facts['service_mgr'] == 'systemd'
+    fail_msg: "This role requires systemd"
+
+- name: Assert valid state value
+  ansible.builtin.assert:
+    quiet: true
+    that: synapse_state in ['present', 'absent']
+    fail_msg: "synapse_state must be 'present' or 'absent'"
+
+- name: Assert remove_data only set when state is absent
+  ansible.builtin.assert:
+    quiet: true
+    that: not synapse_remove_data or synapse_state == 'absent'
+    fail_msg: "synapse_remove_data: true requires synapse_state: absent"
+
+- name: Assert server_name is configured
+  ansible.builtin.assert:
+    quiet: true
+    that: synapse_server_name | length > 0
+    fail_msg: "synapse_server_name must be set in inventory (permanent — cannot be changed after first run)"
+  when: synapse_state == 'present'
+
+- name: Assert public_baseurl is configured
+  ansible.builtin.assert:
+    quiet: true
+    that: synapse_public_baseurl | length > 0
+    fail_msg: "synapse_public_baseurl must be set in inventory"
+  when: synapse_state == 'present'
+
+- name: Assert database password is configured
+  ansible.builtin.assert:
+    quiet: true
+    that: synapse_db_password | length > 0
+    fail_msg: "synapse_db_password must be set in inventory (SOPS encrypted via synapse_db_password_secret)"
+  when: synapse_state == 'present'
+  no_log: true
+
+- name: Assert registration shared secret is configured
+  ansible.builtin.assert:
+    quiet: true
+    that: synapse_registration_shared_secret | length > 0
+    fail_msg: "synapse_registration_shared_secret must be set in inventory (SOPS encrypted)"
+  when: synapse_state == 'present'
+  no_log: true
+
+- name: Assert macaroon secret key is configured
+  ansible.builtin.assert:
+    quiet: true
+    that: synapse_macaroon_secret_key | length > 0
+    fail_msg: "synapse_macaroon_secret_key must be set in inventory (SOPS encrypted via synapse_macaroon_secret_key_secret)"
+  when: synapse_state == 'present'
+  no_log: true
+
+- name: Display role information
+  ansible.builtin.debug:
+    msg: "synapse role - state={{ synapse_state }} server_name={{ synapse_server_name }}"

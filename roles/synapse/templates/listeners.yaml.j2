@@ -1,0 +1,20 @@
+# {{ ansible_managed }}
+# Synapse listener and server configuration
+# Role: synapse — conf.d/listeners.yaml
+
+public_baseurl: "{{ synapse_public_baseurl }}"
+
+signing_key_path: "{{ synapse_signing_key_path }}"
+
+listeners:
+  - port: {{ synapse_listener_port }}
+    tls: false
+    type: http
+    x_forwarded: true
+    bind_addresses:
+      - "127.0.0.1"
+    resources:
+      - names:
+          - client
+          - federation
+        compress: false

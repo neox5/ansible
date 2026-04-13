@@ -32,6 +32,8 @@ caddy_sites:
     backend: "localhost:7070"
   - domain: "s3ui.zion.local"
     backend: "localhost:7071"
+  - domain: "matrix.zion.local"
+    backend: "localhost:8008"
 
 # --- Access Logging ---
 caddy_access_log_enabled: true

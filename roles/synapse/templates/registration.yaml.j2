@@ -1,0 +1,9 @@
+# {{ ansible_managed }}
+# Synapse registration configuration
+# Role: synapse — conf.d/registration.yaml
+
+enable_registration: false
+
+registration_shared_secret: "{{ synapse_registration_shared_secret }}"
+
+macaroon_secret_key: "{{ synapse_macaroon_secret_key }}"

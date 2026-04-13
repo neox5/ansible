@@ -1,0 +1,17 @@
+# {{ ansible_managed }}
+# Synapse database configuration
+# Role: synapse — conf.d/database.yaml
+
+database:
+  name: psycopg2
+  args:
+    user: "{{ synapse_db_user }}"
+    password: "{{ synapse_db_password }}"
+    database: "{{ synapse_db_name }}"
+    host: "{{ synapse_db_host }}"
+    port: {{ synapse_db_port }}
+    cp_min: 5
+    cp_max: 10
+    keepalives_idle: 10
+    keepalives_interval: 10
+    keepalives_count: 3

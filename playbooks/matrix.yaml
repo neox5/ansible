@@ -1,0 +1,17 @@
+---
+# Matrix Synapse Deployment
+#
+# Usage:
+#   ansible-playbook -i inventory/lab playbooks/matrix.yaml
+#
+# Removal (preserve data):
+#   ansible-playbook -i inventory/lab playbooks/matrix.yaml -e "synapse_state=absent"
+#
+# Removal (destroy data):
+#   ansible-playbook -i inventory/lab playbooks/matrix.yaml -e "synapse_state=absent synapse_remove_data=true"
+
+- name: Deploy Matrix Synapse
+  hosts: all
+  become: true
+  roles:
+    - synapse

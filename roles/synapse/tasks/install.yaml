@@ -1,0 +1,59 @@
+---
+# Installation tasks - APT repo, package, debconf bootstrap
+
+- name: Install APT prerequisites
+  ansible.builtin.apt:
+    name:
+      - wget
+      - apt-transport-https
+      - debconf-utils
+    state: present
+    update_cache: true
+
+- name: Download Matrix.org APT keyring
+  ansible.builtin.get_url:
+    url: "{{ synapse_apt_key_url }}"
+    dest: "{{ synapse_apt_keyring_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Add Matrix.org APT repository
+  ansible.builtin.apt_repository:
+    repo: "{{ synapse_apt_repo }}"
+    state: present
+    filename: matrix-org
+
+- name: Pre-seed debconf server_name for non-interactive install
+  ansible.builtin.debconf:
+    name: matrix-synapse-py3
+    question: matrix-synapse/server-name
+    value: "{{ synapse_server_name }}"
+    vtype: string
+
+- name: Pre-seed debconf report_stats for non-interactive install
+  ansible.builtin.debconf:
+    name: matrix-synapse-py3
+    question: matrix-synapse/report-stats
+    value: "{{ synapse_report_stats | string | lower }}"
+    vtype: boolean
+
+- name: Install Synapse package and PostgreSQL client library
+  ansible.builtin.apt:
+    name:
+      - matrix-synapse-py3
+      - libpq5
+    state: present
+    update_cache: true
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Apply debconf values to conf.d files via dpkg-reconfigure
+  ansible.builtin.command:
+    cmd: dpkg-reconfigure -f noninteractive matrix-synapse-py3
+  changed_when: false
+
+- name: Ensure matrix-synapse service is enabled
+  ansible.builtin.systemd:
+    name: matrix-synapse
+    enabled: "{{ synapse_service_enabled }}"
