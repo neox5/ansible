@@ -34,7 +34,14 @@
 		ca_root {{ caddy_acme_ca_root }}
 	}
 {% endif %}
-	reverse_proxy {{ site.backend }}
+{% for route in site.routes %}
+	reverse_proxy {% if route.path is defined %}{{ route.path }} {% endif %}{{ route.backend }}{% if route.headers_up is defined %} {
+{% for header in route.headers_up %}
+		header_up {{ header }}
+{% endfor %}
+	}{% endif %}
+
+{% endfor %}
 {% if caddy_access_log_enabled %}
 	log {
 		output file {{ caddy_access_log_path }} {

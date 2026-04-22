@@ -8,14 +8,25 @@ caddy_version: 2
 caddy_email: ""
 
 # Virtual hosts configuration (required)
-# Each site is a reverse proxy to a backend service
+# Each site proxies to one or more backends via routes.
+# Route fields:
+#   backend     (required) upstream address
+#   path        (optional) path matcher prefix, e.g. /ui/v2/login/*
+#   headers_up  (optional) list of header directives, e.g. ["-TE"]
 caddy_sites: []
 # Example:
 # caddy_sites:
 #   - domain: app.example.com
-#     backend: localhost:3000
-#   - domain: api.example.com
-#     backend: localhost:8080
+#     routes:
+#       - backend: localhost:3000
+#
+#   - domain: zitadel.example.com
+#     routes:
+#       - path: /ui/v2/login/*
+#         backend: http://localhost:3000
+#       - backend: h2c://localhost:8080
+#         headers_up:
+#           - "-TE"
 
 # ACME CA directory URL (leave empty for Let's Encrypt default)
 # Example: https://127.0.0.1:9443/acme/acme/directory

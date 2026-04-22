@@ -25,19 +25,20 @@ caddy_acme_ca_root: "/usr/local/share/ca-certificates/zion_root_ca_g1.crt"
 # --- Caddy Sites Configuration ---
 caddy_sites:
   - domain: "n8n.zion.local"
-    backend: "localhost:5678"
+    routes:
+      - backend: "localhost:5678"
   - domain: "grafana.zion.local"
-    backend: "localhost:3000"
-  - domain: "excalidraw.zion.local"
-    backend: "localhost:8080"
-  - domain: "excalibar.zion.local"
-    backend: "localhost:8085"
+    routes:
+      - backend: "localhost:3000"
   - domain: "s3.zion.local"
-    backend: "localhost:7070"
+    routes:
+      - backend: "localhost:7070"
   - domain: "s3ui.zion.local"
-    backend: "localhost:7071"
+    routes:
+      - backend: "localhost:7071"
   - domain: "matrix.zion.local"
-    backend: "localhost:8008"
+    routes:
+      - backend: "localhost:8008"
 
 # --- Access Logging ---
 caddy_access_log_enabled: true

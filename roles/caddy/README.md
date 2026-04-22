@@ -27,9 +27,11 @@ caddy_email: "[email protected]" # Let's Encrypt contact
 
 caddy_sites:
   - domain: app.example.com
-    backend: localhost:3000
+    routes:
+      - backend: localhost:3000
   - domain: api.example.com
-    backend: localhost:8080
+    routes:
+      - backend: localhost:8080
 ```
 
 ### Optional Variables (defaults provided)
@@ -40,6 +42,26 @@ caddy_version: 2 # Major version pin
 
 See `defaults/main.yaml` for all available variables.
 
+## Route Configuration
+
+Each site requires a `routes` list. Every route must have a `backend`. Two optional fields:
+
+- `path` — Caddy path matcher prefix (e.g. `/ui/v2/login/*`). Omit for catch-all.
+- `headers_up` — list of `header_up` directives passed into the `reverse_proxy` block.
+
+Routes are rendered in order — put path-specific routes before catch-all.
+
+```yaml
+caddy_sites:
+  - domain: zitadel.example.com
+    routes:
+      - path: /ui/v2/login/*
+        backend: http://localhost:3000
+      - backend: h2c://localhost:8080
+        headers_up:
+          - "-TE"
+```
+
 ## TLS Configuration
 
 Three modes supported via the `tls` parameter:
@@ -49,7 +71,8 @@ Three modes supported via the `tls` parameter:
 ```yaml
 caddy_sites:
   - domain: app.lab.local
-    backend: localhost:3000
+    routes:
+      - backend: localhost:3000
     tls: internal
 ```
 
@@ -58,7 +81,8 @@ caddy_sites:
 ```yaml
 caddy_sites:
   - domain: app.example.com
-    backend: localhost:3000
+    routes:
+      - backend: localhost:3000
     tls: "[email protected]"
 ```
 
@@ -67,7 +91,8 @@ caddy_sites:
 ```yaml
 caddy_sites:
   - domain: app.example.com
-    backend: localhost:3000
+    routes:
+      - backend: localhost:3000
     tls:
       cert: /etc/ssl/certs/app.crt
       key: /etc/ssl/private/app.key
@@ -103,17 +128,6 @@ security_firewall_allowed_tcp_ports:
   become: yes
   roles:
     - caddy
-```
-
-## Inventory Example
-
-```yaml
-# group_vars/web/caddy.yaml
-caddy_email: "[email protected]"
-
-caddy_sites:
-  - domain: n8n.example.com
-    backend: localhost:5678
 ```
 
 ## Certificate Management
