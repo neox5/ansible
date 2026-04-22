@@ -7,59 +7,57 @@
 #
 # Authoritative definition of all databases, users, and privileges on n150-01.
 # Replaces group_vars composition which does not support list merging.
-# Passwords referenced from host_vars/n150-01/secrets.sops.yaml
-# ============================================================================
 
-# --- Database Creation ---
 postgresql_databases:
-  - name: "{{ n8n_db_name }}"
-    owner: "{{ n8n_db_user }}"
-    lc_collate: "{{ postgresql_defaults.db.lc_collate }}"
-    lc_ctype: "{{ postgresql_defaults.db.lc_ctype }}"
-    encoding: "{{ postgresql_defaults.db.encoding }}"
-    template: "{{ postgresql_defaults.db.template }}"
-    state: present
+  - name: n8n
+    owner: n8n
+    encoding: UTF-8
+    lc_collate: "en_US.UTF-8"
+    lc_ctype: "en_US.UTF-8"
+    template: template0
   - name: stepca
     owner: stepca
-    lc_collate: "{{ postgresql_defaults.db.lc_collate }}"
-    lc_ctype: "{{ postgresql_defaults.db.lc_ctype }}"
-    encoding: "{{ postgresql_defaults.db.encoding }}"
-    template: "{{ postgresql_defaults.db.template }}"
-    state: present
-  - name: "{{ synapse_db_name }}"
-    owner: "{{ synapse_db_user }}"
-    lc_collate: "C"
-    lc_ctype: "C"
-    encoding: "UTF8"
+    encoding: UTF-8
+    lc_collate: "en_US.UTF-8"
+    lc_ctype: "en_US.UTF-8"
     template: template0
-    state: present
+  - name: synapse
+    owner: synapse
+    encoding: UTF-8
+    lc_collate: C
+    lc_ctype: C
+    template: template0
+  - name: zitadel
+    owner: zitadel
+    encoding: UTF-8
+    lc_collate: C
+    lc_ctype: C
+    template: template0
 
-# --- User Creation ---
 postgresql_users:
-  - name: "{{ n8n_db_user }}"
-    password: "{{ n8n_db_password_secret }}"
-    encrypted: yes
-    role_attr_flags: "NOCREATEDB,NOSUPERUSER"
-    state: present
+  - name: n8n
+    pass: "{{ n8n_db_password_secret }}"
+    encrypted: true
   - name: stepca
-    password: "{{ stepca_db_password_secret }}"
-    encrypted: yes
-    role_attr_flags: "NOCREATEDB,NOSUPERUSER"
-    state: present
-  - name: "{{ synapse_db_user }}"
-    password: "{{ synapse_db_password_secret }}"
-    encrypted: yes
-    role_attr_flags: "NOCREATEDB,NOSUPERUSER"
-    state: present
+    pass: "{{ stepca_db_password_secret }}"
+    encrypted: true
+  - name: synapse
+    pass: "{{ synapse_db_password_secret }}"
+    encrypted: true
+  - name: zitadel
+    pass: "{{ zitadel_db_password_secret }}"
+    encrypted: true
 
-# --- User Privileges ---
 postgresql_user_privileges:
-  - name: "{{ n8n_db_user }}"
-    db: "{{ n8n_db_name }}"
+  - name: n8n
+    db: n8n
     priv: "ALL"
   - name: stepca
     db: stepca
     priv: "ALL"
-  - name: "{{ synapse_db_user }}"
-    db: "{{ synapse_db_name }}"
+  - name: synapse
+    db: synapse
+    priv: "ALL"
+  - name: zitadel
+    db: zitadel
     priv: "ALL"

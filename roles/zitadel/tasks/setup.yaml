@@ -1,0 +1,10 @@
+---
+# Setup tasks - prepare host filesystem
+
+- name: Ensure Zitadel data directory exists
+  ansible.builtin.file:
+    path: "{{ zitadel_data_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"

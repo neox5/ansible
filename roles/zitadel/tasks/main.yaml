@@ -1,0 +1,22 @@
+---
+# Zitadel role - Main task orchestration
+# Debian 13 Trixie + Podman 5.4+ only
+
+- name: Include preflight checks
+  ansible.builtin.import_tasks: preflight.yaml
+
+- name: Include setup tasks
+  ansible.builtin.import_tasks: setup.yaml
+  when: zitadel_state == 'present'
+
+- name: Include start tasks
+  ansible.builtin.import_tasks: start.yaml
+  when: zitadel_state == 'present'
+
+- name: Include verify tasks
+  ansible.builtin.import_tasks: verify.yaml
+  when: zitadel_state == 'present'
+
+- name: Include removal tasks
+  ansible.builtin.import_tasks: remove.yaml
+  when: zitadel_state == 'absent'

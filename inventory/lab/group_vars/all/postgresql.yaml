@@ -1,66 +1,62 @@
 ---
 # ============================================================================
-# PostgreSQL: Universal Defaults
-# File: group_vars/all/postgresql.yaml
-# Role: anxs.postgresql
+# PostgreSQL: lab-vm Database Objects
+# File: host_vars/lab-vm/postgresql.yaml
+# Role: postgresql (custom)
 # ============================================================================
 #
-# This file contains:
-# - REPO: postgresql_defaults.* (our helper variables/constants)
-#
-# Variable categories:
-# - ROLE variables: Set in db/ layer (service-level decisions)
-# - REPO variables: Universal constants referenced across layers
-#
-# Consult role documentation:
-# https://github.com/ANXS/postgresql
-#
-# Variable precedence:
-#   all (this file) → db → hw_* → app → host_vars
-#
-# ROLE variable structure (for reference):
-#
-# postgresql_databases:
-#   - name: dbname
-#     owner: username
-#     encoding: UTF-8
-#     lc_collate: en_US.UTF-8
-#     lc_ctype: en_US.UTF-8
-#     template: template0
-#     state: present
-#
-# postgresql_users:
-#   - name: username
-#     pass: password_or_hash
-#     encrypted: yes
-#     role_attr_flags: "CREATEDB,NOSUPERUSER"  # User attributes defined HERE
-#     state: present
-#
-# postgresql_user_privileges:
-#   - name: username
-#     db: dbname
-#     priv: "ALL"
-#     # Note: role_attr_flags NOT used here - belongs in postgresql_users
-#
-# ============================================================================
+# Authoritative definition of all databases, users, and privileges on lab-vm.
 
-# --- REPO: Universal Defaults ---
-postgresql_defaults:
-  # Server-wide defaults (referenced by db/ layer for ROLE variables)
-  server:
-    encoding: "UTF-8"
-    locale: "en_US.UTF-8"
-    ctype: "en_US.UTF-8"
-
-  # Database creation defaults
-  # Used by application-level configs (n8n, nextcloud, etc.)
-  # Ensures consistent locale/encoding across all databases
-  db:
+postgresql_databases:
+  - name: n8n
+    owner: n8n
+    encoding: UTF-8
     lc_collate: "en_US.UTF-8"
     lc_ctype: "en_US.UTF-8"
-    encoding: "UTF-8"
-    template: "template0"
+    template: template0
+  - name: stepca
+    owner: stepca
+    encoding: UTF-8
+    lc_collate: "en_US.UTF-8"
+    lc_ctype: "en_US.UTF-8"
+    template: template0
+  - name: synapse
+    owner: synapse
+    encoding: UTF-8
+    lc_collate: C
+    lc_ctype: C
+    template: template0
+  - name: zitadel
+    owner: zitadel
+    encoding: UTF-8
+    lc_collate: C
+    lc_ctype: C
+    template: template0
 
-  # Path defaults (Fedora/RHEL pattern)
-  paths:
-    data_directory: "/var/lib/pgsql/{{ postgresql_version }}/data"
+postgresql_users:
+  - name: n8n
+    pass: "{{ n8n_db_password_secret }}"
+    encrypted: true
+  - name: stepca
+    pass: "{{ stepca_db_password_secret }}"
+    encrypted: true
+  - name: synapse
+    pass: "{{ synapse_db_password_secret }}"
+    encrypted: true
+  - name: zitadel
+    pass: "{{ zitadel_db_password_secret }}"
+    encrypted: true
+
+postgresql_user_privileges:
+  - name: n8n
+    db: n8n
+    priv: "ALL"
+  - name: stepca
+    db: stepca
+    priv: "ALL"
+  - name: synapse
+    db: synapse
+    priv: "ALL"
+  - name: zitadel
+    db: zitadel
+    priv: "ALL"

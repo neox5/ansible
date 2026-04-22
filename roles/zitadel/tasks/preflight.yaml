@@ -1,0 +1,46 @@
+---
+# Preflight checks - validate environment before proceeding
+
+- name: Gather distribution facts
+  ansible.builtin.setup:
+    gather_subset:
+      - distribution
+
+- name: Assert Debian 13 or later
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - ansible_distribution == "Debian"
+      - ansible_distribution_major_version | int >= 13
+    fail_msg: "This role requires Debian 13 or later"
+
+- name: Assert valid state value
+  ansible.builtin.assert:
+    quiet: true
+    that: zitadel_state in ['present', 'absent']
+    fail_msg: "zitadel_state must be 'present' or 'absent'"
+
+- name: Assert remove_data only set when state is absent
+  ansible.builtin.assert:
+    quiet: true
+    that: not zitadel_remove_data or zitadel_state == 'absent'
+    fail_msg: "zitadel_remove_data: true requires zitadel_state: absent"
+
+- name: Assert required variables are set
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - zitadel_domain | length > 0
+      - zitadel_masterkey | length == 32
+      - zitadel_db_password | length > 0
+      - zitadel_db_admin_password | length > 0
+    fail_msg: >
+      Required variables must be configured: zitadel_domain,
+      zitadel_masterkey (exactly 32 chars), zitadel_db_password,
+      zitadel_db_admin_password
+  when: zitadel_state == 'present'
+  no_log: true
+
+- name: Display role information
+  ansible.builtin.debug:
+    msg: "Zitadel role - state={{ zitadel_state }} version={{ zitadel_version }}"

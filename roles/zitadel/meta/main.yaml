@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  role_name: zitadel
+  author: neox5
+  description: Zitadel identity provider deployment via Podman Quadlet for Debian 13 Trixie
+  license: MIT
+  min_ansible_version: "2.15"
+
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+
+  galaxy_tags:
+    - containers
+    - podman
+    - identity
+    - oidc
+    - zitadel
+
+dependencies: []

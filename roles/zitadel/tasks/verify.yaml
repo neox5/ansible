@@ -1,0 +1,22 @@
+---
+# Verification tasks - confirm service is healthy
+
+- name: Wait for Zitadel API health endpoint
+  ansible.builtin.uri:
+    url: "{{ zitadel_health_url }}"
+    status_code: 200
+    timeout: 5
+  register: _zitadel_health
+  retries: 18
+  delay: 10
+  until: _zitadel_health.status == 200
+
+- name: Display deployment summary
+  ansible.builtin.debug:
+    msg:
+      - "Zitadel {{ zitadel_version }} deployment complete"
+      - "Domain: https://{{ zitadel_domain }}"
+      - "API: http://localhost:{{ zitadel_api_port }}"
+      - "Login: http://localhost:{{ zitadel_login_port }}"
+      - "Health: passing"
+      - "Console: https://{{ zitadel_domain }}/ui/console"

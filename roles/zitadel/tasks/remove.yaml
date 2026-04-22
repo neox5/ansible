@@ -1,0 +1,39 @@
+---
+# Remove tasks - stop and clean up Zitadel deployment
+
+- name: Stop and disable Zitadel Login service
+  ansible.builtin.systemd:
+    name: "{{ zitadel_login_container_name }}.service"
+    state: stopped
+    enabled: false
+  failed_when: false
+
+- name: Stop and disable Zitadel API service
+  ansible.builtin.systemd:
+    name: "{{ zitadel_api_container_name }}.service"
+    state: stopped
+    enabled: false
+  failed_when: false
+
+- name: Remove Zitadel Login Quadlet unit
+  ansible.builtin.file:
+    path: "/etc/containers/systemd/{{ zitadel_login_container_name }}.container"
+    state: absent
+  register: _zitadel_login_unit_removed
+
+- name: Remove Zitadel API Quadlet unit
+  ansible.builtin.file:
+    path: "/etc/containers/systemd/{{ zitadel_api_container_name }}.container"
+    state: absent
+  register: _zitadel_api_unit_removed
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: _zitadel_login_unit_removed is changed or _zitadel_api_unit_removed is changed
+
+- name: Remove Zitadel data directory
+  ansible.builtin.file:
+    path: "{{ zitadel_data_dir }}"
+    state: absent
+  when: zitadel_remove_data | bool

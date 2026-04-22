@@ -1,0 +1,33 @@
+---
+# ============================================================================
+# Zitadel: Lab n150 Configuration
+# File: group_vars/n150/zitadel.yaml
+# Role: zitadel (custom)
+# ============================================================================
+#
+# Applied to: All hosts in 'n150' group
+# Variable precedence: all < n150 (this file) < host_vars
+
+zitadel_version: "v4.13.1"
+
+zitadel_domain: "zitadel.zion.local"
+zitadel_external_port: 443
+zitadel_external_secure: true
+
+zitadel_db_host: "localhost"
+zitadel_db_port: 5432
+zitadel_db_name: "zitadel"
+zitadel_db_user: "zitadel"
+zitadel_db_password: "{{ zitadel_db_password_secret }}"
+zitadel_db_admin_user: "postgres"
+zitadel_db_admin_password: "{{ zitadel_db_admin_password_secret }}"
+
+zitadel_masterkey: "{{ zitadel_masterkey_secret }}"
+# ============================================================================
+# Notes:
+# - Secrets encrypted via SOPS: zitadel_masterkey_secret,
+#   zitadel_db_password_secret, zitadel_db_admin_password_secret
+# - Masterkey must be exactly 32 characters
+# - Masterkey cannot be changed after first initialization
+# - zitadel database must use C locale (see host_vars postgresql.yaml)
+# ============================================================================

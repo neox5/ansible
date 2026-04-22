@@ -39,6 +39,13 @@ caddy_sites:
   - domain: "matrix.zion.local"
     routes:
       - backend: "localhost:8008"
+  - domain: "zitadel.zion.local"
+    routes:
+      - path: /ui/v2/login/*
+        backend: "http://localhost:3000"
+      - backend: "h2c://localhost:8080"
+        headers_up:
+          - "-TE"
 
 # --- Access Logging ---
 caddy_access_log_enabled: true

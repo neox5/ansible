@@ -1,0 +1,90 @@
+---
+# Start tasks - deploy Zitadel containers via quadlet role
+
+- name: Build API container environment
+  ansible.builtin.set_fact:
+    _zitadel_api_environment:
+      # Runtime
+      ZITADEL_EXTERNALDOMAIN: "{{ zitadel_domain }}"
+      ZITADEL_EXTERNALPORT: "{{ zitadel_external_port | string }}"
+      ZITADEL_EXTERNALSECURE: "{{ zitadel_external_secure | bool | lower }}"
+      ZITADEL_TLS_ENABLED: "false"
+      # Database - runtime user
+      ZITADEL_DATABASE_POSTGRES_HOST: "{{ zitadel_db_host }}"
+      ZITADEL_DATABASE_POSTGRES_PORT: "{{ zitadel_db_port | string }}"
+      ZITADEL_DATABASE_POSTGRES_DATABASE: "{{ zitadel_db_name }}"
+      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: "{{ zitadel_db_user }}"
+      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: "{{ zitadel_db_password }}"
+      ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE: disable
+      # Database - admin user (init only)
+      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: "{{ zitadel_db_admin_user }}"
+      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: "{{ zitadel_db_admin_password }}"
+      ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE: disable
+      # Masterkey
+      ZITADEL_MASTERKEY: "{{ zitadel_masterkey }}"
+      # Init-time: login client
+      ZITADEL_DEFAULTINSTANCE_ORG_LOGINCLIENT_MACHINE_USERNAME: "{{ zitadel_login_client_username }}"
+      ZITADEL_DEFAULTINSTANCE_ORG_LOGINCLIENT_PAT_EXPIRATIONDATE: "{{ zitadel_login_client_pat_expiration }}"
+      ZITADEL_DEFAULTINSTANCE_ORG_LOGINCLIENT_PAT_PATH: "{{ zitadel_pat_file }}"
+      # Init-time: Login V2
+      ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_REQUIRED: "true"
+      ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_BASEURI: "https://{{ zitadel_domain }}"
+      ZITADEL_OIDC_DEFAULTLOGINURLV2: "/ui/v2/login/login?authRequest="
+      ZITADEL_OIDC_DEFAULTLOGOUTURLV2: "/ui/v2/login/logout?post_logout_redirect="
+
+- name: Deploy Zitadel API container via Quadlet
+  ansible.builtin.include_role:
+    name: quadlet
+  vars:
+    quadlet_name: "{{ zitadel_api_container_name }}"
+    quadlet_image: "{{ zitadel_api_image }}:{{ zitadel_version }}"
+    quadlet_command: "start-from-init --masterkeyFromEnv --tlsMode external"
+    quadlet_network: host
+    quadlet_environment: "{{ _zitadel_api_environment }}"
+    quadlet_volumes:
+      - "{{ zitadel_data_dir }}:{{ zitadel_data_dir }}"
+    quadlet_health_cmd: "/app/zitadel ready"
+    quadlet_health_interval: "10s"
+    quadlet_health_timeout: "5s"
+    quadlet_health_retries: 3
+    quadlet_health_start_period: "60s"
+    quadlet_health_notify: true
+    quadlet_restart_policy: always
+    quadlet_restart_sec: "{{ zitadel_api_systemd_restart_sec }}"
+    quadlet_timeout_start_sec: "{{ zitadel_api_systemd_timeout_start }}"
+    quadlet_start_limit_burst: "{{ zitadel_api_systemd_start_limit_burst }}"
+    quadlet_start_limit_interval: "{{ zitadel_api_systemd_start_limit_interval }}"
+    quadlet_systemd_after:
+      - postgresql.service
+      - network-online.target
+    quadlet_systemd_requires:
+      - postgresql.service
+    quadlet_systemd_wants:
+      - network-online.target
+
+- name: Build login container environment
+  ansible.builtin.set_fact:
+    _zitadel_login_environment:
+      ZITADEL_API_URL: "http://localhost:{{ zitadel_api_port }}"
+      ZITADEL_SERVICE_USER_TOKEN_FILE: "{{ zitadel_pat_file }}"
+      BASEURI: "https://{{ zitadel_domain }}"
+
+- name: Deploy Zitadel Login container via Quadlet
+  ansible.builtin.include_role:
+    name: quadlet
+  vars:
+    quadlet_name: "{{ zitadel_login_container_name }}"
+    quadlet_image: "{{ zitadel_login_image }}:{{ zitadel_version }}"
+    quadlet_network: host
+    quadlet_environment: "{{ _zitadel_login_environment }}"
+    quadlet_volumes:
+      - "{{ zitadel_data_dir }}:{{ zitadel_data_dir }}:ro"
+    quadlet_restart_policy: always
+    quadlet_restart_sec: "{{ zitadel_login_systemd_restart_sec }}"
+    quadlet_timeout_start_sec: "{{ zitadel_login_systemd_timeout_start }}"
+    quadlet_start_limit_burst: "{{ zitadel_login_systemd_start_limit_burst }}"
+    quadlet_start_limit_interval: "{{ zitadel_login_systemd_start_limit_interval }}"
+    quadlet_systemd_after:
+      - zitadel.service
+    quadlet_systemd_requires:
+      - zitadel.service

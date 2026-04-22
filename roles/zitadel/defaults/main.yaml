@@ -1,0 +1,48 @@
+---
+# Zitadel Role - Configuration Defaults
+
+# Lifecycle
+zitadel_state: present
+zitadel_remove_data: false
+
+# Version
+zitadel_version: "v4.13.1"
+
+# Network
+zitadel_domain: ""
+zitadel_external_port: 443
+zitadel_external_secure: true
+zitadel_api_port: 8080
+zitadel_login_port: 3000
+
+# Paths
+zitadel_data_dir: /var/lib/zitadel
+zitadel_pat_file: "{{ zitadel_data_dir }}/login-client.pat"
+
+# Database
+zitadel_db_host: localhost
+zitadel_db_port: 5432
+zitadel_db_name: zitadel
+zitadel_db_user: zitadel
+zitadel_db_password: ""
+zitadel_db_admin_user: postgres
+zitadel_db_admin_password: ""
+
+# Masterkey (exactly 32 characters, set via SOPS secret)
+zitadel_masterkey: ""
+
+# Login client (created at first init)
+zitadel_login_client_username: login-client
+zitadel_login_client_pat_expiration: "2040-01-01T00:00:00Z"
+
+# Systemd service configuration — API container
+zitadel_api_systemd_restart_sec: 10
+zitadel_api_systemd_timeout_start: 120
+zitadel_api_systemd_start_limit_burst: 5
+zitadel_api_systemd_start_limit_interval: 600
+
+# Systemd service configuration — Login container
+zitadel_login_systemd_restart_sec: 10
+zitadel_login_systemd_timeout_start: 90
+zitadel_login_systemd_start_limit_burst: 5
+zitadel_login_systemd_start_limit_interval: 600

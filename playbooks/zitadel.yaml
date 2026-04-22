@@ -1,0 +1,9 @@
+---
+# Zitadel Identity Provider Deployment
+# Usage: ansible-playbook -i inventory/lab playbooks/zitadel.yaml
+
+- name: Deploy Zitadel Identity Provider
+  hosts: all
+  become: true
+  roles:
+    - zitadel

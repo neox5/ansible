@@ -1,0 +1,10 @@
+---
+# Zitadel Role - Immutable Variables
+
+zitadel_api_image: "ghcr.io/zitadel/zitadel"
+zitadel_login_image: "ghcr.io/zitadel/zitadel-login"
+
+zitadel_api_container_name: zitadel
+zitadel_login_container_name: zitadel-login
+
+zitadel_health_url: "http://localhost:{{ zitadel_api_port }}/debug/healthz"
