@@ -25,6 +25,13 @@
     - name: Gather facts after Python installed
       setup:
 
+    - name: Assert root password hash is configured
+      ansible.builtin.assert:
+        quiet: true
+        that: bootstrap_root_password_hash | length > 0
+        fail_msg: "bootstrap_root_password_hash_secret must be set in host_vars secrets (SOPS encrypted)"
+      no_log: true
+
     - name: Configure Debian network repositories
       block:
         - name: Remove CD-ROM source from sources.list
@@ -33,47 +40,48 @@
             regexp: "^deb cdrom:"
             state: absent
 
-        - name: Configure main Debian repositories
+        - name: Configure Debian network sources
           ansible.builtin.copy:
-            dest: /etc/apt/sources.list
             content: |
-              # Debian Trixie (13) - Main repositories
-              deb http://deb.debian.org/debian trixie main contrib non-free-firmware
-              deb-src http://deb.debian.org/debian trixie main contrib non-free-firmware
-
-              # Security updates
-              deb http://deb.debian.org/debian-security trixie-security main contrib non-free-firmware
-              deb-src http://deb.debian.org/debian-security trixie-security main contrib non-free-firmware
-
-              # Stable updates
-              deb http://deb.debian.org/debian trixie-updates main contrib non-free-firmware
-              deb-src http://deb.debian.org/debian trixie-updates main contrib non-free-firmware
+              deb http://deb.debian.org/debian {{ ansible_distribution_release }} main non-free-firmware
+              deb http://deb.debian.org/debian {{ ansible_distribution_release }}-updates main non-free-firmware
+              deb http://security.debian.org/debian-security {{ ansible_distribution_release }}-security main non-free-firmware
+            dest: /etc/apt/sources.list
             owner: root
             group: root
             mode: "0644"
       when: ansible_distribution == "Debian"
 
-    - name: Install sudo if missing
-      package:
-        name: sudo
-        state: present
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+      when: ansible_distribution == "Debian"
 
-    - name: Create ansible user
-      user:
+    - name: Create ansible system user
+      ansible.builtin.user:
         name: "{{ bootstrap_ansible_user }}"
         shell: /bin/bash
-        create_home: yes
-        state: present
+        system: true
+        create_home: true
+        home: "/home/{{ bootstrap_ansible_user }}"
 
     - name: Create admin user
-      user:
+      ansible.builtin.user:
         name: "{{ bootstrap_admin_user }}"
         shell: /bin/bash
-        create_home: yes
-        state: present
+        create_home: true
+        home: "/home/{{ bootstrap_admin_user }}"
+        groups: sudo
+        append: true
+
+    - name: Set root password
+      ansible.builtin.user:
+        name: root
+        password: "{{ bootstrap_root_password_hash }}"
+      no_log: true
 
     - name: Create .ssh directory for ansible user
-      file:
+      ansible.builtin.file:
         path: "/home/{{ bootstrap_ansible_user }}/.ssh"
         state: directory
         owner: "{{ bootstrap_ansible_user }}"
@@ -81,7 +89,7 @@
         mode: "0700"
 
     - name: Create .ssh directory for admin user
-      file:
+      ansible.builtin.file:
         path: "/home/{{ bootstrap_admin_user }}/.ssh"
         state: directory
         owner: "{{ bootstrap_admin_user }}"
@@ -103,33 +111,33 @@
       loop: "{{ bootstrap_admin_keys + bootstrap_admin_emergency_keys }}"
 
     - name: Configure temporary passwordless sudo for ansible user
-      copy:
+      ansible.builtin.copy:
         content: "{{ bootstrap_ansible_user }} ALL=(ALL) NOPASSWD:ALL\n"
         dest: "/etc/sudoers.d/00-ansible-bootstrap"
         mode: "0440"
         validate: "visudo -cf %s"
 
     - name: Configure temporary passwordless sudo for admin user
-      copy:
+      ansible.builtin.copy:
         content: "{{ bootstrap_admin_user }} ALL=(ALL) NOPASSWD:ALL\n"
         dest: "/etc/sudoers.d/00-admin-bootstrap"
         mode: "0440"
         validate: "visudo -cf %s"
 
     - name: Verify ansible user can sudo
-      command: sudo -n -l
+      ansible.builtin.command: sudo -n -l
       become: yes
       become_user: "{{ bootstrap_ansible_user }}"
       changed_when: false
 
     - name: Verify admin user can sudo
-      command: sudo -n -l
+      ansible.builtin.command: sudo -n -l
       become: yes
       become_user: "{{ bootstrap_admin_user }}"
       changed_when: false
 
     - name: Remove temporary user
-      user:
+      ansible.builtin.user:
         name: "{{ bootstrap_temp_user }}"
         state: absent
         remove: yes
@@ -138,7 +146,19 @@
 
     - name: Build next steps message
       ansible.builtin.set_fact:
-        _bootstrap_next_steps: "{{ ['Bootstrap complete!', ''] + ['Root account: Locked (no password, use admin user for console access)', ''] + ['Automation access:'] + (bootstrap_ansible_keys | map('basename') | map('replace', '.pub', '') | map('regex_replace', '^', '  ssh -i ~/.ssh/') | map('regex_replace', '$', ' ' ~ bootstrap_ansible_user ~ '@' ~ ansible_host) | list) + [''] + ['Operator access (admin):'] + (bootstrap_admin_keys | map('basename') | map('replace', '.pub', '') | map('regex_replace', '^', '  ssh -i ~/.ssh/') | map('regex_replace', '$', ' ' ~ bootstrap_admin_user ~ '@' ~ ansible_host) | list) + [''] + ['Emergency access:'] + (bootstrap_admin_emergency_keys | map('basename') | map('replace', '.pub', '') | map('regex_replace', '^', '  ssh -i ~/.ssh/') | map('regex_replace', '$', ' ' ~ bootstrap_admin_user ~ '@' ~ ansible_host) | list) + [''] + ['Temporary user removed: ' ~ bootstrap_temp_user] + ['Root SSH access: Prohibited (console access via admin user)'] }}"
+        _bootstrap_next_steps: "{{ ['Bootstrap complete!', ''] +
+          ['Root account: Password set from vault (console access only)', ''] +
+          ['Automation access:'] +
+          (bootstrap_ansible_keys | map('basename') | map('replace', '.pub', '') | map('regex_replace', '^', '  ssh -i ~/.ssh/') | map('regex_replace', '$', ' ' ~ bootstrap_ansible_user ~ '@' ~ ansible_host) | list) +
+          [''] +
+          ['Operator access (admin):'] +
+          (bootstrap_admin_keys | map('basename') | map('replace', '.pub', '') | map('regex_replace', '^', '  ssh -i ~/.ssh/') | map('regex_replace', '$', ' ' ~ bootstrap_admin_user ~ '@' ~ ansible_host) | list) +
+          [''] +
+          ['Emergency access:'] +
+          (bootstrap_admin_emergency_keys | map('basename') | map('replace', '.pub', '') | map('regex_replace', '^', '  ssh -i ~/.ssh/') | map('regex_replace', '$', ' ' ~ bootstrap_admin_user ~ '@' ~ ansible_host) | list) +
+          [''] +
+          (['Temporary user removed: ' ~ bootstrap_temp_user] if (bootstrap_temp_user is defined and bootstrap_temp_user != '') else ['No temporary user to remove']) +
+          ['Root SSH: still open — run security_hardening next'] }}"
 
     - name: Display next steps
       ansible.builtin.debug:

@@ -3,6 +3,9 @@
 [n150]
 n150-01 ansible_host=10.0.0.112
 
+[edge]
+heimdall ansible_host=152.53.16.16
+
 # Production-wide connection settings
 [all:vars]
 ansible_user=ansible

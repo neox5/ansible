@@ -1,0 +1,9 @@
+---
+# Bootstrap Configuration: edge hosts
+# Applied to: all hosts in the edge group
+#
+# Edge hosts (VPS) are provisioned with root access directly.
+# No temporary user is created during provisioning.
+
+# Override: no temp user on VPS-provisioned hosts
+bootstrap_temp_user: ""
