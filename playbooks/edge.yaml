@@ -1,0 +1,9 @@
+---
+# Edge Stack Deployment
+# Deploys complete edge stack in dependency order.
+#
+# Usage:
+#   ansible-playbook -i inventory/prod playbooks/edge.yaml
+
+- import_playbook: update.yaml
+- import_playbook: security.yaml
