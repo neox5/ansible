@@ -1,0 +1,8 @@
+---
+# =============================================================================
+# Headscale: heimdall host configuration
+# File: host_vars/heimdall/headscale.yaml
+# Role: headscale
+# =============================================================================
+
+headscale_domain: "hs.neox5.com"

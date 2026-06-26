@@ -7,3 +7,4 @@
 
 - import_playbook: update.yaml
 - import_playbook: security.yaml
+- import_playbook: headscale.yaml

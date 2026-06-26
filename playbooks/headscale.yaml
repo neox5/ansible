@@ -1,0 +1,13 @@
+---
+# Headscale Coordination Server Deployment
+# Deploys Caddy (TLS termination) then Headscale.
+#
+# Usage:
+#   ansible-playbook -i inventory/prod playbooks/headscale.yaml -l heimdall
+
+- name: Deploy Headscale
+  hosts: all
+  become: true
+  roles:
+    - caddy
+    - headscale

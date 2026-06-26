@@ -1,0 +1,52 @@
+---
+# Preflight checks - validate environment before proceeding
+
+- name: Gather distribution and service manager facts
+  ansible.builtin.setup:
+    gather_subset:
+      - distribution
+      - service_mgr
+
+- name: Assert Debian 13 or later
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - ansible_distribution == "Debian"
+      - ansible_distribution_major_version | int >= 13
+    fail_msg: "This role requires Debian 13 or later"
+
+- name: Assert systemd is the init system
+  ansible.builtin.assert:
+    quiet: true
+    that: ansible_facts['service_mgr'] == 'systemd'
+    fail_msg: "This role requires systemd"
+
+- name: Assert valid state value
+  ansible.builtin.assert:
+    quiet: true
+    that: headscale_state in ['present', 'absent']
+    fail_msg: "headscale_state must be 'present' or 'absent'"
+
+- name: Assert remove_data only set when state is absent
+  ansible.builtin.assert:
+    quiet: true
+    that: not headscale_remove_data or headscale_state == 'absent'
+    fail_msg: "headscale_remove_data: true requires headscale_state: absent"
+
+- name: Assert domain is configured
+  ansible.builtin.assert:
+    quiet: true
+    that: headscale_domain | length > 0
+    fail_msg: "headscale_domain must be set in inventory (e.g. hs.neox5.com)"
+  when: headscale_state == 'present'
+
+- name: Assert embedded DERP and external URLs are not both enabled
+  ansible.builtin.assert:
+    quiet: true
+    that: not (headscale_derp_embedded and headscale_derp_urls | length > 0)
+    fail_msg: "headscale_derp_embedded and headscale_derp_urls are mutually exclusive"
+  when: headscale_state == 'present'
+
+- name: Display role information
+  ansible.builtin.debug:
+    msg: "headscale role - state={{ headscale_state }} version={{ headscale_version }} domain={{ headscale_domain }}"

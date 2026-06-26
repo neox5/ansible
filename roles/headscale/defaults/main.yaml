@@ -1,0 +1,64 @@
+---
+# Headscale Role - Configuration Defaults
+
+# Version
+headscale_version: "0.29.1"
+
+# Lifecycle
+headscale_state: present
+headscale_remove_data: false
+
+# Paths
+headscale_config_dir: "/etc/headscale"
+headscale_data_dir: "/var/lib/headscale"
+headscale_run_dir: "/var/run/headscale"
+
+# Network
+headscale_listen_addr: "127.0.0.1:8080"
+headscale_metrics_addr: "127.0.0.1:9090"
+headscale_grpc_addr: "127.0.0.1:50443"
+
+# Public URL (required — set in inventory)
+# Must match the domain Caddy serves headscale on.
+# Example: "https://hs.neox5.com"
+headscale_domain: ""
+
+# IP address prefixes assigned to mesh nodes
+headscale_ip_prefixes_v4: "100.64.0.0/10"
+headscale_ip_prefixes_v6: "fd7a:115c:a1e0::/48"
+
+# Node expiry (0s = disabled — nodes never expire)
+headscale_node_expiry: "0s"
+
+# DERP configuration
+# Embedded DERP server (relay on this host)
+headscale_derp_embedded: false
+headscale_derp_region_id: 999
+headscale_derp_region_code: "headscale"
+headscale_derp_region_name: "Headscale Embedded DERP"
+headscale_derp_stun_addr: "0.0.0.0:3478"
+
+# External DERP map URLs — empty by default (no Tailscale dependency)
+# Add URLs here if using external DERP servers.
+headscale_derp_urls: []
+
+# Local DERP config file paths — empty by default
+headscale_derp_paths: []
+
+# DERP map auto-update — disabled when no URLs configured
+headscale_derp_auto_update: false
+headscale_derp_update_frequency: "24h"
+
+# DNS
+# MagicDNS disabled — internal DNS handled separately
+headscale_dns_magic_dns: false
+headscale_dns_base_domain: ""
+headscale_dns_nameservers: []
+
+# Logging
+headscale_log_level: "info"
+headscale_log_format: "text"
+
+# Database (SQLite)
+headscale_db_type: "sqlite"
+headscale_db_path: "{{ headscale_data_dir }}/db.sqlite"

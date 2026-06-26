@@ -1,0 +1,90 @@
+# {{ ansible_managed }}
+# Headscale Configuration
+# Role: headscale
+
+# Public URL clients connect to (must be HTTPS when behind reverse proxy)
+server_url: {{ headscale_server_url }}
+
+# Listen addresses (loopback — Caddy terminates TLS)
+listen_addr: {{ headscale_listen_addr }}
+metrics_listen_addr: {{ headscale_metrics_addr }}
+grpc_listen_addr: {{ headscale_grpc_addr }}
+grpc_allow_insecure: false
+
+# TLS disabled — Caddy handles termination
+tls_cert_path: ""
+tls_key_path: ""
+
+# Private keys (managed by headscale on first run)
+private_key_path: {{ headscale_data_dir }}/private.key
+noise:
+  private_key_path: {{ headscale_data_dir }}/noise_private.key
+
+# IP prefixes assigned to mesh nodes
+prefixes:
+  v4: {{ headscale_ip_prefixes_v4 }}
+  v6: {{ headscale_ip_prefixes_v6 }}
+
+# DERP configuration
+derp:
+  server:
+    enabled: {{ headscale_derp_embedded | lower }}
+{% if headscale_derp_embedded %}
+    region_id: {{ headscale_derp_region_id }}
+    region_code: "{{ headscale_derp_region_code }}"
+    region_name: "{{ headscale_derp_region_name }}"
+    stun_listen_addr: "{{ headscale_derp_stun_addr }}"
+{% endif %}
+  urls:
+{% if headscale_derp_urls | length > 0 %}
+{% for url in headscale_derp_urls %}
+    - {{ url }}
+{% endfor %}
+{% else %}
+    []
+{% endif %}
+  paths:
+{% if headscale_derp_paths | length > 0 %}
+{% for path in headscale_derp_paths %}
+    - {{ path }}
+{% endfor %}
+{% else %}
+    []
+{% endif %}
+  auto_update_enabled: {{ headscale_derp_auto_update | lower }}
+  update_frequency: {{ headscale_derp_update_frequency }}
+
+# DNS
+dns:
+  magic_dns: {{ headscale_dns_magic_dns | lower }}
+{% if headscale_dns_base_domain | length > 0 %}
+  base_domain: {{ headscale_dns_base_domain }}
+{% endif %}
+  nameservers:
+    global:
+{% if headscale_dns_nameservers | length > 0 %}
+{% for ns in headscale_dns_nameservers %}
+      - {{ ns }}
+{% endfor %}
+{% else %}
+      []
+{% endif %}
+
+# Node expiry (0s = disabled)
+node_update_check_interval: 10s
+ephemeral_node_inactivity_timeout: 30m
+
+# Database
+database:
+  type: {{ headscale_db_type }}
+  sqlite:
+    path: {{ headscale_db_path }}
+
+# Unix socket
+unix_socket: {{ headscale_run_dir }}/headscale.sock
+unix_socket_permission: "0770"
+
+# Logging
+log:
+  format: {{ headscale_log_format }}
+  level: {{ headscale_log_level }}

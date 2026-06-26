@@ -1,0 +1,15 @@
+---
+# Headscale Role - Immutable Variables
+
+# Architecture mapping for .deb package
+deb_arch_map:
+  x86_64: "amd64"
+  aarch64: "arm64"
+
+deb_arch: "{{ deb_arch_map[ansible_facts['architecture']] | default(ansible_facts['architecture']) }}"
+
+# Package download URL
+headscale_download_url: "https://github.com/juanfont/headscale/releases/download/v{{ headscale_version }}/headscale_{{ headscale_version }}_linux_{{ deb_arch }}.deb"
+
+# Derived server URL
+headscale_server_url: "https://{{ headscale_domain }}"
