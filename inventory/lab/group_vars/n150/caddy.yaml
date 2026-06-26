@@ -25,21 +25,27 @@ caddy_acme_ca_root: "/usr/local/share/ca-certificates/zion_root_ca_g1.crt"
 # --- Caddy Sites Configuration ---
 caddy_sites:
   - domain: "n8n.zion.local"
+    hosts_entry: true
     routes:
       - backend: "localhost:5678"
   - domain: "grafana.zion.local"
+    hosts_entry: true
     routes:
       - backend: "localhost:3000"
   - domain: "s3.zion.local"
+    hosts_entry: true
     routes:
       - backend: "localhost:7070"
   - domain: "s3ui.zion.local"
+    hosts_entry: true
     routes:
       - backend: "localhost:7071"
   - domain: "matrix.zion.local"
+    hosts_entry: true
     routes:
       - backend: "localhost:8008"
   - domain: "zitadel.zion.local"
+    hosts_entry: true
     routes:
       - path: /ui/v2/login/*
         backend: "http://localhost:3000"
@@ -61,6 +67,6 @@ caddy_access_log_skip_paths:
 # Notes:
 # - Caddy listens on 443 (HTTPS) and redirects 80 → 443
 # - Certificates issued automatically via step-ca ACME
-# - Domains must be in /etc/hosts or local DNS
+# - hosts_entry: true because lab-vm is its own DNS server for .local domains
 # - Ports are hardcoded here to avoid cross-role variable dependencies
 # ============================================================================

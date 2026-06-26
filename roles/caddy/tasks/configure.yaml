@@ -8,6 +8,7 @@
     regexp: "^127\\.0\\.0\\.1 {{ item.domain | regex_escape() }} "
     state: present
   loop: "{{ caddy_sites }}"
+  when: item.hosts_entry | default(false)
 
 - name: Check if ssl-cert group exists
   ansible.builtin.getent:

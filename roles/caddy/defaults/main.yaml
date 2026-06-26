@@ -9,6 +9,11 @@ caddy_email: ""
 
 # Virtual hosts configuration (required)
 # Each site proxies to one or more backends via routes.
+# Site fields:
+#   domain      (required) virtual host domain
+#   hosts_entry (optional) add 127.0.0.1 entry to /etc/hosts — default false
+#               Set true when this host is its own DNS server for the domain
+#               (e.g. N150 serving .local domains via internal DNS)
 # Route fields:
 #   backend     (required) upstream address
 #   path        (optional) path matcher prefix, e.g. /ui/v2/login/*
@@ -16,9 +21,17 @@ caddy_email: ""
 caddy_sites: []
 # Example:
 # caddy_sites:
-#   - domain: app.example.com
+#   - domain: app.zion.local
+#     hosts_entry: true        # this host resolves its own .local domain
 #     routes:
 #       - backend: localhost:3000
+#
+#   - domain: hs.neox5.com
+#     hosts_entry: false       # resolves via public DNS
+#     routes:
+#       - backend: localhost:8080
+#         headers_up:
+#           - "True-Client-IP {remote_host}"
 #
 #   - domain: zitadel.example.com
 #     routes:
