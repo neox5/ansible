@@ -9,11 +9,19 @@
     state: present
   loop: "{{ caddy_sites }}"
 
+- name: Check if ssl-cert group exists
+  ansible.builtin.getent:
+    database: group
+    key: ssl-cert
+  failed_when: false
+  register: caddy_ssl_cert_group
+
 - name: Add caddy user to ssl-cert group
   ansible.builtin.user:
     name: caddy
     groups: ssl-cert
     append: true
+  when: caddy_ssl_cert_group.ansible_facts is defined
 
 - name: Ensure caddy log directory exists
   ansible.builtin.file:

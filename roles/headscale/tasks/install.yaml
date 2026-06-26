@@ -2,14 +2,6 @@
 # Installation tasks - download and install headscale .deb package
 # The .deb ships with: headscale binary, default config, systemd unit, dedicated system user
 
-- name: Ensure run directory exists
-  ansible.builtin.file:
-    path: "{{ headscale_run_dir }}"
-    state: directory
-    owner: headscale
-    group: headscale
-    mode: "0750"
-
 - name: Check current headscale version
   ansible.builtin.command:
     cmd: headscale version
