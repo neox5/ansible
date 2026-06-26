@@ -1,39 +1,46 @@
 # {{ ansible_managed }}
-# Headscale Configuration
+# Headscale Configuration — v{{ headscale_version }}
 # Role: headscale
 
-# Public URL clients connect to (must be HTTPS when behind reverse proxy)
-server_url: {{ headscale_server_url }}
+server_url: https://{{ headscale_domain }}
 
-# Listen addresses (loopback — Caddy terminates TLS)
 listen_addr: {{ headscale_listen_addr }}
 metrics_listen_addr: {{ headscale_metrics_addr }}
 grpc_listen_addr: {{ headscale_grpc_addr }}
-grpc_allow_insecure: false
+grpc_allow_insecure: {{ headscale_grpc_allow_insecure | lower }}
 
-# TLS disabled — Caddy handles termination
-tls_cert_path: ""
-tls_key_path: ""
+# Trusted reverse proxy CIDRs (honours X-Real-IP / True-Client-IP headers)
+trusted_proxies:
+{% for cidr in headscale_trusted_proxies %}
+  - {{ cidr }}
+{% endfor %}
 
-# Private keys (managed by headscale on first run)
+# Private key (top-level, managed by headscale on first run)
 private_key_path: {{ headscale_data_dir }}/private.key
+
 noise:
   private_key_path: {{ headscale_data_dir }}/noise_private.key
 
-# IP prefixes assigned to mesh nodes
 prefixes:
   v4: {{ headscale_ip_prefixes_v4 }}
   v6: {{ headscale_ip_prefixes_v6 }}
+  allocation: {{ headscale_ip_allocation }}
 
-# DERP configuration
 derp:
   server:
     enabled: {{ headscale_derp_embedded | lower }}
-{% if headscale_derp_embedded %}
     region_id: {{ headscale_derp_region_id }}
     region_code: "{{ headscale_derp_region_code }}"
     region_name: "{{ headscale_derp_region_name }}"
+    verify_clients: {{ headscale_derp_verify_clients | lower }}
     stun_listen_addr: "{{ headscale_derp_stun_addr }}"
+    private_key_path: {{ headscale_data_dir }}/derp_server_private.key
+    automatically_add_embedded_derp_region: {{ headscale_derp_automatically_add_embedded_region | lower }}
+{% if headscale_derp_embedded_ipv4 | length > 0 %}
+    ipv4: {{ headscale_derp_embedded_ipv4 }}
+{% endif %}
+{% if headscale_derp_embedded_ipv6 | length > 0 %}
+    ipv6: {{ headscale_derp_embedded_ipv6 }}
 {% endif %}
   urls:
 {% if headscale_derp_urls | length > 0 %}
@@ -54,37 +61,63 @@ derp:
   auto_update_enabled: {{ headscale_derp_auto_update | lower }}
   update_frequency: {{ headscale_derp_update_frequency }}
 
-# DNS
+disable_check_updates: {{ headscale_disable_check_updates | lower }}
+
+node:
+  expiry: {{ headscale_node_expiry }}
+  ephemeral:
+    inactivity_timeout: {{ headscale_node_ephemeral_inactivity_timeout }}
+
+database:
+  type: {{ headscale_db_type }}
+  debug: false
+  gorm:
+    prepare_stmt: true
+    parameterized_queries: true
+    skip_err_record_not_found: true
+    slow_threshold: 1000
+  sqlite:
+    path: {{ headscale_db_path }}
+    write_ahead_log: {{ headscale_db_wal | lower }}
+    wal_autocheckpoint: {{ headscale_db_wal_autocheckpoint }}
+
+# TLS — disabled, Caddy handles termination
+tls_cert_path: "{{ headscale_tls_cert_path }}"
+tls_key_path: "{{ headscale_tls_key_path }}"
+
+log:
+  level: {{ headscale_log_level }}
+  format: {{ headscale_log_format }}
+
+policy:
+  mode: {{ headscale_policy_mode }}
+  path: "{{ headscale_policy_path }}"
+
 dns:
   magic_dns: {{ headscale_dns_magic_dns | lower }}
-{% if headscale_dns_base_domain | length > 0 %}
-  base_domain: {{ headscale_dns_base_domain }}
-{% endif %}
+  base_domain: "{{ headscale_dns_base_domain }}"
+  override_local_dns: {{ headscale_dns_override_local_dns | lower }}
   nameservers:
     global:
-{% if headscale_dns_nameservers | length > 0 %}
-{% for ns in headscale_dns_nameservers %}
+{% if headscale_dns_nameservers_global | length > 0 %}
+{% for ns in headscale_dns_nameservers_global %}
       - {{ ns }}
 {% endfor %}
 {% else %}
       []
 {% endif %}
+    split: {}
+  search_domains: []
+  extra_records: []
 
-# Node expiry (0s = disabled)
-node_update_check_interval: 10s
-ephemeral_node_inactivity_timeout: 30m
-
-# Database
-database:
-  type: {{ headscale_db_type }}
-  sqlite:
-    path: {{ headscale_db_path }}
-
-# Unix socket
 unix_socket: {{ headscale_run_dir }}/headscale.sock
 unix_socket_permission: "0770"
 
-# Logging
-log:
-  format: {{ headscale_log_format }}
-  level: {{ headscale_log_level }}
+logtail:
+  enabled: {{ headscale_logtail_enabled | lower }}
+
+taildrop:
+  enabled: {{ headscale_taildrop_enabled | lower }}
+
+auto_update:
+  enabled: {{ headscale_auto_update_enabled | lower }}

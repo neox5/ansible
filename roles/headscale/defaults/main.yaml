@@ -1,5 +1,6 @@
 ---
 # Headscale Role - Configuration Defaults
+# Based on headscale v0.29.1 config-example.yaml
 
 # Version
 headscale_version: "0.29.1"
@@ -17,48 +18,76 @@ headscale_run_dir: "/var/run/headscale"
 headscale_listen_addr: "127.0.0.1:8080"
 headscale_metrics_addr: "127.0.0.1:9090"
 headscale_grpc_addr: "127.0.0.1:50443"
+headscale_grpc_allow_insecure: false
+
+# Trusted reverse proxies — list of CIDRs whose X-Real-IP headers are honoured
+headscale_trusted_proxies:
+  - "127.0.0.1/32"
 
 # Public URL (required — set in inventory)
-# Must match the domain Caddy serves headscale on.
-# Example: "https://hs.neox5.com"
 headscale_domain: ""
 
-# IP address prefixes assigned to mesh nodes
+# IP prefixes assigned to mesh nodes (must stay within standard Tailscale ranges)
 headscale_ip_prefixes_v4: "100.64.0.0/10"
 headscale_ip_prefixes_v6: "fd7a:115c:a1e0::/48"
+headscale_ip_allocation: "sequential"
 
-# Node expiry (0s = disabled — nodes never expire)
-headscale_node_expiry: "0s"
+# Node lifecycle
+headscale_node_expiry: "0"
+headscale_node_ephemeral_inactivity_timeout: "30m"
 
-# DERP configuration
-# Embedded DERP server (relay on this host)
-headscale_derp_embedded: false
+# DERP — embedded server enabled by default (no external Tailscale dependency)
+headscale_derp_embedded: true
 headscale_derp_region_id: 999
 headscale_derp_region_code: "headscale"
 headscale_derp_region_name: "Headscale Embedded DERP"
 headscale_derp_stun_addr: "0.0.0.0:3478"
+headscale_derp_verify_clients: true
+headscale_derp_automatically_add_embedded_region: true
+headscale_derp_embedded_ipv4: ""   # set in host_vars
+headscale_derp_embedded_ipv6: ""
 
-# External DERP map URLs — empty by default (no Tailscale dependency)
-# Add URLs here if using external DERP servers.
+# External DERP — empty (no Tailscale dependency)
 headscale_derp_urls: []
-
-# Local DERP config file paths — empty by default
 headscale_derp_paths: []
-
-# DERP map auto-update — disabled when no URLs configured
 headscale_derp_auto_update: false
 headscale_derp_update_frequency: "24h"
 
 # DNS
-# MagicDNS disabled — internal DNS handled separately
 headscale_dns_magic_dns: false
 headscale_dns_base_domain: ""
-headscale_dns_nameservers: []
+headscale_dns_override_local_dns: false
+headscale_dns_nameservers_global: []
+headscale_dns_nameservers_split: {}
+headscale_dns_search_domains: []
+headscale_dns_extra_records: []
 
-# Logging
-headscale_log_level: "info"
-headscale_log_format: "text"
+# Policy
+headscale_policy_mode: "file"
+headscale_policy_path: ""
 
 # Database (SQLite)
 headscale_db_type: "sqlite"
 headscale_db_path: "{{ headscale_data_dir }}/db.sqlite"
+headscale_db_wal: true
+headscale_db_wal_autocheckpoint: 1000
+
+# TLS (disabled — Caddy handles termination)
+headscale_tls_cert_path: ""
+headscale_tls_key_path: ""
+
+# Logtail — disabled: no logs sent to Tailscale Inc.
+headscale_logtail_enabled: false
+
+# Taildrop — file sharing between nodes
+headscale_taildrop_enabled: true
+
+# Auto-update of headscale client nodes
+headscale_auto_update_enabled: false
+
+# Disable headscale's own update check on startup
+headscale_disable_check_updates: true
+
+# Logging
+headscale_log_level: "info"
+headscale_log_format: "text"

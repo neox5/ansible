@@ -22,6 +22,11 @@ table inet filter {
     tcp dport {{ port }} accept
 {% endfor %}
 
+    # Allow additional UDP ports
+{% for port in security_firewall_allowed_udp_ports %}
+    udp dport {{ port }} accept
+{% endfor %}
+
     # Allow ICMP for connectivity diagnostics
     icmp type { echo-request, destination-unreachable } accept
     icmpv6 type { echo-request, destination-unreachable, packet-too-big } accept

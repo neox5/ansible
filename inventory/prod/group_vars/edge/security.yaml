@@ -6,7 +6,7 @@
 # =============================================================================
 #
 # Edge hosts sit at the internet boundary.
-# Ports opened here: SSH baseline + HTTP/HTTPS for Caddy.
+# Ports opened here: SSH baseline + HTTP/HTTPS for Caddy + STUN for DERP.
 # Additional ports added as services are deployed.
 #
 # Applied to: All hosts in 'edge' group
@@ -15,3 +15,6 @@
 security_firewall_allowed_tcp_ports:
   - 80    # HTTP (Caddy — redirect to HTTPS + ACME challenge)
   - 443   # HTTPS (Caddy — headscale coordination)
+
+security_firewall_allowed_udp_ports:
+  - 3478  # STUN (headscale embedded DERP)

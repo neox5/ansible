@@ -47,6 +47,15 @@
     fail_msg: "headscale_derp_embedded and headscale_derp_urls are mutually exclusive"
   when: headscale_state == 'present'
 
+- name: Assert embedded DERP IPv4 is set when embedded DERP is enabled
+  ansible.builtin.assert:
+    quiet: true
+    that: headscale_derp_embedded_ipv4 | length > 0
+    fail_msg: "headscale_derp_embedded_ipv4 must be set in host_vars when headscale_derp_embedded: true"
+  when:
+    - headscale_state == 'present'
+    - headscale_derp_embedded
+
 - name: Display role information
   ansible.builtin.debug:
     msg: "headscale role - state={{ headscale_state }} version={{ headscale_version }} domain={{ headscale_domain }}"
