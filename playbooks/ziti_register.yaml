@@ -1,0 +1,67 @@
+---
+# OpenZiti Component Registration
+# Registers overlay components with the controller and outputs enrollment tokens.
+#
+# Requirements:
+#   - ziti CLI available on the control node
+#   - Controller reachable at ziti_ctrl_advertised_address:ziti_ctrl_advertised_port
+#   - ziti_admin_password available (from SOPS-encrypted inventory)
+#   - ziti_name mandatory for all tags (-e ziti_name=<name>)
+#
+# Usage:
+#   # Public router (no tunneler):
+#   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
+#     --tags router -e "ziti_name=heimdall"
+#
+#   # Router with tunneler enabled:
+#   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
+#     --tags router-tunneler -e "ziti_name=core"
+#
+# Output: /tmp/{{ ziti_name }}.jwt on the control node
+
+- name: Register OpenZiti components
+  hosts: all
+  gather_facts: false
+  become: false
+  tasks:
+
+    - name: Assert ziti_name is set
+      ansible.builtin.assert:
+        quiet: true
+        that: ziti_name | default('') | length > 0
+        fail_msg: "ziti_name is required: -e ziti_name=<name>"
+      tags: [router, router-tunneler]
+
+    - name: Login to controller
+      ansible.builtin.command:
+        cmd: >
+          ziti edge login
+          https://{{ ziti_ctrl_advertised_address }}:{{ ziti_ctrl_advertised_port }}
+          -u admin
+          -p {{ ziti_admin_password }}
+          -y
+      no_log: true
+      changed_when: true
+      tags: [router, router-tunneler]
+
+    - name: Create edge-router (no tunneler)
+      ansible.builtin.command:
+        cmd: >
+          ziti edge create edge-router {{ ziti_name }}
+          --jwt-output-file /tmp/{{ ziti_name }}.jwt
+      tags: [router]
+
+    - name: Create edge-router (tunneler enabled)
+      ansible.builtin.command:
+        cmd: >
+          ziti edge create edge-router {{ ziti_name }}
+          --tunneler-enabled
+          --jwt-output-file /tmp/{{ ziti_name }}.jwt
+      tags: [router-tunneler]
+
+    - name: Display JWT path
+      ansible.builtin.debug:
+        msg:
+          - "JWT written to /tmp/{{ ziti_name }}.jwt on the control node."
+          - "Proceed with: ansible-playbook -i inventory/prod playbooks/ziti_router.yaml -l {{ ziti_name }}"
+      tags: [router, router-tunneler]

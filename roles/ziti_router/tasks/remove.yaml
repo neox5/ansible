@@ -1,0 +1,43 @@
+---
+# Removal tasks - stop and clean up ziti_router installation
+
+- name: Stop ziti-router service
+  ansible.builtin.systemd:
+    name: ziti-router
+    state: stopped
+  failed_when: false
+
+- name: Disable ziti-router service
+  ansible.builtin.systemd:
+    name: ziti-router
+    enabled: false
+  failed_when: false
+
+- name: Remove openziti-router package
+  ansible.builtin.apt:
+    name: openziti-router
+    state: absent
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Remove OpenZiti APT repository
+  ansible.builtin.apt_repository:
+    repo: "{{ ziti_router_apt_repo }}"
+    state: absent
+    filename: openziti-release
+
+- name: Remove OpenZiti APT keyring
+  ansible.builtin.file:
+    path: "{{ ziti_router_apt_keyring_path }}"
+    state: absent
+
+- name: Remove router config file
+  ansible.builtin.file:
+    path: "{{ ziti_router_config_file }}"
+    state: absent
+
+- name: Remove router base directory
+  ansible.builtin.file:
+    path: "{{ ziti_router_base_dir }}"
+    state: absent
+  when: ziti_router_remove_data | bool

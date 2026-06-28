@@ -1,0 +1,92 @@
+---
+# Preflight checks - validate environment before proceeding
+
+- name: Gather distribution and service manager facts
+  ansible.builtin.setup:
+    gather_subset:
+      - distribution
+      - service_mgr
+
+- name: Assert Debian 13 or later
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - ansible_distribution == "Debian"
+      - ansible_distribution_major_version | int >= 13
+    fail_msg: "This role requires Debian 13 or later"
+
+- name: Assert systemd is the init system
+  ansible.builtin.assert:
+    quiet: true
+    that: ansible_facts['service_mgr'] == 'systemd'
+    fail_msg: "This role requires systemd"
+
+- name: Assert valid state value
+  ansible.builtin.assert:
+    quiet: true
+    that: ziti_router_state in ['present', 'absent']
+    fail_msg: "ziti_router_state must be 'present' or 'absent'"
+
+- name: Assert remove_data only set when state is absent
+  ansible.builtin.assert:
+    quiet: true
+    that: not ziti_router_remove_data or ziti_router_state == 'absent'
+    fail_msg: "ziti_router_remove_data: true requires ziti_router_state: absent"
+
+- name: Assert controller address is configured
+  ansible.builtin.assert:
+    quiet: true
+    that: ziti_ctrl_advertised_address | default('') | length > 0
+    fail_msg: "ziti_ctrl_advertised_address must be set in inventory"
+  when: ziti_router_state == 'present'
+
+- name: Assert router advertised address is configured
+  ansible.builtin.assert:
+    quiet: true
+    that: ziti_router_advertised_address | length > 0
+    fail_msg: "ziti_router_advertised_address must be set in inventory"
+  when: ziti_router_state == 'present'
+
+- name: Assert link listener address configured when link listener enabled
+  ansible.builtin.assert:
+    quiet: true
+    that: ziti_router_link_advertised_address | length > 0
+    fail_msg: "ziti_router_link_advertised_address must be set when ziti_router_link_listener: true"
+  when:
+    - ziti_router_state == 'present'
+    - ziti_router_link_listener | bool
+
+- name: Check if router identity already enrolled
+  ansible.builtin.stat:
+    path: "{{ ziti_router_base_dir }}/{{ ziti_name }}.cert"
+  register: _ziti_router_identity
+  changed_when: false
+  check_mode: false
+
+- name: Assert JWT exists on control node when not yet enrolled
+  ansible.builtin.stat:
+    path: "{{ ziti_jwt_path }}"
+  register: _ziti_jwt
+  delegate_to: localhost
+  become: false
+  changed_when: false
+  check_mode: false
+  when: not _ziti_router_identity.stat.exists
+
+- name: Fail if JWT missing and router not yet enrolled
+  ansible.builtin.fail:
+    msg: >
+      Router identity not found and JWT not present at {{ ziti_jwt_path }} on control node.
+      Run: ansible-playbook ziti_register.yaml --tags router[-tunneler] -e ziti_name={{ ziti_name }}
+  when:
+    - not _ziti_router_identity.stat.exists
+    - not _ziti_jwt.stat.exists
+
+- name: Display role information
+  ansible.builtin.debug:
+    msg: >-
+      ziti_router role - state={{ ziti_router_state }}
+      name={{ ziti_name }}
+      advertise={{ ziti_router_advertised_address }}:{{ ziti_router_advertised_port }}
+      link_listener={{ ziti_router_link_listener }}
+      tunneler={{ ziti_router_tunneler_enabled }}

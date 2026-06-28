@@ -1,0 +1,75 @@
+# {{ ansible_managed }}
+# OpenZiti Router Configuration
+# Reference: https://openziti.io/docs/reference/configuration/router
+
+v: 3
+
+# ---------------------------------------------------------------------------
+# Identity - router mTLS certificates (written at enrollment)
+# ---------------------------------------------------------------------------
+identity:
+  cert:        {{ ziti_router_base_dir }}/{{ ziti_name }}.cert
+  server_cert: {{ ziti_router_base_dir }}/{{ ziti_name }}.server.chain.cert
+  key:         {{ ziti_router_base_dir }}/{{ ziti_name }}.key
+  ca:          {{ ziti_router_base_dir }}/{{ ziti_name }}.cas
+
+# ---------------------------------------------------------------------------
+# Control plane
+# ---------------------------------------------------------------------------
+ctrl:
+  endpoint: tls:{{ ziti_ctrl_advertised_address }}:{{ ziti_ctrl_advertised_port }}
+
+# ---------------------------------------------------------------------------
+# Fabric mesh links
+# ---------------------------------------------------------------------------
+link:
+  dialers:
+    - binding: transport
+{% if ziti_router_link_listener | bool %}
+  listeners:
+    - binding: transport
+      bind: tls:0.0.0.0:{{ ziti_router_link_advertised_port }}
+      advertise: tls:{{ ziti_router_link_advertised_address }}:{{ ziti_router_link_advertised_port }}
+{% endif %}
+
+# ---------------------------------------------------------------------------
+# Dialers
+# ---------------------------------------------------------------------------
+dialers:
+  - binding: transport
+  - binding: udp
+
+# ---------------------------------------------------------------------------
+# Edge - CSR for enrollment and cert renewal
+# ---------------------------------------------------------------------------
+edge:
+  csr:
+    sans:
+      dns:
+        - localhost
+        - {{ ziti_router_advertised_address }}
+      ip:
+        - "127.0.0.1"
+
+# ---------------------------------------------------------------------------
+# Listeners - edge SDK clients
+# ---------------------------------------------------------------------------
+listeners:
+  - binding: edge
+    address: tls:0.0.0.0:{{ ziti_router_advertised_port }}
+    options:
+      advertise: {{ ziti_router_advertised_address }}:{{ ziti_router_advertised_port }}
+{% if ziti_router_tunneler_enabled | bool %}
+  - binding: tunnel
+    options:
+      mode: {{ ziti_router_tunneler_mode }}
+{% endif %}
+
+# ---------------------------------------------------------------------------
+# Health checks
+# ---------------------------------------------------------------------------
+healthChecks:
+  ctrlPingCheck:
+    interval: 30s
+    timeout: 15s
+    initialDelay: 15s

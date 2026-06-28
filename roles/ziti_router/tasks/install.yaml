@@ -1,0 +1,51 @@
+---
+# Installation tasks - APT repo and package
+
+- name: Install APT prerequisites
+  ansible.builtin.apt:
+    name:
+      - curl
+      - gnupg
+    state: present
+    update_cache: true
+
+- name: Download OpenZiti APT keyring
+  ansible.builtin.get_url:
+    url: "{{ ziti_router_apt_key_url }}"
+    dest: "/tmp/openziti.gpg"
+    mode: "0644"
+
+- name: Dearmor and install OpenZiti APT keyring
+  ansible.builtin.shell:
+    cmd: >
+      gpg --dearmor < /tmp/openziti.gpg > {{ ziti_router_apt_keyring_path }}
+    creates: "{{ ziti_router_apt_keyring_path }}"
+
+- name: Ensure APT keyring is readable by all users
+  ansible.builtin.file:
+    path: "{{ ziti_router_apt_keyring_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Add OpenZiti APT repository
+  ansible.builtin.apt_repository:
+    repo: "{{ ziti_router_apt_repo }}"
+    state: present
+    filename: openziti-release
+
+- name: Install openziti-router package
+  ansible.builtin.apt:
+    name: openziti-router
+    state: present
+    update_cache: true
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Disable package bootstrap script
+  ansible.builtin.lineinfile:
+    path: "{{ ziti_router_service_env }}"
+    regexp: '^(#\s*)?ZITI_BOOTSTRAP='
+    line: "ZITI_BOOTSTRAP=false"
+    state: present
+    create: false

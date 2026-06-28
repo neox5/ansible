@@ -1,0 +1,20 @@
+---
+# Verification tasks - confirm router is healthy
+
+- name: Wait for router to connect to controller
+  ansible.builtin.command:
+    cmd: systemctl is-active ziti-router
+  register: _ziti_router_active
+  retries: 12
+  delay: 5
+  until: _ziti_router_active.rc == 0
+  changed_when: false
+
+- name: Display deployment summary
+  ansible.builtin.debug:
+    msg:
+      - "ziti_router deployment complete"
+      - "Name: {{ ziti_name }}"
+      - "Advertise: {{ ziti_router_advertised_address }}:{{ ziti_router_advertised_port }}"
+      - "Link listener: {{ ziti_router_link_listener }}"
+      - "Tunneler: {{ ziti_router_tunneler_enabled }} (mode: {{ ziti_router_tunneler_mode }})"

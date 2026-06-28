@@ -1,0 +1,12 @@
+---
+# OpenZiti Router Deployment
+# Usage:
+#   ansible-playbook -i inventory/lab playbooks/ziti_router.yaml
+#   ansible-playbook -i inventory/prod playbooks/ziti_router.yaml -l heimdall
+#   ansible-playbook -i inventory/prod playbooks/ziti_router.yaml -l core
+
+- name: Deploy OpenZiti Router
+  hosts: all
+  become: true
+  roles:
+    - ziti_router

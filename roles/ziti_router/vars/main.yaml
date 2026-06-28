@@ -1,0 +1,8 @@
+---
+# ziti_router Role - Immutable Variables
+
+ziti_router_apt_keyring_path: "/usr/share/keyrings/openziti.gpg"
+ziti_router_apt_key_url: "https://get.openziti.io/tun/package-repos.gpg"
+ziti_router_apt_repo: "deb [signed-by=/usr/share/keyrings/openziti.gpg] https://packages.openziti.org/zitipax-openziti-deb-stable debian main"
+
+ziti_router_health_url: "https://localhost:{{ ziti_router_advertised_port }}/health-checks"

@@ -1,0 +1,9 @@
+---
+# Start tasks - enable and start the router service
+
+- name: Enable and start ziti-router service
+  ansible.builtin.systemd:
+    name: ziti-router
+    state: "{{ ziti_router_service_state }}"
+    enabled: "{{ ziti_router_service_enabled }}"
+    daemon_reload: true
