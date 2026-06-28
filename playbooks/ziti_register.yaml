@@ -17,6 +17,10 @@
 #   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
 #     --tags router-tunneler -e "ziti_name=core"
 #
+#   # Standalone tunneler identity:
+#   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
+#     --tags tunneler -e "ziti_name=<name>"
+#
 # Output: /tmp/{{ ziti_name }}.jwt on the control node
 
 - name: Register OpenZiti components
@@ -30,7 +34,7 @@
         quiet: true
         that: ziti_name | default('') | length > 0
         fail_msg: "ziti_name is required: -e ziti_name=<name>"
-      tags: [router, router-tunneler]
+      tags: [router, router-tunneler, tunneler]
 
     - name: Login to controller
       ansible.builtin.command:
@@ -42,7 +46,7 @@
           -y
       no_log: true
       changed_when: true
-      tags: [router, router-tunneler]
+      tags: [router, router-tunneler, tunneler]
 
     - name: Create edge-router (no tunneler)
       ansible.builtin.command:
@@ -58,6 +62,20 @@
           --tunneler-enabled
           --jwt-output-file /tmp/{{ ziti_name }}.jwt
       tags: [router-tunneler]
+
+    - name: Create tunneler identity
+      ansible.builtin.command:
+        cmd: >
+          ziti edge create identity {{ ziti_name }}
+          --jwt-output-file /tmp/{{ ziti_name }}.jwt
+      tags: [tunneler]
+
+    - name: Display JWT path
+      ansible.builtin.debug:
+        msg:
+          - "JWT written to /tmp/{{ ziti_name }}.jwt on the control node."
+          - "Proceed with: ansible-playbook -i inventory/prod playbooks/ziti_tunneler.yaml -l {{ ziti_name }}"
+      tags: [tunneler]
 
     - name: Display JWT path
       ansible.builtin.debug:

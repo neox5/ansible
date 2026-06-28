@@ -1,0 +1,19 @@
+---
+# Configuration tasks - systemd drop-in to set identity-dir
+
+- name: Ensure systemd override directory exists
+  ansible.builtin.file:
+    path: "{{ ziti_tunneler_override_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy systemd override to configure identity-dir
+  ansible.builtin.template:
+    src: override.conf.j2
+    dest: "{{ ziti_tunneler_override_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart ziti-edge-tunnel

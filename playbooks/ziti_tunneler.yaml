@@ -1,0 +1,11 @@
+---
+# OpenZiti Tunneler Deployment
+# Usage:
+#   ansible-playbook -i inventory/lab playbooks/ziti_tunneler.yaml
+#   ansible-playbook -i inventory/prod playbooks/ziti_tunneler.yaml -l <host>
+
+- name: Deploy OpenZiti Tunneler
+  hosts: all
+  become: true
+  roles:
+    - ziti_tunneler

@@ -1,0 +1,6 @@
+---
+# ziti_tunneler Role - Immutable Variables
+
+ziti_tunneler_apt_keyring_path: "/usr/share/keyrings/openziti.gpg"
+ziti_tunneler_apt_key_url: "https://get.openziti.io/tun/package-repos.gpg"
+ziti_tunneler_apt_repo: "deb [signed-by=/usr/share/keyrings/openziti.gpg] https://packages.openziti.org/zitipax-openziti-deb-stable jammy main"

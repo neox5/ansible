@@ -1,0 +1,26 @@
+---
+# ziti_tunneler Role - Configuration Defaults
+
+# Lifecycle
+ziti_tunneler_state: present
+ziti_tunneler_remove_data: false
+
+# Identity name — defaults to inventory hostname
+ziti_name: "{{ inventory_hostname }}"
+
+# JWT enrollment token path on control node (produced by ziti_register.yaml)
+ziti_jwt_path: "/tmp/{{ ziti_name }}.jwt"
+
+# Controller endpoint — reuse overlay-wide vars set in inventory
+# ziti_ctrl_advertised_address: ""   # mandatory — set in inventory
+# ziti_ctrl_advertised_port: 1280    # set in ziti_controller defaults
+
+# Filesystem paths
+ziti_tunneler_identity_dir: "/opt/openziti/etc/identities"
+ziti_tunneler_identity_file: "{{ ziti_tunneler_identity_dir }}/{{ ziti_name }}.json"
+ziti_tunneler_override_dir: "/etc/systemd/system/ziti-edge-tunnel.service.d"
+ziti_tunneler_override_file: "{{ ziti_tunneler_override_dir }}/override.conf"
+
+# Service state
+ziti_tunneler_service_state: started
+ziti_tunneler_service_enabled: true

@@ -1,0 +1,41 @@
+---
+# Enrollment tasks - enroll tunneler identity with controller (one-time)
+# Gated on identity file existence - safe to re-run
+
+- name: Check if tunneler identity already enrolled
+  ansible.builtin.stat:
+    path: "{{ ziti_tunneler_identity_file }}"
+  register: _ziti_tunneler_identity
+  changed_when: false
+  check_mode: false
+
+- name: Copy JWT to target host
+  ansible.builtin.copy:
+    src: "{{ ziti_jwt_path }}"
+    dest: "/tmp/{{ ziti_name }}.jwt"
+    owner: root
+    group: root
+    mode: "0600"
+  when: not _ziti_tunneler_identity.stat.exists
+
+- name: Enroll tunneler identity with controller
+  ansible.builtin.command:
+    cmd: >
+      ziti-edge-tunnel enroll
+      --jwt /tmp/{{ ziti_name }}.jwt
+      --identity {{ ziti_tunneler_identity_file }}
+  when: not _ziti_tunneler_identity.stat.exists
+
+- name: Set identity file permissions
+  ansible.builtin.file:
+    path: "{{ ziti_tunneler_identity_file }}"
+    owner: root
+    group: ziti
+    mode: "0640"
+  when: not _ziti_tunneler_identity.stat.exists
+
+- name: Remove JWT from target host
+  ansible.builtin.file:
+    path: "/tmp/{{ ziti_name }}.jwt"
+    state: absent
+  when: not _ziti_tunneler_identity.stat.exists

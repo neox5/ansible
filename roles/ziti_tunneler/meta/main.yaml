@@ -1,0 +1,20 @@
+---
+galaxy_info:
+  role_name: ziti_tunneler
+  author: neox5
+  description: OpenZiti ziti-edge-tunnel (host-mode) via APT package for Debian 13 Trixie
+  license: MIT
+  min_ansible_version: "2.15"
+
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+
+  galaxy_tags:
+    - openziti
+    - overlay
+    - zerotrust
+    - networking
+
+dependencies: []

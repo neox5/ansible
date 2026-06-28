@@ -1,0 +1,19 @@
+---
+# Verification tasks - confirm tunneler is healthy
+
+- name: Wait for tunneler service to become active
+  ansible.builtin.command:
+    cmd: systemctl is-active ziti-edge-tunnel
+  register: _ziti_tunneler_active
+  retries: 12
+  delay: 5
+  until: _ziti_tunneler_active.rc == 0
+  changed_when: false
+
+- name: Display deployment summary
+  ansible.builtin.debug:
+    msg:
+      - "ziti_tunneler deployment complete"
+      - "Name: {{ ziti_name }}"
+      - "Identity: {{ ziti_tunneler_identity_file }}"
+      - "Identity dir: {{ ziti_tunneler_identity_dir }}"

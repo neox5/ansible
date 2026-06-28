@@ -1,0 +1,9 @@
+---
+# Start tasks - enable and start the tunneler service
+
+- name: Enable and start ziti-edge-tunnel service
+  ansible.builtin.systemd:
+    name: ziti-edge-tunnel
+    state: "{{ ziti_tunneler_service_state }}"
+    enabled: "{{ ziti_tunneler_service_enabled }}"
+    daemon_reload: true

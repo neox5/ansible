@@ -1,0 +1,48 @@
+---
+# Removal tasks - stop and clean up ziti_tunneler installation
+
+- name: Stop ziti-edge-tunnel service
+  ansible.builtin.systemd:
+    name: ziti-edge-tunnel
+    state: stopped
+  failed_when: false
+
+- name: Disable ziti-edge-tunnel service
+  ansible.builtin.systemd:
+    name: ziti-edge-tunnel
+    enabled: false
+  failed_when: false
+
+- name: Remove systemd override file
+  ansible.builtin.file:
+    path: "{{ ziti_tunneler_override_file }}"
+    state: absent
+
+- name: Remove systemd override directory
+  ansible.builtin.file:
+    path: "{{ ziti_tunneler_override_dir }}"
+    state: absent
+
+- name: Remove ziti-edge-tunnel package
+  ansible.builtin.apt:
+    name: ziti-edge-tunnel
+    state: absent
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Remove OpenZiti APT repository
+  ansible.builtin.apt_repository:
+    repo: "{{ ziti_tunneler_apt_repo }}"
+    state: absent
+    filename: openziti-release
+
+- name: Remove OpenZiti APT keyring
+  ansible.builtin.file:
+    path: "{{ ziti_tunneler_apt_keyring_path }}"
+    state: absent
+
+- name: Remove tunneler identity directory
+  ansible.builtin.file:
+    path: "{{ ziti_tunneler_identity_dir }}"
+    state: absent
+  when: ziti_tunneler_remove_data | bool

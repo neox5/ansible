@@ -1,0 +1,51 @@
+---
+# Installation tasks - APT repo and package
+
+- name: Install APT prerequisites
+  ansible.builtin.apt:
+    name:
+      - curl
+      - gnupg
+    state: present
+    update_cache: true
+
+- name: Download OpenZiti APT keyring
+  ansible.builtin.get_url:
+    url: "{{ ziti_tunneler_apt_key_url }}"
+    dest: "/tmp/openziti.gpg"
+    mode: "0644"
+
+- name: Dearmor and install OpenZiti APT keyring
+  ansible.builtin.shell:
+    cmd: >
+      gpg --dearmor < /tmp/openziti.gpg > {{ ziti_tunneler_apt_keyring_path }}
+    creates: "{{ ziti_tunneler_apt_keyring_path }}"
+
+- name: Ensure APT keyring is readable by all users
+  ansible.builtin.file:
+    path: "{{ ziti_tunneler_apt_keyring_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Add OpenZiti APT repository
+  ansible.builtin.apt_repository:
+    repo: "{{ ziti_tunneler_apt_repo }}"
+    state: present
+    filename: openziti-release
+
+- name: Install ziti-edge-tunnel package
+  ansible.builtin.apt:
+    name: ziti-edge-tunnel
+    state: present
+    update_cache: true
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Ensure identities directory exists with correct permissions
+  ansible.builtin.file:
+    path: "{{ ziti_tunneler_identity_dir }}"
+    state: directory
+    owner: root
+    group: ziti
+    mode: "0770"

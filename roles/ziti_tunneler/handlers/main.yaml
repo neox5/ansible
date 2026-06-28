@@ -1,0 +1,8 @@
+---
+# ziti_tunneler role handlers
+
+- name: restart ziti-edge-tunnel
+  ansible.builtin.systemd:
+    name: ziti-edge-tunnel
+    state: restarted
+    daemon_reload: true

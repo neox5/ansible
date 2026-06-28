@@ -1,0 +1,30 @@
+---
+# ziti_tunneler role - Main task orchestration
+# Debian 13 Trixie only
+
+- name: Include preflight checks
+  ansible.builtin.import_tasks: preflight.yaml
+
+- name: Include installation tasks
+  ansible.builtin.import_tasks: install.yaml
+  when: ziti_tunneler_state == 'present'
+
+- name: Include enrollment tasks
+  ansible.builtin.import_tasks: enroll.yaml
+  when: ziti_tunneler_state == 'present'
+
+- name: Include configuration tasks
+  ansible.builtin.import_tasks: configure.yaml
+  when: ziti_tunneler_state == 'present'
+
+- name: Include start tasks
+  ansible.builtin.import_tasks: start.yaml
+  when: ziti_tunneler_state == 'present'
+
+- name: Include verification tasks
+  ansible.builtin.import_tasks: verify.yaml
+  when: ziti_tunneler_state == 'present'
+
+- name: Include removal tasks
+  ansible.builtin.import_tasks: remove.yaml
+  when: ziti_tunneler_state == 'absent'
