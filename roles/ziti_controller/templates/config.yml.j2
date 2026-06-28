@@ -1,0 +1,68 @@
+# {{ ansible_managed }}
+# OpenZiti Controller Configuration
+# Reference: https://openziti.io/docs/reference/configuration/controller
+
+v: 3
+
+# ---------------------------------------------------------------------------
+# Identity - controller mTLS certificates
+# ---------------------------------------------------------------------------
+identity:
+  cert:        {{ ziti_controller_pki_dir }}/signing/certs/controller-client.chain.pem
+  server_cert: {{ ziti_controller_pki_dir }}/signing/certs/controller-server.chain.pem
+  key:         {{ ziti_controller_pki_dir }}/signing/keys/controller-client.key
+  server_key:  {{ ziti_controller_pki_dir }}/signing/keys/controller-server.key
+  ca:          {{ ziti_controller_pki_dir }}/root/certs/root.cert
+
+# ---------------------------------------------------------------------------
+# Control plane
+# ---------------------------------------------------------------------------
+ctrl:
+  listener: tls:0.0.0.0:{{ ziti_ctrl_advertised_port }}
+  options:
+    advertiseAddress: tls:{{ ziti_ctrl_advertised_address }}:{{ ziti_ctrl_advertised_port }}
+
+# ---------------------------------------------------------------------------
+# Cluster (single-node — required by OpenZiti v2.0+)
+# ---------------------------------------------------------------------------
+cluster:
+  dataDir: {{ ziti_controller_db_dir }}
+
+# ---------------------------------------------------------------------------
+# Edge
+# ---------------------------------------------------------------------------
+edge:
+  api:
+    activityUpdateInterval: 90s
+    sessionTimeout:         30m
+  enrollment:
+    signingCert:
+      cert: {{ ziti_controller_pki_dir }}/signing/certs/signing.cert
+      key:  {{ ziti_controller_pki_dir }}/signing/keys/signing.key
+    edgeIdentity:
+      duration: 5m
+    edgeRouter:
+      duration: 5m
+
+# ---------------------------------------------------------------------------
+# Web - REST API and health check listeners
+# ---------------------------------------------------------------------------
+web:
+  - name: all-apis
+    bindPoints:
+      - interface: 0.0.0.0:{{ ziti_ctrl_advertised_port }}
+        address: {{ ziti_ctrl_advertised_address }}:{{ ziti_ctrl_advertised_port }}
+    options:
+      minTLSVersion: TLS1.2
+      maxTLSVersion: TLS1.3
+    identity:
+      cert:        {{ ziti_controller_pki_dir }}/signing/certs/controller-server.chain.pem
+      server_cert: {{ ziti_controller_pki_dir }}/signing/certs/controller-server.chain.pem
+      key:         {{ ziti_controller_pki_dir }}/signing/keys/controller-server.key
+      ca:          {{ ziti_controller_pki_dir }}/root/certs/root.cert
+    apis:
+      - binding: health-checks
+      - binding: fabric
+      - binding: edge-management
+      - binding: edge-client
+      - binding: edge-oidc

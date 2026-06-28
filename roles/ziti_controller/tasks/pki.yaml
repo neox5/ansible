@@ -1,0 +1,136 @@
+---
+# PKI tasks - generate ECC PKI for the overlay network
+# All ziti pki create calls use --curve {{ ziti_curve }} (default P-256)
+# Gated on file existence - safe to re-run
+
+- name: Ensure PKI root directory exists
+  ansible.builtin.file:
+    path: "{{ ziti_controller_pki_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+# ---------------------------------------------------------------------------
+# Root CA (one-time — key removed from host after bootstrap)
+# ---------------------------------------------------------------------------
+
+- name: Check if root CA certificate exists
+  ansible.builtin.stat:
+    path: "{{ ziti_controller_pki_dir }}/root/certs/root.cert"
+  register: _ziti_root_cert
+  changed_when: false
+  check_mode: false
+
+- name: Generate root CA
+  ansible.builtin.command:
+    cmd: >
+      ziti pki create ca
+      --pki-root {{ ziti_controller_pki_dir }}
+      --ca-file root
+      --ca-name "{{ ziti_trust_domain }} Root CA"
+      --curve {{ ziti_curve }}
+      --max-path-len 1
+  when: not _ziti_root_cert.stat.exists
+
+# ---------------------------------------------------------------------------
+# Signing CA / edge enrollment signer (intermediate, stays on host)
+# ---------------------------------------------------------------------------
+
+- name: Check if signing CA certificate exists
+  ansible.builtin.stat:
+    path: "{{ ziti_controller_pki_dir }}/signing/certs/signing.cert"
+  register: _ziti_signing_cert
+  changed_when: false
+  check_mode: false
+
+- name: Generate signing CA (intermediate)
+  ansible.builtin.command:
+    cmd: >
+      ziti pki create intermediate
+      --pki-root {{ ziti_controller_pki_dir }}
+      --ca-name root
+      --intermediate-file signing
+      --intermediate-name "{{ ziti_trust_domain }} Signing CA"
+      --curve {{ ziti_curve }}
+      --max-path-len 0
+  when: not _ziti_signing_cert.stat.exists or ziti_renew_signing_ca | bool
+
+# ---------------------------------------------------------------------------
+# Controller leaf certs (server + client)
+# ---------------------------------------------------------------------------
+
+- name: Check if controller server cert exists
+  ansible.builtin.stat:
+    path: "{{ ziti_controller_pki_dir }}/signing/certs/controller-server.chain.pem"
+  register: _ziti_server_cert
+  changed_when: false
+  check_mode: false
+
+- name: Generate controller server cert
+  ansible.builtin.command:
+    cmd: >
+      ziti pki create server
+      --pki-root {{ ziti_controller_pki_dir }}
+      --ca-name signing
+      --server-file controller-server
+      --server-name "{{ ziti_ctrl_advertised_address }} Server"
+      --dns "localhost,{{ ziti_ctrl_advertised_address }}"
+      --ip "127.0.0.1,::1"
+      --spiffe-id "controller/{{ ziti_trust_domain }}"
+      --curve {{ ziti_curve }}
+  when: not _ziti_server_cert.stat.exists
+
+- name: Check if controller client cert exists
+  ansible.builtin.stat:
+    path: "{{ ziti_controller_pki_dir }}/signing/certs/controller-client.chain.pem"
+  register: _ziti_client_cert
+  changed_when: false
+  check_mode: false
+
+- name: Generate controller client cert
+  ansible.builtin.command:
+    cmd: >
+      ziti pki create client
+      --pki-root {{ ziti_controller_pki_dir }}
+      --ca-name signing
+      --client-file controller-client
+      --client-name "{{ ziti_ctrl_advertised_address }} Client"
+      --spiffe-id "controller/{{ ziti_trust_domain }}"
+      --curve {{ ziti_curve }}
+  when: not _ziti_client_cert.stat.exists
+
+# ---------------------------------------------------------------------------
+# Root CA key handling - fetch to control node, remove from host
+# ---------------------------------------------------------------------------
+
+- name: Check if root CA private key still exists on host
+  ansible.builtin.stat:
+    path: "{{ ziti_controller_pki_dir }}/root/keys/root.key"
+  register: _ziti_root_key_on_host
+  changed_when: false
+  check_mode: false
+
+- name: Fetch root CA private key to control node
+  ansible.builtin.fetch:
+    src: "{{ ziti_controller_pki_dir }}/root/keys/root.key"
+    dest: "{{ ziti_root_ca_fetch_path }}"
+    flat: true
+  when: _ziti_root_key_on_host.stat.exists
+
+- name: Remove root CA private key from controller host
+  ansible.builtin.file:
+    path: "{{ ziti_controller_pki_dir }}/root/keys/root.key"
+    state: absent
+  when: _ziti_root_key_on_host.stat.exists
+
+- name: Notify operator to secure root CA private key
+  ansible.builtin.debug:
+    msg:
+      - "IMPORTANT: Root CA private key has been fetched to the control node:"
+      - "  {{ ziti_root_ca_fetch_path }}"
+      - ""
+      - "This key has been removed from the controller host."
+      - "Encrypt and store it offline immediately (e.g. SOPS + age)."
+      - "It is required only to reissue the signing CA or add a cluster node."
+  when: _ziti_root_key_on_host.stat.exists

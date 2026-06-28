@@ -1,0 +1,19 @@
+---
+# Configuration tasks - render config.yml from template
+
+- name: Ensure database directory exists
+  ansible.builtin.file:
+    path: "{{ ziti_controller_db_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Deploy controller config.yml
+  ansible.builtin.template:
+    src: config.yml.j2
+    dest: "{{ ziti_controller_config_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+  notify: restart ziti-controller

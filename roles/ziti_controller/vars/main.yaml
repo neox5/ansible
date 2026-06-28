@@ -1,0 +1,8 @@
+---
+# ziti_controller Role - Immutable Variables
+
+ziti_controller_apt_keyring_path: "/usr/share/keyrings/openziti.gpg"
+ziti_controller_apt_key_url: "https://get.openziti.io/tun/package-repos.gpg"
+ziti_controller_apt_repo: "deb [signed-by=/usr/share/keyrings/openziti.gpg] https://packages.openziti.org/zitipax-openziti-deb-stable debian main"
+
+ziti_controller_health_url: "https://localhost:{{ ziti_controller_port }}/health-checks"

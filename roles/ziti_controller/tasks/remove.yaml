@@ -1,0 +1,49 @@
+---
+# Removal tasks - stop and clean up ziti_controller installation
+
+- name: Stop ziti-controller service
+  ansible.builtin.systemd:
+    name: ziti-controller
+    state: stopped
+  failed_when: false
+
+- name: Disable ziti-controller service
+  ansible.builtin.systemd:
+    name: ziti-controller
+    enabled: false
+  failed_when: false
+
+- name: Remove openziti-controller package
+  ansible.builtin.apt:
+    name: openziti-controller
+    state: absent
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Remove OpenZiti APT repository
+  ansible.builtin.apt_repository:
+    repo: "{{ ziti_controller_apt_repo }}"
+    state: absent
+    filename: openziti-release
+
+- name: Remove OpenZiti APT keyring
+  ansible.builtin.file:
+    path: "{{ ziti_controller_apt_keyring_path }}"
+    state: absent
+
+- name: Remove controller config file
+  ansible.builtin.file:
+    path: "{{ ziti_controller_config_file }}"
+    state: absent
+
+- name: Remove controller PKI directory
+  ansible.builtin.file:
+    path: "{{ ziti_controller_pki_dir }}"
+    state: absent
+  when: ziti_controller_remove_data | bool
+
+- name: Remove controller database directory
+  ansible.builtin.file:
+    path: "{{ ziti_controller_db_dir }}"
+    state: absent
+  when: ziti_controller_remove_data | bool

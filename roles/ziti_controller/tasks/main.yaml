@@ -1,0 +1,34 @@
+---
+# ziti_controller role - Main task orchestration
+# Debian 13 Trixie only
+
+- name: Include preflight checks
+  ansible.builtin.import_tasks: preflight.yaml
+
+- name: Include installation tasks
+  ansible.builtin.import_tasks: install.yaml
+  when: ziti_controller_state == 'present'
+
+- name: Include PKI tasks
+  ansible.builtin.import_tasks: pki.yaml
+  when: ziti_controller_state == 'present'
+
+- name: Include configuration tasks
+  ansible.builtin.import_tasks: configure.yaml
+  when: ziti_controller_state == 'present'
+
+- name: Include database init tasks
+  ansible.builtin.import_tasks: init.yaml
+  when: ziti_controller_state == 'present'
+
+- name: Include start tasks
+  ansible.builtin.import_tasks: start.yaml
+  when: ziti_controller_state == 'present'
+
+- name: Include verification tasks
+  ansible.builtin.import_tasks: verify.yaml
+  when: ziti_controller_state == 'present'
+
+- name: Include removal tasks
+  ansible.builtin.import_tasks: remove.yaml
+  when: ziti_controller_state == 'absent'

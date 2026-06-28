@@ -1,0 +1,66 @@
+---
+# Preflight checks - validate environment before proceeding
+
+- name: Gather distribution and service manager facts
+  ansible.builtin.setup:
+    gather_subset:
+      - distribution
+      - service_mgr
+
+- name: Assert Debian 13 or later
+  ansible.builtin.assert:
+    quiet: true
+    that:
+      - ansible_distribution == "Debian"
+      - ansible_distribution_major_version | int >= 13
+    fail_msg: "This role requires Debian 13 or later"
+
+- name: Assert systemd is the init system
+  ansible.builtin.assert:
+    quiet: true
+    that: ansible_facts['service_mgr'] == 'systemd'
+    fail_msg: "This role requires systemd"
+
+- name: Assert valid state value
+  ansible.builtin.assert:
+    quiet: true
+    that: ziti_controller_state in ['present', 'absent']
+    fail_msg: "ziti_controller_state must be 'present' or 'absent'"
+
+- name: Assert remove_data only set when state is absent
+  ansible.builtin.assert:
+    quiet: true
+    that: not ziti_controller_remove_data or ziti_controller_state == 'absent'
+    fail_msg: "ziti_controller_remove_data: true requires ziti_controller_state: absent"
+
+- name: Assert advertised address is configured
+  ansible.builtin.assert:
+    quiet: true
+    that: ziti_ctrl_advertised_address | length > 0
+    fail_msg: >
+      ziti_ctrl_advertised_address must be set in inventory.
+      This value is permanent — it is embedded in all PKI SANs and cannot be changed
+      after first deployment without regenerating the entire PKI.
+  when: ziti_controller_state == 'present'
+
+- name: Assert trust domain is configured
+  ansible.builtin.assert:
+    quiet: true
+    that: ziti_trust_domain | length > 0
+    fail_msg: "ziti_trust_domain must be set in inventory (e.g. 'zion.local')"
+  when: ziti_controller_state == 'present'
+
+- name: Assert admin password is configured
+  ansible.builtin.assert:
+    quiet: true
+    that: ziti_admin_password | length > 0
+    fail_msg: "ziti_admin_password must be set in inventory (SOPS encrypted)"
+  when: ziti_controller_state == 'present'
+  no_log: true
+
+- name: Display role information
+  ansible.builtin.debug:
+    msg: >-
+      ziti_controller role - state={{ ziti_controller_state }}
+      address={{ ziti_ctrl_advertised_address }}:{{ ziti_ctrl_advertised_port }}
+      trust_domain={{ ziti_trust_domain }}

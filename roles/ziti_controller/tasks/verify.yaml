@@ -1,0 +1,22 @@
+---
+# Verification tasks - confirm controller is healthy
+
+- name: Wait for controller health endpoint
+  ansible.builtin.uri:
+    url: "{{ ziti_controller_health_url }}"
+    validate_certs: false
+    status_code: 200
+    timeout: 5
+  register: _ziti_health
+  retries: 12
+  delay: 5
+  until: _ziti_health.status == 200
+
+- name: Display deployment summary
+  ansible.builtin.debug:
+    msg:
+      - "ziti_controller deployment complete"
+      - "Address: {{ ziti_ctrl_advertised_address }}:{{ ziti_ctrl_advertised_port }}"
+      - "Trust domain: {{ ziti_trust_domain }}"
+      - "PKI curve: {{ ziti_curve }}"
+      - "Health: passing"

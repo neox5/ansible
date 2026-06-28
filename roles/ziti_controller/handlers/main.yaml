@@ -1,0 +1,7 @@
+---
+# ziti_controller role handlers
+
+- name: restart ziti-controller
+  ansible.builtin.systemd:
+    name: ziti-controller
+    state: restarted

@@ -1,0 +1,11 @@
+---
+# OpenZiti Controller Deployment
+# Usage:
+#   ansible-playbook -i inventory/lab playbooks/ziti_controller.yaml
+#   ansible-playbook -i inventory/prod playbooks/ziti_controller.yaml
+
+- name: Deploy OpenZiti Controller
+  hosts: all
+  become: true
+  roles:
+    - ziti_controller

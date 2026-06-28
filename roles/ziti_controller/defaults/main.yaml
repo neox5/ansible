@@ -1,0 +1,38 @@
+---
+# ziti_controller Role - Configuration Defaults
+
+# Lifecycle
+ziti_controller_state: present
+ziti_controller_remove_data: false
+
+# Network identity (mandatory — permanent after first run)
+ziti_ctrl_advertised_address: ""
+ziti_ctrl_advertised_port: 1280
+ziti_trust_domain: ""
+
+# PKI
+ziti_curve: "P-256"
+ziti_root_ca_validity_days: 3650
+ziti_signing_ca_validity_days: 3650
+ziti_leaf_validity_days: 365
+ziti_root_ca_fetch_path: "/tmp/ziti-root-ca.key"
+
+# PKI renewal
+ziti_renew_signing_ca: false
+
+# Credentials (mandatory — set via SOPS-encrypted inventory vars)
+ziti_admin_password: ""
+
+# Filesystem paths
+ziti_controller_base_dir: "/var/lib/ziti-controller"
+ziti_controller_pki_dir: "{{ ziti_controller_base_dir }}/pki"
+ziti_controller_db_dir: "{{ ziti_controller_base_dir }}/db"
+ziti_controller_config_file: "{{ ziti_controller_base_dir }}/config.yml"
+ziti_controller_service_env: "/opt/openziti/etc/controller/service.env"
+
+# Controller listen port (used for CLI login; matches ziti_ctrl_advertised_port)
+ziti_controller_port: "{{ ziti_ctrl_advertised_port }}"
+
+# Service state
+ziti_controller_service_state: started
+ziti_controller_service_enabled: true

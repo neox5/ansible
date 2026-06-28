@@ -1,0 +1,9 @@
+---
+# Start tasks - enable and start the controller service
+
+- name: Enable and start ziti-controller service
+  ansible.builtin.systemd:
+    name: ziti-controller
+    state: "{{ ziti_controller_service_state }}"
+    enabled: "{{ ziti_controller_service_enabled }}"
+    daemon_reload: true

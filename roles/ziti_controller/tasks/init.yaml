@@ -1,0 +1,20 @@
+---
+# Database init tasks - initialise bbolt database (one-time)
+# Gated on ctrl.db existence - safe to re-run
+
+- name: Check if database already exists
+  ansible.builtin.stat:
+    path: "{{ ziti_controller_db_dir }}/ctrl.db"
+  register: _ziti_ctrl_db
+  changed_when: false
+  check_mode: false
+
+- name: Initialise controller database
+  ansible.builtin.command:
+    cmd: >
+      ziti controller edge init
+      {{ ziti_controller_config_file }}
+      -u admin
+      -p {{ ziti_admin_password }}
+  when: not _ziti_ctrl_db.stat.exists
+  no_log: true
