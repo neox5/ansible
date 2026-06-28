@@ -60,6 +60,18 @@ for SOURCE_NAME in "${SOURCES[@]}"; do
       log_start "Backup: {{ source_name }} → ${REPO}"
 
       BACKUP_EXIT=0
+{% if source.pre_command is defined %}
+      PRE_EXIT=0
+      {{ source.pre_command }} \
+        2>&1 | tee -a "$BACKUP_LOG" || PRE_EXIT=$?
+      if ! log_result $PRE_EXIT "pre_command: {{ source_name }}" "$BACKUP_LOG"; then
+        OVERALL_EXIT=1
+        log_end "Backup: {{ source_name }} → ${REPO}"
+        echo ""
+        continue
+      fi
+
+{% endif %}
 {% if source.stdin | default(false) %}
       {{ source.stdin_command }} | \
         restic_run "$REPO" backup \
