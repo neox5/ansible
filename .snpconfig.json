@@ -1,0 +1,22 @@
+{
+  "generated": "2026-06-29T01:37:19.319744248+02:00",
+  "source_dir": ".",
+  "depth": -1,
+  "filter_flags": [
+    {
+      "type": "exclude",
+      "value": "docs"
+    }
+  ],
+  "pick_paths": [],
+  "force_text_patterns": [],
+  "force_binary_patterns": [],
+  "output_path": "snapshot.snp",
+  "no_summary": false,
+  "no_index": false,
+  "no_git_log": false,
+  "no_content": false,
+  "stdout": false,
+  "dry_run": false,
+  "silent": false
+}
