@@ -1,0 +1,51 @@
+---
+# Reconcile a single declared service (included once per item in ziti_services)
+
+- name: Create intercept config for {{ item.name }}
+  ansible.builtin.command:
+    cmd: >
+      ziti edge create config {{ item.name }}.intercept.v1 intercept.v1
+      '{{ {"protocols": ["tcp"], "addresses": item.intercept.addresses,
+           "portRanges": [{"low": item.intercept.port, "high": item.intercept.port}]} | to_json }}'
+  register: _create
+  failed_when: _create.rc != 0 and 'already exists' not in _create.stderr
+  changed_when: _create.rc == 0
+
+- name: Create host config for {{ item.name }}
+  ansible.builtin.command:
+    cmd: >
+      ziti edge create config {{ item.name }}.host.v1 host.v1
+      '{{ {"protocol": "tcp", "address": item.host.address, "port": item.host.port} | to_json }}'
+  register: _create
+  failed_when: _create.rc != 0 and 'already exists' not in _create.stderr
+  changed_when: _create.rc == 0
+  when: item.host is defined
+
+- name: Create service {{ item.name }}
+  ansible.builtin.command:
+    cmd: >
+      ziti edge create service {{ item.name }}
+      --configs {{ item.name }}.intercept.v1{{ ',' + item.name + '.host.v1' if item.host is defined else '' }}
+  register: _create
+  failed_when: _create.rc != 0 and 'already exists' not in _create.stderr
+  changed_when: _create.rc == 0
+
+- name: Create dial policy for {{ item.name }}
+  ansible.builtin.command:
+    cmd: >
+      ziti edge create service-policy {{ item.name }}.dial Dial
+      --service-roles '@{{ item.name }}' --identity-roles '{{ item.dial_roles }}'
+  register: _create
+  failed_when: _create.rc != 0 and 'already exists' not in _create.stderr
+  changed_when: _create.rc == 0
+  when: item.dial_roles is defined
+
+- name: Create bind policy for {{ item.name }}
+  ansible.builtin.command:
+    cmd: >
+      ziti edge create service-policy {{ item.name }}.bind Bind
+      --service-roles '@{{ item.name }}' --identity-roles '{{ item.bind_roles }}'
+  register: _create
+  failed_when: _create.rc != 0 and 'already exists' not in _create.stderr
+  changed_when: _create.rc == 0
+  when: item.bind_roles is defined

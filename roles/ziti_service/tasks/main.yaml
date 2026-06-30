@@ -1,0 +1,43 @@
+---
+# ziti_service role - Main task orchestration
+# Controller-side reconciliation only — runs on localhost, no target host involved.
+
+- name: Assert controller address is configured
+  ansible.builtin.assert:
+    quiet: true
+    that: ziti_ctrl_advertised_address | default('') | length > 0
+    fail_msg: "ziti_ctrl_advertised_address must be set in inventory"
+
+- name: Assert ziti_services entries have unique names
+  ansible.builtin.assert:
+    quiet: true
+    that: (ziti_services | map(attribute='name') | list | unique | length) == (ziti_services | length)
+    fail_msg: "ziti_services contains duplicate service names"
+
+- name: Login to controller
+  ansible.builtin.command:
+    cmd: >
+      ziti edge login
+      https://{{ ziti_ctrl_advertised_address }}:{{ ziti_ctrl_advertised_port }}
+      -u admin
+      -p {{ ziti_admin_password }}
+      -y
+  no_log: true
+  changed_when: true
+
+- name: Reconcile each declared service
+  ansible.builtin.include_tasks: service.yaml
+  loop: "{{ ziti_services }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Include pruning tasks
+  ansible.builtin.import_tasks: prune.yaml
+  when: ziti_service_prune | bool
+
+- name: Display reconciliation summary
+  ansible.builtin.debug:
+    msg:
+      - "ziti_service reconciliation complete"
+      - "Declared services: {{ ziti_services | map(attribute='name') | list }}"
+      - "Pruning: {{ ziti_service_prune }}"

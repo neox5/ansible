@@ -1,0 +1,20 @@
+---
+galaxy_info:
+  role_name: ziti_service
+  author: neox5
+  description: OpenZiti service/config/policy reconciliation via controller API
+  license: MIT
+  min_ansible_version: "2.15"
+
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+
+  galaxy_tags:
+    - openziti
+    - overlay
+    - zerotrust
+    - networking
+
+dependencies: []

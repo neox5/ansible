@@ -1,0 +1,15 @@
+---
+# OpenZiti Service Reconciliation
+# Controller-side only — creates/updates/optionally prunes services, configs,
+# and policies declared in ziti_services. No target host involved.
+#
+# Usage:
+#   ansible-playbook -i inventory/prod playbooks/ziti_service.yaml
+#   ansible-playbook -i inventory/prod playbooks/ziti_service.yaml -e ziti_service_prune=true
+
+- name: Reconcile OpenZiti Services
+  hosts: localhost
+  gather_facts: false
+  become: false
+  roles:
+    - ziti_service
