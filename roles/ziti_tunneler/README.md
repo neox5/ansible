@@ -1,10 +1,13 @@
 # ziti_tunneler
 
-Deploys `ziti-edge-tunnel` in host-mode on Debian 13 Trixie targets.
+Deploys `ziti-edge-tunnel` on Debian 13 Trixie targets, in either
+host-mode (bind only) or client-mode (bind + dial/intercept).
 
-Used for hosts that host OpenZiti services (bind) without running a full
-edge router — e.g. NAS, router targets (Phase 8), or any host needing
-overlay service hosting without fabric participation.
+- **Host mode** — hosts that host OpenZiti services without running a
+  full edge router — e.g. NAS, router targets (Phase 8), or any host
+  needing overlay service hosting without fabric participation.
+- **Client mode** — workstations and devices that consume overlay
+  services via tproxy intercept (e.g. desktop, mobile workstation).
 
 ## Requirements
 
@@ -12,12 +15,14 @@ overlay service hosting without fabric participation.
 - systemd
 - `ziti_ctrl_advertised_address` set in inventory
 - Identity JWT at `ziti_jwt_path` on control node (produced by `ziti_register.yaml`)
+- Client mode: kernel TPROXY support (present by default on Debian 13)
 
 ## Role Variables
 
 | Variable                        | Default                        | Description                    |
 | ------------------------------- | ------------------------------ | ------------------------------ |
 | `ziti_tunneler_state`           | `present`                      | `present` or `absent`          |
+| `ziti_tunneler_mode`            | `host`                         | `host` or `client`             |
 | `ziti_tunneler_remove_data`     | `false`                        | Remove identity dir on absence |
 | `ziti_name`                     | `{{ inventory_hostname }}`     | Identity name in controller    |
 | `ziti_jwt_path`                 | `/tmp/{{ ziti_name }}.jwt`     | JWT path on control node       |
@@ -35,11 +40,18 @@ pattern as `ziti_router`.
 **Step 1 — Register** (control node → controller):
 
 ```bash
+# Host-mode target
 ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
   --tags tunneler -e "ziti_name=<name>"
+
+# Client-mode target
+ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
+  --tags client -e "ziti_name=<name>"
 ```
 
-Produces `/tmp/<name>.jwt` on the control node.
+Produces `/tmp/<name>.jwt` on the control node. Both tags create an
+identical plain identity — the distinction is enforced at deployment
+time via `ziti_tunneler_mode`, not at registration.
 
 **Step 2 — Deploy** (control node → target host):
 
@@ -50,12 +62,26 @@ ansible-playbook -i inventory/prod playbooks/ziti_tunneler.yaml -l <host>
 Copies JWT to host, runs `ziti-edge-tunnel enroll`, removes JWT.
 Enrollment is gated on identity file existence — safe to re-run.
 
-## Host Mode
+## Mode Selection
 
-This role deploys in host-mode only. The tunneler hosts services (bind)
-for the overlay without kernel tun/tproxy capabilities.
+Mode is inventory-driven, not playbook-driven. Set in host_vars for
+the target host:
 
-Client/intercept mode (tproxy) is deferred to Phase 8 workstation targets.
+```yaml
+# host_vars/<workstation>/ziti.yaml
+ziti_tunneler_mode: client
+```
+
+Hosts without this variable default to `host` mode.
+
+| Mode     | Subcommand | Kernel capability | Use case                          |
+| -------- | ---------- | ----------------- | --------------------------------- |
+| `host`   | `run-host` | none              | NAS, router targets (bind only)   |
+| `client` | `run`      | CAP_NET_ADMIN     | Workstations (bind + dial/tproxy) |
+
+Standalone identity for the client device. Hot/standalone enrollment
+flows (e.g. device self-enrollment outside Ansible) are out of scope
+for this role — see Phase 7 enrollment automation track.
 
 ## Notes
 
@@ -66,3 +92,6 @@ Client/intercept mode (tproxy) is deferred to Phase 8 workstation targets.
 - Identity directory permissions: `root:ziti 0770`
 - systemd drop-in configures `--identity-dir` regardless of whether the
   default path is used, ensuring consistent behaviour across upgrades.
+- Switching `ziti_tunneler_mode` on an already-enrolled host only
+  changes the systemd drop-in (subcommand); re-run the playbook and the
+  service restarts via handler. No re-enrollment needed.

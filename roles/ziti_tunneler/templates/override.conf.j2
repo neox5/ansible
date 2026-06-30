@@ -1,9 +1,10 @@
 # {{ ansible_managed }}
 # Systemd drop-in: configure ziti-edge-tunnel identity directory
+# Mode: {{ ziti_tunneler_mode }}
 
 [Service]
 ExecStart=
-ExecStart=/opt/openziti/bin/ziti-edge-tunnel run \
+ExecStart=/opt/openziti/bin/ziti-edge-tunnel {{ 'run' if ziti_tunneler_mode == 'client' else 'run-host' }} \
   --verbose=${ZITI_VERBOSE} \
   --dns-ip-range=${ZITI_DNS_IP_RANGE} \
   --identity-dir={{ ziti_tunneler_identity_dir }}

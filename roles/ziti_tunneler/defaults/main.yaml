@@ -5,6 +5,10 @@
 ziti_tunneler_state: present
 ziti_tunneler_remove_data: false
 
+# Operating mode: 'host' (bind only, no kernel capabilities) or
+# 'client' (bind + dial/intercept, tproxy via CAP_NET_ADMIN)
+ziti_tunneler_mode: host
+
 # Identity name — defaults to inventory hostname
 ziti_name: "{{ inventory_hostname }}"
 

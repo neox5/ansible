@@ -17,9 +17,13 @@
 #   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
 #     --tags router-tunneler -e "ziti_name=core"
 #
-#   # Standalone tunneler identity:
+#   # Standalone tunneler identity (host-mode targets — NAS, etc.):
 #   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
 #     --tags tunneler -e "ziti_name=<name>"
+#
+#   # Client identity (workstation/device, intercept mode):
+#   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
+#     --tags client -e "ziti_name=<name>"
 #
 # Output: /tmp/{{ ziti_name }}.jwt on the control node
 
@@ -34,7 +38,7 @@
         quiet: true
         that: ziti_name | default('') | length > 0
         fail_msg: "ziti_name is required: -e ziti_name=<name>"
-      tags: [router, router-tunneler, tunneler]
+      tags: [router, router-tunneler, tunneler, client]
 
     - name: Login to controller
       ansible.builtin.command:
@@ -46,7 +50,7 @@
           -y
       no_log: true
       changed_when: true
-      tags: [router, router-tunneler, tunneler]
+      tags: [router, router-tunneler, tunneler, client]
 
     - name: Create edge-router (no tunneler)
       ansible.builtin.command:
@@ -68,7 +72,7 @@
         cmd: >
           ziti edge create identity {{ ziti_name }}
           --jwt-output-file /tmp/{{ ziti_name }}.jwt
-      tags: [tunneler]
+      tags: [tunneler, client]
 
     - name: Display JWT path
       ansible.builtin.debug:
@@ -76,6 +80,14 @@
           - "JWT written to /tmp/{{ ziti_name }}.jwt on the control node."
           - "Proceed with: ansible-playbook -i inventory/prod playbooks/ziti_tunneler.yaml -l {{ ziti_name }}"
       tags: [tunneler]
+
+    - name: Display JWT path
+      ansible.builtin.debug:
+        msg:
+          - "JWT written to /tmp/{{ ziti_name }}.jwt on the control node."
+          - "Set ziti_tunneler_mode: client in host_vars for this host."
+          - "Proceed with: ansible-playbook -i inventory/prod playbooks/ziti_tunneler.yaml -l {{ ziti_name }}"
+      tags: [client]
 
     - name: Display JWT path
       ansible.builtin.debug:

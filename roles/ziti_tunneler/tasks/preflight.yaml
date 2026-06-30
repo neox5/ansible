@@ -27,6 +27,12 @@
     that: ziti_tunneler_state in ['present', 'absent']
     fail_msg: "ziti_tunneler_state must be 'present' or 'absent'"
 
+- name: Assert valid mode value
+  ansible.builtin.assert:
+    quiet: true
+    that: ziti_tunneler_mode in ['host', 'client']
+    fail_msg: "ziti_tunneler_mode must be 'host' or 'client'"
+
 - name: Assert remove_data only set when state is absent
   ansible.builtin.assert:
     quiet: true
@@ -70,5 +76,6 @@
   ansible.builtin.debug:
     msg: >-
       ziti_tunneler role - state={{ ziti_tunneler_state }}
+      mode={{ ziti_tunneler_mode }}
       name={{ ziti_name }}
       identity_dir={{ ziti_tunneler_identity_dir }}
