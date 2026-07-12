@@ -1,12 +1,12 @@
 ---
 # ============================================================================
 # stepca Configuration
-# File: group_vars/n150/stepca.yaml
+# File: group_vars/core/stepca.yaml
 # Role: stepca (custom)
 # ============================================================================
 #
-# Applied to: All hosts in 'n150' group
-# Variable precedence: all < n150 (this file) < host_vars
+# Applied to: All hosts in 'core' group
+# Variable precedence: all < core (this file) < host_vars
 
 stepca_name: "Zion Issuing CA G1"
 stepca_cert_name: "zion_issuing_ca_g1"

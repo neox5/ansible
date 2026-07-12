@@ -1,7 +1,7 @@
 # Production hosts
 
-[n150]
-n150-01 ansible_host=10.0.0.112
+[core]
+core ansible_host=10.30.0.2
 
 [edge]
 heimdall ansible_host=152.53.16.16

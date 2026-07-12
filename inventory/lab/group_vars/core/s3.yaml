@@ -1,12 +1,12 @@
 ---
 # ============================================================================
-# VersityGW: Prod n150 Configuration
-# File: group_vars/n150/s3.yaml
+# VersityGW: Lab core Configuration
+# File: group_vars/core/s3.yaml
 # Role: versitygw (custom)
 # ============================================================================
 #
-# Applied to: All hosts in 'n150' group
-# Variable precedence: all < n150 (this file) < host_vars
+# Applied to: All hosts in 'core' group
+# Variable precedence: all < core (this file) < host_vars
 
 versitygw_version: "1.4.0"
 

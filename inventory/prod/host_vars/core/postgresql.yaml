@@ -1,11 +1,11 @@
 ---
 # ============================================================================
-# PostgreSQL: n150-01 Database Objects
-# File: host_vars/n150-01/postgresql.yaml
+# PostgreSQL: core Database Objects
+# File: host_vars/core/postgresql.yaml
 # Role: postgresql (custom)
 # ============================================================================
 #
-# Authoritative definition of all databases, users, and privileges on n150-01.
+# Authoritative definition of all databases, users, and privileges on core.
 # Replaces group_vars composition which does not support list merging.
 
 postgresql_databases:

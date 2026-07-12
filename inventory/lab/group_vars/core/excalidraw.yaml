@@ -1,15 +1,15 @@
 ---
 # ============================================================================
 # Excalidraw: Lab Configuration
-# File: group_vars/n150/excalidraw.yaml
+# File: group_vars/core/excalidraw.yaml
 # Role: excalidraw (custom)
 # ============================================================================
 #
 # Lab environment configuration for self-hosted Excalidraw stack.
 # Deploys excalidraw frontend + excalibar collaboration server via Quadlet.
 #
-# Applied to: All hosts in 'n150' group
-# Variable precedence: all < n150 (this file) < host_vars
+# Applied to: All hosts in 'core' group
+# Variable precedence: all < core (this file) < host_vars
 #
 # ============================================================================
 

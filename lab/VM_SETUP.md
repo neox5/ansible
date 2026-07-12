@@ -69,7 +69,7 @@ Bootstrap command:
 
 ```bash
 ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook playbooks/bootstrap.yaml \
-  -i inventory/prod -l n150-01 \
+  -i inventory/prod -l core \
   -e ansible_user=temp \
   -k -K
 ```

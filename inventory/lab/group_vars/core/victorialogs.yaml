@@ -1,5 +1,5 @@
 ---
-# VictoriaLogs instances for prod n150 group
+# VictoriaLogs instances for lab core group
 
 victorialogs_instances:
   - victorialogs_instance_name: victorialogs-access

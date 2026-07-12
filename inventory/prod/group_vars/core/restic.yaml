@@ -1,15 +1,15 @@
 ---
 # ============================================================================
-# Restic: n150 Backup Sources
-# File: group_vars/n150/restic.yaml
+# Restic: core Backup Sources
+# File: group_vars/core/restic.yaml
 # Role: restic (custom)
 # ============================================================================
 #
-# Defines what gets backed up on all n150 hosts.
+# Defines what gets backed up on all core hosts.
 # Repos and jobs are host-specific (host_vars/<host>/restic.yaml).
 #
-# Applied to: All hosts in 'n150' group
-# Variable precedence: all < n150 (this file) < host_vars
+# Applied to: All hosts in 'core' group
+# Variable precedence: all < core (this file) < host_vars
 #
 # ============================================================================
 

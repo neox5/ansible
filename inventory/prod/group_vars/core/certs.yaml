@@ -1,12 +1,12 @@
 ---
 # ============================================================================
-# Certs: Lab n150 Configuration
-# File: group_vars/n150/certs.yaml
+# Certs: Prod core Configuration
+# File: group_vars/core/certs.yaml
 # Role: certs (custom)
 # ============================================================================
 #
-# Applied to: All hosts in 'n150' group
-# Variable precedence: all < n150 (this file) < host_vars
+# Applied to: All hosts in 'core' group
+# Variable precedence: all < core (this file) < host_vars
 
 # CA certificates - installed into system trust store
 # Content: paste PEM content of zion_root_ca_g1.cert.pem

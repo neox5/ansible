@@ -1,15 +1,15 @@
 ---
 # ============================================================================
-# Caddy: Prod n150 Configuration
-# File: group_vars/n150/caddy.yaml
+# Caddy: Lab core Configuration
+# File: group_vars/core/caddy.yaml
 # Role: caddy (custom)
 # ============================================================================
 #
-# Production environment configuration for Caddy reverse proxy.
+# Lab environment configuration for Caddy reverse proxy.
 # Uses step-ca ACME for automatic certificate issuance.
 #
-# Applied to: All hosts in 'n150' group
-# Variable precedence: all < n150 (this file) < host_vars
+# Applied to: All hosts in 'core' group
+# Variable precedence: all < core (this file) < host_vars
 #
 # ============================================================================
 
@@ -32,14 +32,6 @@ caddy_sites:
     hosts_entry: true
     routes:
       - backend: "localhost:3000"
-  - domain: "excalidraw.zion.local"
-    hosts_entry: true
-    routes:
-      - backend: "localhost:8080"
-  - domain: "excalibar.zion.local"
-    hosts_entry: true
-    routes:
-      - backend: "localhost:8085"
   - domain: "s3.zion.local"
     hosts_entry: true
     routes:
@@ -75,6 +67,6 @@ caddy_access_log_skip_paths:
 # Notes:
 # - Caddy listens on 443 (HTTPS) and redirects 80 → 443
 # - Certificates issued automatically via step-ca ACME
-# - hosts_entry: true because N150 is its own DNS server for .local domains
+# - hosts_entry: true because lab-vm is its own DNS server for .local domains
 # - Ports are hardcoded here to avoid cross-role variable dependencies
 # ============================================================================

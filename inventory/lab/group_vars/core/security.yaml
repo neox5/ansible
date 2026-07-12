@@ -1,15 +1,15 @@
 ---
 # =============================================================================
-# Security: n150 Group Configuration
-# File: group_vars/n150/security.yaml
+# Security: core Group Configuration
+# File: group_vars/core/security.yaml
 # Role: security_hardening
 # =============================================================================
 #
 # Firewall ports required for reverse proxy operation.
 # Caddy listens on 80 (HTTP redirect) and 443 (HTTPS).
 #
-# Applied to: All hosts in 'n150' group
-# Variable precedence: all < n150 (this file) < host_vars
+# Applied to: All hosts in 'core' group
+# Variable precedence: all < core (this file) < host_vars
 
 security_firewall_allowed_tcp_ports:
   - 80

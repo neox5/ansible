@@ -1,7 +1,7 @@
 ---
 # ============================================================================
-# PostgreSQL: n150 Configuration
-# File: group_vars/n150/postgresql.yaml
+# PostgreSQL: core Configuration
+# File: group_vars/core/postgresql.yaml
 # Role: anxs.postgresql
 # ============================================================================
 #
@@ -13,8 +13,8 @@
 # - Storage: 512GB SSD
 # - CPU: x86_64 (multi-core)
 #
-# Applied to: All hosts in 'n150' group
-# Variable precedence: all < n150 (this file) < host_vars
+# Applied to: All hosts in 'core' group
+# Variable precedence: all < core (this file) < host_vars
 #
 # Tuning based on PostgreSQL wiki guidelines for mixed workload.
 # References: https://wiki.postgresql.org/wiki/Tuning_Your_PostgreSQL_Server

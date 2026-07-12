@@ -1,11 +1,11 @@
 ---
 # ============================================================================
-# Restic: n150-01 Repositories and Jobs
-# File: host_vars/n150-01/restic.yaml
+# Restic: core Repositories and Jobs
+# File: host_vars/core/restic.yaml
 # Role: restic (custom)
 # ============================================================================
 #
-# Defines where and when backups run for n150-01.
+# Defines where and when backups run for core.
 # Sources are group-scoped (group_vars/n8n/restic.yaml).
 # Passwords and credentials are in secrets.sops.yaml.
 #
