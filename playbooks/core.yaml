@@ -1,0 +1,15 @@
+---
+# Core Zero Trust Overlay - Minimal Deployment
+# Deploys the Layer 1 (Zero Trust Overlay) minimal role set on core:
+# apt_repositories -> update -> security -> journald -> ziti_controller -> ziti_router
+# Excludes stepca, postgresql, and the rest of the legacy full stack (deferred).
+#
+# Usage:
+#   ansible-playbook -i inventory/prod playbooks/core.yaml -l core
+
+- import_playbook: apt_repositories.yaml
+- import_playbook: update.yaml
+- import_playbook: security.yaml
+- import_playbook: journald.yaml
+- import_playbook: ziti_controller.yaml
+- import_playbook: ziti_router.yaml

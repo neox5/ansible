@@ -1,0 +1,16 @@
+---
+# ============================================================================
+# ziti_controller: Prod core Configuration
+# File: group_vars/core/ziti_controller.yaml
+# Role: ziti_controller (custom)
+# ============================================================================
+#
+# Locked identity values (see P06 Roadmap) - permanent once the controller
+# is bootstrapped. Changing either requires full PKI regeneration and
+# re-enrollment of every identity in the overlay.
+
+ziti_ctrl_advertised_address: "zion.neox5.com"
+ziti_ctrl_advertised_port: 1280
+ziti_trust_domain: "zion"
+
+ziti_admin_password: "{{ ziti_admin_password_secret }}"

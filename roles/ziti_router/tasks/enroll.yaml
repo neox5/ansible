@@ -9,6 +9,25 @@
   changed_when: false
   check_mode: false
 
+- name: Assert JWT exists on control node when not yet enrolled
+  ansible.builtin.stat:
+    path: "{{ ziti_jwt_path }}"
+  register: _ziti_jwt
+  delegate_to: localhost
+  become: false
+  changed_when: false
+  check_mode: false
+  when: not _ziti_router_enrolled.stat.exists
+
+- name: Fail if JWT missing and router not yet enrolled
+  ansible.builtin.fail:
+    msg: >
+      Router identity not found and JWT not present at {{ ziti_jwt_path }} on control node.
+      Run: ansible-playbook -i inventory/prod playbooks/ziti_register.yaml --tags router -e ziti_name={{ ziti_name }}
+  when:
+    - not _ziti_router_enrolled.stat.exists
+    - not _ziti_jwt.stat.exists
+
 - name: Ensure router base directory exists
   ansible.builtin.file:
     path: "{{ ziti_router_base_dir }}"

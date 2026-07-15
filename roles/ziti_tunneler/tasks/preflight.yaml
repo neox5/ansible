@@ -1,12 +1,10 @@
 ---
 # Preflight checks - validate environment before proceeding
-
 - name: Gather distribution and service manager facts
   ansible.builtin.setup:
     gather_subset:
       - distribution
       - service_mgr
-
 - name: Assert Debian 13 or later
   ansible.builtin.assert:
     quiet: true
@@ -14,64 +12,32 @@
       - ansible_distribution == "Debian"
       - ansible_distribution_major_version | int >= 13
     fail_msg: "This role requires Debian 13 or later"
-
 - name: Assert systemd is the init system
   ansible.builtin.assert:
     quiet: true
     that: ansible_facts['service_mgr'] == 'systemd'
     fail_msg: "This role requires systemd"
-
 - name: Assert valid state value
   ansible.builtin.assert:
     quiet: true
     that: ziti_tunneler_state in ['present', 'absent']
     fail_msg: "ziti_tunneler_state must be 'present' or 'absent'"
-
 - name: Assert valid mode value
   ansible.builtin.assert:
     quiet: true
     that: ziti_tunneler_mode in ['host', 'client']
     fail_msg: "ziti_tunneler_mode must be 'host' or 'client'"
-
 - name: Assert remove_data only set when state is absent
   ansible.builtin.assert:
     quiet: true
     that: not ziti_tunneler_remove_data or ziti_tunneler_state == 'absent'
     fail_msg: "ziti_tunneler_remove_data: true requires ziti_tunneler_state: absent"
-
 - name: Assert controller address is configured
   ansible.builtin.assert:
     quiet: true
     that: ziti_ctrl_advertised_address | default('') | length > 0
     fail_msg: "ziti_ctrl_advertised_address must be set in inventory"
   when: ziti_tunneler_state == 'present'
-
-- name: Check if tunneler identity already enrolled
-  ansible.builtin.stat:
-    path: "{{ ziti_tunneler_identity_file }}"
-  register: _ziti_tunneler_enrolled
-  changed_when: false
-  check_mode: false
-
-- name: Assert JWT exists on control node when not yet enrolled
-  ansible.builtin.stat:
-    path: "{{ ziti_jwt_path }}"
-  register: _ziti_jwt
-  delegate_to: localhost
-  become: false
-  changed_when: false
-  check_mode: false
-  when: not _ziti_tunneler_enrolled.stat.exists
-
-- name: Fail if JWT missing and tunneler not yet enrolled
-  ansible.builtin.fail:
-    msg: >
-      Tunneler identity not found and JWT not present at {{ ziti_jwt_path }} on control node.
-      Run: ansible-playbook -i inventory/prod playbooks/ziti_register.yaml --tags tunneler -e ziti_name={{ ziti_name }}
-  when:
-    - not _ziti_tunneler_enrolled.stat.exists
-    - not _ziti_jwt.stat.exists
-
 - name: Display role information
   ansible.builtin.debug:
     msg: >-

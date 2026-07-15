@@ -1,0 +1,14 @@
+---
+# ============================================================================
+# Security Hardening: Prod core Configuration
+# File: group_vars/core/security.yaml
+# Role: security_hardening
+# ============================================================================
+#
+# Ziti control + edge listener ports (controller + router).
+# Legacy Caddy 80/443 rules intentionally not present — not part of the
+# zero-trust-overlay minimal build. Re-add if/when Caddy returns to core.
+
+security_firewall_allowed_tcp_ports:
+  - 1280 # ziti_controller - ctrl channel + edge-management/edge-client APIs
+  - 3022 # ziti_router - edge listener (SDK/tunneler clients, LAN)

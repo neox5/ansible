@@ -4,27 +4,34 @@
 
 - name: Include preflight checks
   ansible.builtin.import_tasks: preflight.yaml
+  tags: always
 
 - name: Include installation tasks
   ansible.builtin.import_tasks: install.yaml
   when: ziti_tunneler_state == 'present'
+  tags: install
 
 - name: Include enrollment tasks
   ansible.builtin.import_tasks: enroll.yaml
   when: ziti_tunneler_state == 'present'
+  tags: enroll
 
 - name: Include configuration tasks
   ansible.builtin.import_tasks: configure.yaml
   when: ziti_tunneler_state == 'present'
+  tags: configure
 
 - name: Include start tasks
   ansible.builtin.import_tasks: start.yaml
   when: ziti_tunneler_state == 'present'
+  tags: start
 
 - name: Include verification tasks
   ansible.builtin.import_tasks: verify.yaml
   when: ziti_tunneler_state == 'present'
+  tags: verify
 
 - name: Include removal tasks
   ansible.builtin.import_tasks: remove.yaml
   when: ziti_tunneler_state == 'absent'
+  tags: remove
