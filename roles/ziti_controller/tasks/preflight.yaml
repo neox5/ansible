@@ -33,6 +33,15 @@
     that: not ziti_controller_remove_data or ziti_controller_state == 'absent'
     fail_msg: "ziti_controller_remove_data: true requires ziti_controller_state: absent"
 
+- name: Assert remove_root_ca only set when remove_data is also set
+  ansible.builtin.assert:
+    quiet: true
+    that: not ziti_controller_remove_root_ca or ziti_controller_remove_data | bool
+    fail_msg: >
+      ziti_controller_remove_root_ca: true requires ziti_controller_remove_data: true.
+      Root CA removal without also removing the signing CA and database would leave
+      orphaned PKI state that cannot be verified or reissued.
+
 - name: Assert advertised address is configured
   ansible.builtin.assert:
     quiet: true
@@ -48,6 +57,17 @@
     quiet: true
     that: ziti_trust_domain | length > 0
     fail_msg: "ziti_trust_domain must be set in inventory (e.g. 'zion.local')"
+  when: ziti_controller_state == 'present'
+
+- name: Assert controller id is configured
+  ansible.builtin.assert:
+    quiet: true
+    that: ziti_controller_id | length > 0
+    fail_msg: >
+      ziti_controller_id must be set in inventory (e.g. 'zctrl1').
+      Used as the SPIFFE ID path segment (controller/<id>), distinct from
+      ziti_trust_domain. Permanent once enrolled — changing it requires PKI
+      regeneration.
   when: ziti_controller_state == 'present'
 
 - name: Assert admin password is configured

@@ -4,7 +4,7 @@
 
 - name: Check if database already exists
   ansible.builtin.stat:
-    path: "{{ ziti_controller_db_dir }}/ctrl.db"
+    path: "{{ ziti_controller_db_dir }}/ctrl-ha.db"
   register: _ziti_ctrl_db
   changed_when: false
   check_mode: false
@@ -17,4 +17,4 @@
       -u admin
       -p {{ ziti_admin_password }}
   when: not _ziti_ctrl_db.stat.exists
-  no_log: true
+  no_log: false

@@ -33,6 +33,7 @@ cluster:
 # ---------------------------------------------------------------------------
 edge:
   api:
+    address:                {{ ziti_ctrl_advertised_address }}:{{ ziti_ctrl_advertised_port }}
     activityUpdateInterval: 90s
     sessionTimeout:         30m
   enrollment:

@@ -1,0 +1,6 @@
+---
+# Site-wide OpenZiti overlay identity - shared by every host at this site
+# regardless of role (controller, router, tunneler). Second site would get
+# its own site_<name> group with its own trust domain - never shared here.
+
+ziti_trust_domain: "zion"

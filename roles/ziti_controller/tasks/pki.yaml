@@ -12,7 +12,8 @@
     mode: "0700"
 
 # ---------------------------------------------------------------------------
-# Root CA (one-time — key removed from host after bootstrap)
+# Root CA (interim: stays on this host — production custody model pending
+# dedicated design discussion)
 # ---------------------------------------------------------------------------
 
 - name: Check if root CA certificate exists
@@ -29,9 +30,17 @@
       --pki-root {{ ziti_controller_pki_dir }}
       --ca-file root
       --ca-name "{{ ziti_trust_domain }} Root CA"
+      --trust-domain {{ ziti_trust_domain }}
       --curve {{ ziti_curve }}
       --max-path-len 1
   when: not _ziti_root_cert.stat.exists
+
+- name: Enforce root CA private key permissions
+  ansible.builtin.file:
+    path: "{{ ziti_controller_pki_dir }}/root/keys/root.key"
+    owner: root
+    group: root
+    mode: "0600"
 
 # ---------------------------------------------------------------------------
 # Signing CA / edge enrollment signer (intermediate, stays on host)
@@ -58,6 +67,9 @@
 
 # ---------------------------------------------------------------------------
 # Controller leaf certs (server + client)
+# Name/CN must equal ziti_controller_id — the controller CLIENT cert's CN must
+# exactly match the SPIFFE ID's controller-id segment, or `edge init` panics.
+# Server cert kept consistent with the same bare id for the same reason.
 # ---------------------------------------------------------------------------
 
 - name: Check if controller server cert exists
@@ -74,10 +86,10 @@
       --pki-root {{ ziti_controller_pki_dir }}
       --ca-name signing
       --server-file controller-server
-      --server-name "{{ ziti_ctrl_advertised_address }} Server"
+      --server-name "{{ ziti_controller_id }}"
       --dns "localhost,{{ ziti_ctrl_advertised_address }}"
       --ip "127.0.0.1,::1"
-      --spiffe-id "controller/{{ ziti_trust_domain }}"
+      --spiffe-id "controller/{{ ziti_controller_id }}"
       --curve {{ ziti_curve }}
   when: not _ziti_server_cert.stat.exists
 
@@ -95,42 +107,20 @@
       --pki-root {{ ziti_controller_pki_dir }}
       --ca-name signing
       --client-file controller-client
-      --client-name "{{ ziti_ctrl_advertised_address }} Client"
-      --spiffe-id "controller/{{ ziti_trust_domain }}"
+      --client-name "{{ ziti_controller_id }}"
+      --spiffe-id "controller/{{ ziti_controller_id }}"
       --curve {{ ziti_curve }}
   when: not _ziti_client_cert.stat.exists
 
 # ---------------------------------------------------------------------------
-# Root CA key handling - fetch to control node, remove from host
+# Root CA key custody notice
 # ---------------------------------------------------------------------------
 
-- name: Check if root CA private key still exists on host
-  ansible.builtin.stat:
-    path: "{{ ziti_controller_pki_dir }}/root/keys/root.key"
-  register: _ziti_root_key_on_host
-  changed_when: false
-  check_mode: false
-
-- name: Fetch root CA private key to control node
-  ansible.builtin.fetch:
-    src: "{{ ziti_controller_pki_dir }}/root/keys/root.key"
-    dest: "{{ ziti_root_ca_fetch_path }}"
-    flat: true
-  when: _ziti_root_key_on_host.stat.exists
-
-- name: Remove root CA private key from controller host
-  ansible.builtin.file:
-    path: "{{ ziti_controller_pki_dir }}/root/keys/root.key"
-    state: absent
-  when: _ziti_root_key_on_host.stat.exists
-
-- name: Notify operator to secure root CA private key
+- name: Notify operator of root CA key custody status
   ansible.builtin.debug:
     msg:
-      - "IMPORTANT: Root CA private key has been fetched to the control node:"
-      - "  {{ ziti_root_ca_fetch_path }}"
+      - "NOTE: Root CA private key remains on this host (interim decision):"
+      - "  {{ ziti_controller_pki_dir }}/root/keys/root.key"
       - ""
-      - "This key has been removed from the controller host."
-      - "Encrypt and store it offline immediately (e.g. SOPS + age)."
-      - "It is required only to reissue the signing CA or add a cluster node."
-  when: _ziti_root_key_on_host.stat.exists
+      - "Production-grade key custody (offline storage / HSM) is deferred pending"
+      - "a dedicated design discussion. Do not treat this as final."

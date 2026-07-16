@@ -1,6 +1,9 @@
 ---
 # Enrollment tasks - enroll tunneler identity with controller (one-time)
 # Gated on identity file existence - safe to re-run
+# If JWT is not provisioned, remaining phases for THIS ROLE ONLY (configure/start/
+# verify) are skipped via ziti_tunneler_enrollment_pending - scoped to this role,
+# does not affect other roles later in the same play.
 
 - name: Check if tunneler identity already enrolled
   ansible.builtin.stat:
@@ -9,7 +12,7 @@
   changed_when: false
   check_mode: false
 
-- name: Assert JWT exists on control node when not yet enrolled
+- name: Check if JWT exists on control node when not yet enrolled
   ansible.builtin.stat:
     path: "{{ ziti_jwt_path }}"
   register: _ziti_jwt
@@ -19,11 +22,9 @@
   check_mode: false
   when: not _ziti_tunneler_identity.stat.exists
 
-- name: Fail if JWT missing and tunneler not yet enrolled
-  ansible.builtin.fail:
-    msg: >
-      Tunneler identity not found and JWT not present at {{ ziti_jwt_path }} on control node.
-      Run: ansible-playbook -i inventory/prod playbooks/ziti_register.yaml --tags tunneler -e ziti_name={{ ziti_name }}
+- name: Set enrollment pending fact
+  ansible.builtin.set_fact:
+    ziti_tunneler_enrollment_pending: true
   when:
     - not _ziti_tunneler_identity.stat.exists
     - not _ziti_jwt.stat.exists
@@ -35,7 +36,9 @@
     owner: root
     group: root
     mode: "0600"
-  when: not _ziti_tunneler_identity.stat.exists
+  when:
+    - not _ziti_tunneler_identity.stat.exists
+    - _ziti_jwt.stat.exists | default(false)
 
 - name: Enroll tunneler identity with controller
   ansible.builtin.command:
@@ -43,7 +46,9 @@
       ziti-edge-tunnel enroll
       --jwt /tmp/{{ ziti_name }}.jwt
       --identity {{ ziti_tunneler_identity_file }}
-  when: not _ziti_tunneler_identity.stat.exists
+  when:
+    - not _ziti_tunneler_identity.stat.exists
+    - _ziti_jwt.stat.exists | default(false)
 
 - name: Set identity file permissions
   ansible.builtin.file:
@@ -51,10 +56,34 @@
     owner: root
     group: ziti
     mode: "0640"
-  when: not _ziti_tunneler_identity.stat.exists
+  when:
+    - not _ziti_tunneler_identity.stat.exists
+    - _ziti_jwt.stat.exists | default(false)
 
 - name: Remove JWT from target host
   ansible.builtin.file:
     path: "/tmp/{{ ziti_name }}.jwt"
     state: absent
-  when: not _ziti_tunneler_identity.stat.exists
+  when:
+    - not _ziti_tunneler_identity.stat.exists
+    - _ziti_jwt.stat.exists | default(false)
+
+- name: Remove JWT from control node
+  ansible.builtin.file:
+    path: "{{ ziti_jwt_path }}"
+    state: absent
+  delegate_to: localhost
+  become: false
+  when:
+    - not _ziti_tunneler_identity.stat.exists
+    - _ziti_jwt.stat.exists | default(false)
+
+- name: Note enrollment pending
+  ansible.builtin.debug:
+    msg: >
+      Tunneler identity not found and JWT not present at {{ ziti_jwt_path }} on control node.
+      Run: ansible-playbook -i inventory/prod playbooks/ziti_register.yaml --tags tunneler -e ziti_name={{ ziti_name }}
+      configure/start/verify for ziti_tunneler are skipped on this host until enrollment completes.
+  when:
+    - not _ziti_tunneler_identity.stat.exists
+    - not _ziti_jwt.stat.exists

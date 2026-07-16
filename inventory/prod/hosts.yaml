@@ -1,10 +1,13 @@
 # Production hosts
-
 [core]
 core ansible_host=10.30.0.2
 
 [edge]
 heimdall ansible_host=152.53.16.16
+
+[site_zion:children]
+core
+edge
 
 # Production-wide connection settings
 [all:vars]

@@ -7,31 +7,37 @@
   tags: always
 
 - name: Include installation tasks
-  ansible.builtin.import_tasks: install.yaml
+  ansible.builtin.include_tasks: install.yaml
   when: ziti_tunneler_state == 'present'
   tags: install
 
 - name: Include enrollment tasks
-  ansible.builtin.import_tasks: enroll.yaml
+  ansible.builtin.include_tasks: enroll.yaml
   when: ziti_tunneler_state == 'present'
   tags: enroll
 
 - name: Include configuration tasks
-  ansible.builtin.import_tasks: configure.yaml
-  when: ziti_tunneler_state == 'present'
+  ansible.builtin.include_tasks: configure.yaml
+  when:
+    - ziti_tunneler_state == 'present'
+    - not (ziti_tunneler_enrollment_pending | default(false))
   tags: configure
 
 - name: Include start tasks
-  ansible.builtin.import_tasks: start.yaml
-  when: ziti_tunneler_state == 'present'
+  ansible.builtin.include_tasks: start.yaml
+  when:
+    - ziti_tunneler_state == 'present'
+    - not (ziti_tunneler_enrollment_pending | default(false))
   tags: start
 
 - name: Include verification tasks
-  ansible.builtin.import_tasks: verify.yaml
-  when: ziti_tunneler_state == 'present'
+  ansible.builtin.include_tasks: verify.yaml
+  when:
+    - ziti_tunneler_state == 'present'
+    - not (ziti_tunneler_enrollment_pending | default(false))
   tags: verify
 
 - name: Include removal tasks
-  ansible.builtin.import_tasks: remove.yaml
+  ansible.builtin.include_tasks: remove.yaml
   when: ziti_tunneler_state == 'absent'
   tags: remove

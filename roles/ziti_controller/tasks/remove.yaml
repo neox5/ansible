@@ -1,5 +1,12 @@
 ---
-# Removal tasks - stop and clean up ziti_controller installation
+# Removal tasks - three escalating levels
+#   Level 1 (default):              software only, all PKI/data preserved
+#   Level 2 (+ remove_data):        + signing CA, leaf certs, database (root CA preserved)
+#   Level 3 (+ remove_root_ca):     + root CA, base dir, system user/group (irreversible)
+
+# ---------------------------------------------------------------------------
+# Level 1 — software removal (always runs when state: absent)
+# ---------------------------------------------------------------------------
 
 - name: Stop ziti-controller service
   ansible.builtin.systemd:
@@ -13,10 +20,11 @@
     enabled: false
   failed_when: false
 
-- name: Remove openziti-controller package
+- name: Purge openziti-controller package
   ansible.builtin.apt:
     name: openziti-controller
     state: absent
+    purge: true
   environment:
     DEBIAN_FRONTEND: noninteractive
 
@@ -36,9 +44,13 @@
     path: "{{ ziti_controller_config_file }}"
     state: absent
 
-- name: Remove controller PKI directory
+# ---------------------------------------------------------------------------
+# Level 2 — data removal (signing CA, leaf certs, database; root CA preserved)
+# ---------------------------------------------------------------------------
+
+- name: Remove signing CA and leaf certs
   ansible.builtin.file:
-    path: "{{ ziti_controller_pki_dir }}"
+    path: "{{ ziti_controller_pki_dir }}/signing"
     state: absent
   when: ziti_controller_remove_data | bool
 
@@ -47,3 +59,40 @@
     path: "{{ ziti_controller_db_dir }}"
     state: absent
   when: ziti_controller_remove_data | bool
+
+# ---------------------------------------------------------------------------
+# Level 3 — root CA removal (irreversible: destroys the network's root of trust)
+# ---------------------------------------------------------------------------
+
+- name: Warn before irreversible root CA destruction
+  ansible.builtin.debug:
+    msg:
+      - "WARNING: ziti_controller_remove_root_ca is set — this will permanently delete"
+      - "the root CA private key. No off-host copy exists (interim custody decision)."
+      - "This network's root of trust cannot be recovered after this run."
+  when: ziti_controller_remove_root_ca | bool
+
+- name: Remove root CA
+  ansible.builtin.file:
+    path: "{{ ziti_controller_pki_dir }}/root"
+    state: absent
+  when: ziti_controller_remove_root_ca | bool
+
+- name: Remove controller base directory
+  ansible.builtin.file:
+    path: "{{ ziti_controller_base_dir }}"
+    state: absent
+  when: ziti_controller_remove_root_ca | bool
+
+- name: Remove ziti-controller system user
+  ansible.builtin.user:
+    name: "{{ ziti_controller_system_user }}"
+    state: absent
+    remove: true
+  when: ziti_controller_remove_root_ca | bool
+
+- name: Remove ziti-controller system group
+  ansible.builtin.group:
+    name: "{{ ziti_controller_system_group }}"
+    state: absent
+  when: ziti_controller_remove_root_ca | bool

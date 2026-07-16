@@ -1,17 +1,14 @@
 ---
 # ============================================================================
-# ziti_router: Prod core Configuration
+# ziti_router: core profile
 # File: group_vars/core/ziti_router.yaml
 # Role: ziti_router (custom)
 # ============================================================================
 #
 # Private router profile (LAN-resident, on-site clients): no link listener,
-# built-in tunneler enabled in host mode. Matches README's "private router"
-# example for core.
+# built-in tunneler enabled in host mode.
 
-ziti_router_advertised_address: "zr1.neox5.com"
 ziti_router_advertised_port: 3022
-
 ziti_router_link_listener: false
 
 ziti_router_tunneler_enabled: true
