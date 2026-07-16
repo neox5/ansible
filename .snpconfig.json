@@ -1,16 +1,20 @@
 {
-  "generated": "2026-07-12T23:25:48.395573261+02:00",
+  "generated": "2026-07-16T07:13:24.159027053+02:00",
   "source_dir": ".",
   "depth": -1,
   "filter_flags": [
     {
       "type": "exclude",
       "value": "docs"
+    },
+    {
+      "type": "exclude",
+      "value": "docs"
     }
   ],
-  "pick_paths": [],
-  "force_text_patterns": [],
-  "force_binary_patterns": [],
+  "pick_paths": null,
+  "force_text_patterns": null,
+  "force_binary_patterns": null,
   "output_path": "snapshot.snp",
   "no_summary": false,
   "no_index": false,
