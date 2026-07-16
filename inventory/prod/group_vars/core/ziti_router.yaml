@@ -9,7 +9,7 @@
 # built-in tunneler enabled in host mode. Matches README's "private router"
 # example for core.
 
-ziti_router_advertised_address: "10.30.0.2"
+ziti_router_advertised_address: "zr1.neox5.com"
 ziti_router_advertised_port: 3022
 
 ziti_router_link_listener: false

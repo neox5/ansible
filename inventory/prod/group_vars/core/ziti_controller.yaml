@@ -9,7 +9,7 @@
 # is bootstrapped. Changing either requires full PKI regeneration and
 # re-enrollment of every identity in the overlay.
 
-ziti_ctrl_advertised_address: "zion.neox5.com"
+ziti_ctrl_advertised_address: "zctrl.neox5.com"
 ziti_ctrl_advertised_port: 1280
 ziti_trust_domain: "zion"
 

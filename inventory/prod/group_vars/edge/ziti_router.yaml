@@ -1,0 +1,19 @@
+---
+# ============================================================================
+# ziti_router: Prod edge (heimdall) Configuration
+# File: group_vars/edge/ziti_router.yaml
+# Role: ziti_router (custom)
+# ============================================================================
+#
+# Public router profile: edge listener for off-site SDK/tunneler clients
+# AND link listener for router-to-router mesh. No built-in tunneler.
+# Matches README's "public router" example.
+
+ziti_router_advertised_address: "zr2.neox5.com"
+ziti_router_advertised_port: 3022
+
+ziti_router_link_listener: true
+ziti_router_link_advertised_address: "zr2.neox5.com"
+ziti_router_link_advertised_port: 3023
+
+ziti_router_tunneler_enabled: false

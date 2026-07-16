@@ -1,0 +1,13 @@
+---
+# ============================================================================
+# Security Hardening: Prod edge (heimdall) Configuration
+# File: group_vars/edge/security.yaml
+# Role: security_hardening
+# ============================================================================
+#
+# Public router: edge listener (SDK/tunneler clients) + link listener
+# (router-to-router mesh). No controller or Caddy on this host.
+
+security_firewall_allowed_tcp_ports:
+  - 3022 # ziti_router - edge listener (public SDK/tunneler clients)
+  - 3023 # ziti_router - link listener (mesh links from other routers)
