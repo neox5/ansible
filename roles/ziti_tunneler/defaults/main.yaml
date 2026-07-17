@@ -10,9 +10,9 @@ ziti_tunneler_remove_data: false
 ziti_name: "{{ inventory_hostname }}"
 ziti_jwt_path: "/tmp/{{ ziti_name }}.jwt"
 
-# Controller connection (single source of truth: hostvars['core'])
-ziti_ctrl_advertised_address: "{{ hostvars['core'].ziti_ctrl_advertised_address }}"
-ziti_ctrl_advertised_port: "{{ hostvars['core'].ziti_ctrl_advertised_port }}"
+# Controller connection (single source of truth: hostvars['eroc'])
+ziti_ctrl_advertised_address: "{{ hostvars['eroc'].ziti_ctrl_advertised_address }}"
+ziti_ctrl_advertised_port: "{{ hostvars['eroc'].ziti_ctrl_advertised_port }}"
 
 # Filesystem paths
 ziti_tunneler_identity_dir: "/opt/openziti/etc/identities"

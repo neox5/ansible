@@ -1,7 +1,7 @@
 ---
 # ============================================================================
-# ziti_controller: core instance identity
-# File: host_vars/core/ziti_controller.yaml
+# ziti_controller: eroc instance identity
+# File: host_vars/eroc/ziti_controller.yaml
 # ============================================================================
 #
 # Locked identity values (see P06 Roadmap) - permanent once the controller

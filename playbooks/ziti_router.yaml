@@ -3,7 +3,7 @@
 # Usage:
 #   ansible-playbook -i inventory/lab playbooks/ziti_router.yaml
 #   ansible-playbook -i inventory/prod playbooks/ziti_router.yaml -l heimdall
-#   ansible-playbook -i inventory/prod playbooks/ziti_router.yaml -l core
+#   ansible-playbook -i inventory/prod playbooks/ziti_router.yaml -l eroc
 
 - name: Deploy OpenZiti Router
   hosts: all

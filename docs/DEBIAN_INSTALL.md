@@ -27,7 +27,7 @@ mpv --profile=low-latency --no-cache --fs \
 
 **Network**
 
-- Hostname: `<hostname>` (e.g. `core`)
+- Hostname: `<hostname>` (e.g. `eroc`)
 - Domain: `zion.local`
 - Configure network manually: yes
   - IP: `<ip>/<cidr>` (e.g. `10.30.0.2/24`)

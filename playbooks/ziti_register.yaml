@@ -3,8 +3,8 @@
 # Registers overlay components with the controller and outputs enrollment tokens.
 #
 # Requirements:
-#   - ziti CLI available on the targeted host (core — the only host with it installed)
-#   - Must be run with -l core regardless of which identity is being registered
+#   - ziti CLI available on the targeted host (eroc — the only host with it installed)
+#   - Must be run with -l eroc regardless of which identity is being registered
 #   - Controller reachable at ziti_ctrl_advertised_address:ziti_ctrl_advertised_port
 #   - ziti_admin_password available (from SOPS-encrypted inventory)
 #   - ziti_name mandatory for all tags (-e ziti_name=<name>)
@@ -34,22 +34,22 @@
 # Usage:
 #   # Public router (no tunneler):
 #   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
-#     -l core --tags router -e "ziti_name=heimdall"
+#     -l eroc --tags router -e "ziti_name=heimdall"
 #
 #   # Router with tunneler enabled:
 #   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
-#     -l core --tags router-tunneler -e "ziti_name=core"
+#     -l eroc --tags router-tunneler -e "ziti_name=eroc"
 #
 #   # Standalone tunneler identity (host-mode targets — NAS, etc.):
 #   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
-#     -l core --tags tunneler -e "ziti_name=<name>"
+#     -l eroc --tags tunneler -e "ziti_name=<name>"
 #
 #   # Client identity (workstation/device, intercept mode):
 #   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
-#     -l core --tags client -e "ziti_name=<name>"
+#     -l eroc --tags client -e "ziti_name=<name>"
 #
-# Output: /tmp/{{ ziti_name }}.jwt on the control node (fetched from core, then
-# removed from core — see fetch/cleanup tasks below)
+# Output: /tmp/{{ ziti_name }}.jwt on the control node (fetched from eroc, then
+# removed from eroc — see fetch/cleanup tasks below)
 
 - name: Register OpenZiti components
   hosts: all
