@@ -4,12 +4,34 @@
 # apt_repositories -> update -> security -> journald -> ziti_controller -> ziti_router
 # Excludes stepca, postgresql, and the rest of the legacy full stack (deferred).
 #
+# Scoped to the 'core' group — safe to run without -l.
+#
 # Usage:
-#   ansible-playbook -i inventory/prod playbooks/core.yaml -l core
+#   ansible-playbook -i inventory/prod playbooks/core.yaml
 
-- import_playbook: apt_repositories.yaml
-- import_playbook: update.yaml
-- import_playbook: security.yaml
-- import_playbook: journald.yaml
-- import_playbook: ziti_controller.yaml
-- import_playbook: ziti_router.yaml
+- name: Deploy core
+  hosts: core
+  become: true
+  tasks:
+    - name: Configure APT repositories
+      ansible.builtin.import_role:
+        name: apt_repositories
+
+    - name: Manual system updates
+      ansible.builtin.import_tasks: ../tasks/update.yaml
+
+    - name: Apply security hardening
+      ansible.builtin.import_role:
+        name: security_hardening
+
+    - name: Configure journald
+      ansible.builtin.import_role:
+        name: journald
+
+    - name: Deploy OpenZiti Controller
+      ansible.builtin.import_role:
+        name: ziti_controller
+
+    - name: Deploy OpenZiti Router
+      ansible.builtin.import_role:
+        name: ziti_router

@@ -60,6 +60,23 @@
     - not _ziti_router_enrolled.stat.exists
     - _ziti_jwt.stat.exists | default(false)
 
+- name: Set ownership of enrolled identity files for router service
+  # ziti router enroll runs as root (via become); the running ziti-router
+  # service uses a non-root package-created user and cannot read root-owned
+  # identity files — matches the same bug class already fixed for ziti_controller.
+  ansible.builtin.file:
+    path: "{{ item }}"
+    owner: "{{ ziti_router_system_user }}"
+    group: "{{ ziti_router_system_group }}"
+  loop:
+    - "{{ ziti_router_base_dir }}/{{ ziti_name }}.cert"
+    - "{{ ziti_router_base_dir }}/{{ ziti_name }}.key"
+    - "{{ ziti_router_base_dir }}/{{ ziti_name }}.server.chain.cert"
+    - "{{ ziti_router_base_dir }}/{{ ziti_name }}.cas"
+  when:
+    - not _ziti_router_enrolled.stat.exists
+    - _ziti_jwt.stat.exists | default(false)
+
 - name: Remove JWT from router host
   ansible.builtin.file:
     path: "/tmp/{{ ziti_name }}.jwt"

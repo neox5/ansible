@@ -34,6 +34,11 @@ ziti_router_base_dir: "/var/lib/ziti-router"
 ziti_router_config_file: "{{ ziti_router_base_dir }}/config.yml"
 ziti_router_service_env: "/opt/openziti/etc/router/service.env"
 
+# System identity (created by the package; the running service uses this user —
+# enrollment output files must be readable by it, see enroll.yaml)
+ziti_router_system_user: "ziti-router"
+ziti_router_system_group: "ziti-router"
+
 # Service state
 ziti_router_service_state: started
 ziti_router_service_enabled: true

@@ -2,11 +2,30 @@
 # Edge Stack Deployment
 # Deploys complete edge stack in dependency order.
 #
+# Scoped to the 'edge' group — safe to run without -l.
+#
 # Usage:
 #   ansible-playbook -i inventory/prod playbooks/edge.yaml
 
-- import_playbook: apt_repositories.yaml
-- import_playbook: update.yaml
-- import_playbook: security.yaml
-- import_playbook: journald.yaml
-- import_playbook: ziti_router.yaml
+- name: Deploy edge
+  hosts: edge
+  become: true
+  tasks:
+    - name: Configure APT repositories
+      ansible.builtin.import_role:
+        name: apt_repositories
+
+    - name: Manual system updates
+      ansible.builtin.import_tasks: ../tasks/update.yaml
+
+    - name: Apply security hardening
+      ansible.builtin.import_role:
+        name: security_hardening
+
+    - name: Configure journald
+      ansible.builtin.import_role:
+        name: journald
+
+    - name: Deploy OpenZiti Router
+      ansible.builtin.import_role:
+        name: ziti_router

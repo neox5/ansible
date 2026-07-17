@@ -5,15 +5,15 @@
   ansible.builtin.file:
     path: "{{ ziti_router_base_dir }}"
     state: directory
-    owner: root
-    group: root
+    owner: "{{ ziti_router_system_user }}"
+    group: "{{ ziti_router_system_group }}"
     mode: "0700"
 
 - name: Deploy router config.yml
   ansible.builtin.template:
     src: config.yml.j2
     dest: "{{ ziti_router_config_file }}"
-    owner: root
-    group: root
+    owner: "{{ ziti_router_system_user }}"
+    group: "{{ ziti_router_system_group }}"
     mode: "0600"
   notify: restart ziti-router
