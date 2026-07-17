@@ -4,6 +4,10 @@
 *.env.*
 !*.env.example
 
+# python
+__pycache__/
+*.pyc
+
 # snapshot files
 **/*.snp
 **/*.snp.txt
