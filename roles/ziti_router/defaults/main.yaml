@@ -11,9 +11,10 @@ ziti_name: "{{ inventory_hostname }}"
 # JWT enrollment token path on control node (produced by ziti_register.yaml)
 ziti_jwt_path: "/tmp/{{ ziti_name }}.jwt"
 
-# Controller endpoint — reuse overlay-wide vars set in inventory
-# ziti_ctrl_advertised_address: ""   # mandatory — set in inventory
-# ziti_ctrl_advertised_port: 1280    # set in ziti_controller defaults
+# Controller endpoint — set once in host_vars/core/ziti_controller.yaml;
+# every other host references it via hostvars rather than duplicating it.
+ziti_ctrl_advertised_address: "{{ hostvars['core'].ziti_ctrl_advertised_address }}"
+ziti_ctrl_advertised_port: "{{ hostvars['core'].ziti_ctrl_advertised_port }}"
 
 # Edge listener — router advertised address for SDK clients
 ziti_router_advertised_address: ""

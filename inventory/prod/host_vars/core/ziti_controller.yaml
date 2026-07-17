@@ -9,6 +9,7 @@
 # re-enrollment of every identity in the overlay.
 
 ziti_ctrl_advertised_address: "zctrl1.neox5.com"
+ziti_ctrl_advertised_port: 1280
 ziti_controller_id: "zctrl1"
 
 ziti_admin_password: "{{ ziti_admin_password_secret }}"

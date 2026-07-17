@@ -17,4 +17,4 @@
       -u admin
       -p {{ ziti_admin_password }}
   when: not _ziti_ctrl_db.stat.exists
-  no_log: false
+  no_log: true

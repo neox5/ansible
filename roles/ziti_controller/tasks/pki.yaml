@@ -8,8 +8,8 @@
     path: "{{ ziti_controller_pki_dir }}"
     state: directory
     owner: root
-    group: root
-    mode: "0700"
+    group: "{{ ziti_controller_system_group }}"
+    mode: "0750"
 
 # ---------------------------------------------------------------------------
 # Root CA (interim: stays on this host — production custody model pending
@@ -111,6 +111,21 @@
       --spiffe-id "controller/{{ ziti_controller_id }}"
       --curve {{ ziti_curve }}
   when: not _ziti_client_cert.stat.exists
+
+# ---------------------------------------------------------------------------
+# Signing CA directory ownership
+# Signing CA cert/key and controller server/client certs are read by the
+# running controller service (ziti-controller:ziti-controller), unlike the
+# root CA which is only touched by `ziti pki create` (run as root) above.
+# ---------------------------------------------------------------------------
+
+- name: Set ownership of signing CA directory for controller service
+  ansible.builtin.file:
+    path: "{{ ziti_controller_pki_dir }}/signing"
+    state: directory
+    owner: "{{ ziti_controller_system_user }}"
+    group: "{{ ziti_controller_system_group }}"
+    recurse: true
 
 # ---------------------------------------------------------------------------
 # Root CA key custody notice

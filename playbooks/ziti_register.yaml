@@ -3,29 +3,45 @@
 # Registers overlay components with the controller and outputs enrollment tokens.
 #
 # Requirements:
-#   - ziti CLI available on the control node
+#   - ziti CLI available on the targeted host (core — the only host with it installed)
+#   - Must be run with -l core regardless of which identity is being registered
 #   - Controller reachable at ziti_ctrl_advertised_address:ziti_ctrl_advertised_port
 #   - ziti_admin_password available (from SOPS-encrypted inventory)
 #   - ziti_name mandatory for all tags (-e ziti_name=<name>)
 #
+# Idempotency:
+#   - Any stale /tmp/{{ ziti_name }}.jwt on the registration host from a prior
+#     interrupted run is removed unconditionally before create/re-enroll, so
+#     this playbook can always be safely re-run.
+#   - router / router-tunneler: if an edge-router with this name already exists
+#     (e.g. a prior run's JWT expired before enrollment completed), a fresh JWT
+#     is re-issued via `ziti edge re-enroll edge-router` instead of failing on
+#     "name must be unique".
+#   - tunneler / client: no equivalent re-enroll exists for identities in the
+#     OpenZiti CLI (open upstream request: openziti/ziti#2378). A name collision
+#     on these tags still fails — recover manually:
+#       ziti edge delete identity <name>
+#     then re-run this playbook.
+#
 # Usage:
 #   # Public router (no tunneler):
 #   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
-#     --tags router -e "ziti_name=heimdall"
+#     -l core --tags router -e "ziti_name=heimdall"
 #
 #   # Router with tunneler enabled:
 #   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
-#     --tags router-tunneler -e "ziti_name=core"
+#     -l core --tags router-tunneler -e "ziti_name=core"
 #
 #   # Standalone tunneler identity (host-mode targets — NAS, etc.):
 #   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
-#     --tags tunneler -e "ziti_name=<name>"
+#     -l core --tags tunneler -e "ziti_name=<name>"
 #
 #   # Client identity (workstation/device, intercept mode):
 #   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
-#     --tags client -e "ziti_name=<name>"
+#     -l core --tags client -e "ziti_name=<name>"
 #
-# Output: /tmp/{{ ziti_name }}.jwt on the control node
+# Output: /tmp/{{ ziti_name }}.jwt on the control node (fetched from core, then
+# removed from core — see fetch/cleanup tasks below)
 
 - name: Register OpenZiti components
   hosts: all
@@ -52,11 +68,32 @@
       changed_when: true
       tags: [router, router-tunneler, tunneler, client]
 
+    - name: Remove stale JWT file before registration
+      ansible.builtin.file:
+        path: "/tmp/{{ ziti_name }}.jwt"
+        state: absent
+      become: true
+      tags: [router, router-tunneler, tunneler, client]
+
+    - name: Check if edge-router already exists
+      ansible.builtin.command:
+        cmd: >
+          ziti edge list edge-routers 'name="{{ ziti_name }}"' -j
+      register: _ziti_edge_router_list
+      changed_when: false
+      tags: [router, router-tunneler]
+
+    - name: Set edge-router existence fact
+      ansible.builtin.set_fact:
+        _ziti_edge_router_exists: "{{ (_ziti_edge_router_list.stdout | from_json).data | length > 0 }}"
+      tags: [router, router-tunneler]
+
     - name: Create edge-router (no tunneler)
       ansible.builtin.command:
         cmd: >
           ziti edge create edge-router {{ ziti_name }}
           --jwt-output-file /tmp/{{ ziti_name }}.jwt
+      when: not _ziti_edge_router_exists
       tags: [router]
 
     - name: Create edge-router (tunneler enabled)
@@ -65,7 +102,16 @@
           ziti edge create edge-router {{ ziti_name }}
           --tunneler-enabled
           --jwt-output-file /tmp/{{ ziti_name }}.jwt
+      when: not _ziti_edge_router_exists
       tags: [router-tunneler]
+
+    - name: Re-enroll existing edge-router (fresh JWT)
+      ansible.builtin.command:
+        cmd: >
+          ziti edge re-enroll edge-router {{ ziti_name }}
+          --jwt-output-file /tmp/{{ ziti_name }}.jwt
+      when: _ziti_edge_router_exists
+      tags: [router, router-tunneler]
 
     - name: Create tunneler identity
       ansible.builtin.command:
@@ -73,6 +119,19 @@
           ziti edge create identity {{ ziti_name }}
           --jwt-output-file /tmp/{{ ziti_name }}.jwt
       tags: [tunneler, client]
+
+    - name: Fetch JWT to control node
+      ansible.builtin.fetch:
+        src: "/tmp/{{ ziti_name }}.jwt"
+        dest: "/tmp/{{ ziti_name }}.jwt"
+        flat: true
+      tags: [router, router-tunneler, tunneler, client]
+
+    - name: Remove JWT from registration host
+      ansible.builtin.file:
+        path: "/tmp/{{ ziti_name }}.jwt"
+        state: absent
+      tags: [router, router-tunneler, tunneler, client]
 
     - name: Display JWT path
       ansible.builtin.debug:
