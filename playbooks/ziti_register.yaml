@@ -23,6 +23,14 @@
 #       ziti edge delete identity <name>
 #     then re-run this playbook.
 #
+# Error output:
+#   - Command failures show a concise summary (via the ziti_error_summary
+#     filter) instead of raw goroutine dumps / repeated JSON bodies.
+#   - Login failures are always summarized from stderr (credential-free), even
+#     though the task itself is no_log. For the rare case that's not enough,
+#     re-run with -e ziti_debug=true to also dump the full raw result
+#     (includes the command line, i.e. the credential — local/debug use only).
+#
 # Usage:
 #   # Public router (no tunneler):
 #   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
@@ -64,8 +72,26 @@
           -u admin
           -p {{ ziti_admin_password }}
           -y
+      register: _ziti_login
       no_log: true
       changed_when: true
+      failed_when: false
+      tags: [router, router-tunneler, tunneler, client]
+
+    - name: Fail with concise login error
+      ansible.builtin.fail:
+        msg: >-
+          Login to controller failed: {{ _ziti_login.stderr | ziti_error_summary }}
+          {{ '' if (ziti_debug | default(false) | bool) else '(re-run with -e ziti_debug=true for full raw output, including the command line)' }}
+      when: _ziti_login.rc != 0
+      tags: [router, router-tunneler, tunneler, client]
+
+    - name: Debug - full login result (sensitive — includes credential in argv)
+      ansible.builtin.debug:
+        var: _ziti_login
+      when:
+        - _ziti_login.rc != 0
+        - ziti_debug | default(false) | bool
       tags: [router, router-tunneler, tunneler, client]
 
     - name: Remove stale JWT file before registration
@@ -93,7 +119,17 @@
         cmd: >
           ziti edge create edge-router {{ ziti_name }}
           --jwt-output-file /tmp/{{ ziti_name }}.jwt
+      register: _ziti_create_router
+      failed_when: false
       when: not _ziti_edge_router_exists
+      tags: [router]
+
+    - name: Fail with concise edge-router creation error
+      ansible.builtin.fail:
+        msg: "Edge-router creation failed: {{ _ziti_create_router.stderr | ziti_error_summary }}"
+      when:
+        - not _ziti_edge_router_exists
+        - _ziti_create_router.rc != 0
       tags: [router]
 
     - name: Create edge-router (tunneler enabled)
@@ -102,7 +138,17 @@
           ziti edge create edge-router {{ ziti_name }}
           --tunneler-enabled
           --jwt-output-file /tmp/{{ ziti_name }}.jwt
+      register: _ziti_create_router_tunneler
+      failed_when: false
       when: not _ziti_edge_router_exists
+      tags: [router-tunneler]
+
+    - name: Fail with concise edge-router creation error
+      ansible.builtin.fail:
+        msg: "Edge-router creation failed: {{ _ziti_create_router_tunneler.stderr | ziti_error_summary }}"
+      when:
+        - not _ziti_edge_router_exists
+        - _ziti_create_router_tunneler.rc != 0
       tags: [router-tunneler]
 
     - name: Re-enroll existing edge-router (fresh JWT)
@@ -110,7 +156,17 @@
         cmd: >
           ziti edge re-enroll edge-router {{ ziti_name }}
           --jwt-output-file /tmp/{{ ziti_name }}.jwt
+      register: _ziti_reenroll_router
+      failed_when: false
       when: _ziti_edge_router_exists
+      tags: [router, router-tunneler]
+
+    - name: Fail with concise re-enrollment error
+      ansible.builtin.fail:
+        msg: "Edge-router re-enrollment failed: {{ _ziti_reenroll_router.stderr | ziti_error_summary }}"
+      when:
+        - _ziti_edge_router_exists
+        - _ziti_reenroll_router.rc != 0
       tags: [router, router-tunneler]
 
     - name: Create tunneler identity
@@ -118,6 +174,14 @@
         cmd: >
           ziti edge create identity {{ ziti_name }}
           --jwt-output-file /tmp/{{ ziti_name }}.jwt
+      register: _ziti_create_identity
+      failed_when: false
+      tags: [tunneler, client]
+
+    - name: Fail with concise identity creation error
+      ansible.builtin.fail:
+        msg: "Identity creation failed: {{ _ziti_create_identity.stderr | ziti_error_summary }}"
+      when: _ziti_create_identity.rc != 0
       tags: [tunneler, client]
 
     - name: Fetch JWT to control node

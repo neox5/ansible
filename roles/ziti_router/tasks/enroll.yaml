@@ -56,14 +56,21 @@
     cmd: >
       ziti router enroll {{ ziti_router_config_file }}
       --jwt /tmp/{{ ziti_name }}.jwt
+  register: _ziti_router_enroll
+  failed_when: false
   when:
     - not _ziti_router_enrolled.stat.exists
     - _ziti_jwt.stat.exists | default(false)
 
+- name: Fail with concise enrollment error
+  ansible.builtin.fail:
+    msg: "Router enrollment failed: {{ _ziti_router_enroll.stderr | ziti_error_summary }}"
+  when:
+    - not _ziti_router_enrolled.stat.exists
+    - _ziti_jwt.stat.exists | default(false)
+    - _ziti_router_enroll.rc != 0
+
 - name: Set ownership of enrolled identity files for router service
-  # ziti router enroll runs as root (via become); the running ziti-router
-  # service uses a non-root package-created user and cannot read root-owned
-  # identity files — matches the same bug class already fixed for ziti_controller.
   ansible.builtin.file:
     path: "{{ item }}"
     owner: "{{ ziti_router_system_user }}"

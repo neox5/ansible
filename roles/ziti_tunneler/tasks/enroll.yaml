@@ -46,9 +46,19 @@
       ziti-edge-tunnel enroll
       --jwt /tmp/{{ ziti_name }}.jwt
       --identity {{ ziti_tunneler_identity_file }}
+  register: _ziti_tunneler_enroll
+  failed_when: false
   when:
     - not _ziti_tunneler_identity.stat.exists
     - _ziti_jwt.stat.exists | default(false)
+
+- name: Fail with concise enrollment error
+  ansible.builtin.fail:
+    msg: "Tunneler enrollment failed: {{ _ziti_tunneler_enroll.stderr | ziti_error_summary }}"
+  when:
+    - not _ziti_tunneler_identity.stat.exists
+    - _ziti_jwt.stat.exists | default(false)
+    - _ziti_tunneler_enroll.rc != 0
 
 - name: Set identity file permissions
   ansible.builtin.file:
