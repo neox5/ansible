@@ -41,3 +41,16 @@
     path: "{{ ziti_router_base_dir }}"
     state: absent
   when: ziti_router_remove_data | bool
+
+- name: Remove ziti-router system user
+  ansible.builtin.user:
+    name: "{{ ziti_router_system_user }}"
+    state: absent
+    remove: true
+  when: ziti_router_remove_data | bool
+
+- name: Remove ziti-router system group
+  ansible.builtin.group:
+    name: "{{ ziti_router_system_group }}"
+    state: absent
+  when: ziti_router_remove_data | bool

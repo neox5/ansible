@@ -3,20 +3,14 @@
 
 # Lifecycle
 ziti_tunneler_state: present
+ziti_tunneler_mode: host
 ziti_tunneler_remove_data: false
 
-# Operating mode: 'host' (bind only, no kernel capabilities) or
-# 'client' (bind + dial/intercept, tproxy via CAP_NET_ADMIN)
-ziti_tunneler_mode: host
-
-# Identity name — defaults to inventory hostname
+# Identity
 ziti_name: "{{ inventory_hostname }}"
-
-# JWT enrollment token path on control node (produced by ziti_register.yaml)
 ziti_jwt_path: "/tmp/{{ ziti_name }}.jwt"
 
-# Controller endpoint — set once in host_vars/core/ziti_controller.yaml;
-# every other host references it via hostvars rather than duplicating it.
+# Controller connection (single source of truth: hostvars['core'])
 ziti_ctrl_advertised_address: "{{ hostvars['core'].ziti_ctrl_advertised_address }}"
 ziti_ctrl_advertised_port: "{{ hostvars['core'].ziti_ctrl_advertised_port }}"
 
@@ -25,6 +19,11 @@ ziti_tunneler_identity_dir: "/opt/openziti/etc/identities"
 ziti_tunneler_identity_file: "{{ ziti_tunneler_identity_dir }}/{{ ziti_name }}.json"
 ziti_tunneler_override_dir: "/etc/systemd/system/ziti-edge-tunnel.service.d"
 ziti_tunneler_override_file: "{{ ziti_tunneler_override_dir }}/override.conf"
+
+# System identity (created by the package as of ziti-edge-tunnel v0.21.0+; shared
+# generic name, not role-prefixed — referenced for removal only)
+ziti_tunneler_system_user: "ziti"
+ziti_tunneler_system_group: "ziti"
 
 # Service state
 ziti_tunneler_service_state: started

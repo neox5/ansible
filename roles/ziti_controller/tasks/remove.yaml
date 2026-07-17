@@ -65,12 +65,21 @@
 # ---------------------------------------------------------------------------
 
 - name: Warn before irreversible root CA destruction
-  ansible.builtin.debug:
-    msg:
-      - "WARNING: ziti_controller_remove_root_ca is set — this will permanently delete"
-      - "the root CA private key. No off-host copy exists (interim custody decision)."
-      - "This network's root of trust cannot be recovered after this run."
+  ansible.builtin.pause:
+    prompt: |
+      WARNING: ziti_controller_remove_root_ca is set — this will permanently delete
+      the root CA private key. No off-host copy exists (interim custody decision).
+      This network's root of trust cannot be recovered after this run.
+      Type 'yes' to continue, anything else to abort
+  register: _root_ca_confirm
   when: ziti_controller_remove_root_ca | bool
+
+- name: Abort if root CA removal not confirmed
+  ansible.builtin.fail:
+    msg: "Root CA removal aborted by operator."
+  when:
+    - ziti_controller_remove_root_ca | bool
+    - _root_ca_confirm.user_input | default('') != 'yes'
 
 - name: Remove root CA
   ansible.builtin.file:

@@ -46,3 +46,16 @@
     path: "{{ ziti_tunneler_identity_dir }}"
     state: absent
   when: ziti_tunneler_remove_data | bool
+
+- name: Remove ziti system user
+  ansible.builtin.user:
+    name: "{{ ziti_tunneler_system_user }}"
+    state: absent
+    remove: true
+  when: ziti_tunneler_remove_data | bool
+
+- name: Remove ziti system group
+  ansible.builtin.group:
+    name: "{{ ziti_tunneler_system_group }}"
+    state: absent
+  when: ziti_tunneler_remove_data | bool
