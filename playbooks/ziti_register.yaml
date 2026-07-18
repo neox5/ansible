@@ -8,6 +8,7 @@
 #   - Controller reachable at ziti_ctrl_advertised_address:ziti_ctrl_advertised_port
 #   - ziti_admin_password available (from SOPS-encrypted inventory)
 #   - ziti_name mandatory for all tags (-e ziti_name=<name>)
+#   - Exactly one of --tags router|router-tunneler|tunneler|client is required
 #
 # Idempotency:
 #   - Any stale /tmp/{{ ziti_name }}.jwt on the registration host from a prior
@@ -23,30 +24,15 @@
 #       ziti edge delete identity <name>
 #     then re-run this playbook.
 #
-# Error output:
-#   - Command failures show a concise summary (via the ziti_error_summary
-#     filter) instead of raw goroutine dumps / repeated JSON bodies.
-#   - Login failures are always summarized from stderr (credential-free), even
-#     though the task itself is no_log. For the rare case that's not enough,
-#     re-run with -e ziti_debug=true to also dump the full raw result
-#     (includes the command line, i.e. the credential — local/debug use only).
+# Debugging:
+#   Login failures (no_log, since the command line carries the admin password)
+#   surface a credential-free stderr summary by default.
+#   For the rare case that's not enough, re-run with -e ziti_debug=true to also
+#   dump the full raw result (includes the command line, i.e. the credential —
+#   local/debug use only).
 #
 # Usage:
-#   # Public router (no tunneler):
-#   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
-#     -l eroc --tags router -e "ziti_name=heimdall"
-#
-#   # Router with tunneler enabled:
-#   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
-#     -l eroc --tags router-tunneler -e "ziti_name=eroc"
-#
-#   # Standalone tunneler identity (host-mode targets — NAS, etc.):
-#   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
-#     -l eroc --tags tunneler -e "ziti_name=<name>"
-#
-#   # Client identity (workstation/device, intercept mode):
-#   ansible-playbook -i inventory/prod playbooks/ziti_register.yaml \
-#     -l eroc --tags client -e "ziti_name=<name>"
+#   ansible-playbook -i inventory/<env> -l <controller_host> playbooks/ziti_register.yaml --tags <router|router-tunneler|tunneler|client> -e "ziti_name=<name>"
 #
 # Output: /tmp/{{ ziti_name }}.jwt on the control node (fetched from eroc, then
 # removed from eroc — see fetch/cleanup tasks below)
@@ -56,13 +42,43 @@
   gather_facts: false
   become: false
   tasks:
+    # -----------------------------------------------------------------------
+    # Preflight — consolidated usage validation
+    # Runs unconditionally (tags: always) so a missing/invalid --tags value
+    # is itself caught here rather than silently matching zero tasks below.
+    # -----------------------------------------------------------------------
 
-    - name: Assert ziti_name is set
-      ansible.builtin.assert:
-        quiet: true
-        that: ziti_name | default('') | length > 0
-        fail_msg: "ziti_name is required: -e ziti_name=<name>"
-      tags: [router, router-tunneler, tunneler, client]
+    - name: Determine effective run tags
+      ansible.builtin.set_fact:
+        _ziti_valid_tags: [router, router-tunneler, tunneler, client]
+        _ziti_selected_tags: "{{ ansible_run_tags | difference(['always', 'all']) }}"
+      tags: always
+
+    - name: Collect usage violations
+      ansible.builtin.set_fact:
+        _ziti_usage_errors: >-
+          {{
+            (['ziti_name is required (-e ziti_name=<name>).']
+              if not (ziti_name | default('') | length > 0) else []) +
+            (['Exactly one of --tags router|router-tunneler|tunneler|client is required (got: '
+              ~ (_ziti_selected_tags | join(', ') if _ziti_selected_tags | length > 0 else 'none') ~ ').']
+              if (_ziti_selected_tags | length != 1 or _ziti_selected_tags[0] not in _ziti_valid_tags) else [])
+          }}
+      tags: always
+
+    - name: Show usage and fail on invalid input
+      ansible.builtin.fail:
+        msg: |
+          {{ _ziti_usage_errors | join('\n') }}
+
+          Usage:
+            ansible-playbook -i inventory/<env> -l <controller_host> playbooks/ziti_register.yaml --tags <router|router-tunneler|tunneler|client> -e "ziti_name=<name>"
+      when: _ziti_usage_errors | length > 0
+      tags: always
+
+    # -----------------------------------------------------------------------
+    # Controller login
+    # -----------------------------------------------------------------------
 
     - name: Login to controller
       ansible.builtin.command:
@@ -93,6 +109,10 @@
         - _ziti_login.rc != 0
         - ziti_debug | default(false) | bool
       tags: [router, router-tunneler, tunneler, client]
+
+    # -----------------------------------------------------------------------
+    # Registration
+    # -----------------------------------------------------------------------
 
     - name: Remove stale JWT file before registration
       ansible.builtin.file:
@@ -184,6 +204,10 @@
       when: _ziti_create_identity.rc != 0
       tags: [tunneler, client]
 
+    # -----------------------------------------------------------------------
+    # JWT handoff
+    # -----------------------------------------------------------------------
+
     - name: Fetch JWT to control node
       ansible.builtin.fetch:
         src: "/tmp/{{ ziti_name }}.jwt"
@@ -201,6 +225,13 @@
       ansible.builtin.debug:
         msg:
           - "JWT written to /tmp/{{ ziti_name }}.jwt on the control node."
+          - "Proceed with: ansible-playbook -i inventory/prod playbooks/ziti_router.yaml -l {{ ziti_name }}"
+      tags: [router, router-tunneler]
+
+    - name: Display JWT path
+      ansible.builtin.debug:
+        msg:
+          - "JWT written to /tmp/{{ ziti_name }}.jwt on the control node."
           - "Proceed with: ansible-playbook -i inventory/prod playbooks/ziti_tunneler.yaml -l {{ ziti_name }}"
       tags: [tunneler]
 
@@ -211,10 +242,3 @@
           - "Set ziti_tunneler_mode: client in host_vars for this host."
           - "Proceed with: ansible-playbook -i inventory/prod playbooks/ziti_tunneler.yaml -l {{ ziti_name }}"
       tags: [client]
-
-    - name: Display JWT path
-      ansible.builtin.debug:
-        msg:
-          - "JWT written to /tmp/{{ ziti_name }}.jwt on the control node."
-          - "Proceed with: ansible-playbook -i inventory/prod playbooks/ziti_router.yaml -l {{ ziti_name }}"
-      tags: [router, router-tunneler]
