@@ -1,0 +1,11 @@
+---
+# Reconcile Role Attributes for a single declared Edge Router
+# (included once per item in ziti_edge_router_role_attributes)
+
+- name: Set role attributes on edge-router {{ item.router }}
+  ansible.builtin.command:
+    cmd: >
+      ziti edge update edge-router {{ item.router }}
+      --role-attributes {{ item.role_attributes | join(',') }}
+      {% if item.tags is defined %}--tags {% for k in item.tags %}{{ k }}={{ item.tags[k] }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}
+  changed_when: true

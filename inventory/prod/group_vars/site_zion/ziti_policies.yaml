@@ -1,0 +1,70 @@
+# ============================================================================
+# Ziti Policies
+# File: group_vars/site_zion/ziti_policies.yaml
+# Role: ziti_policies
+# ============================================================================
+#
+# Usage
+# -----
+# Role syntax (used in every *_roles list below):
+#   "#attribute"   selects entities tagged with this Role Attribute
+#   "@name"        selects one specific entity by name
+#   "#all"         selects every entity of that type
+#
+# semantic: optional per policy — "AnyOf" | "AllOf". Governs how multiple
+# attributes within ONE field combine (not between fields). Omitted =
+# controller default (AnyOf).
+#
+# tags: optional per entry (Role Attributes and all policy types) — a map
+# of key: value strings, e.g. tags: { group: "example" }. Distinct from
+# Role Attributes: used for grouping/lookup only, never for policy matching.
+#
+# Service Policies (Dial/Bind) and Service Edge Router Policies reference
+# Services by @name — the Service itself (and its intercept.v1/host.v1
+# Configs) must already exist on the controller; this file does not create
+# them.
+
+# ---------------------------------------------------------------------------
+# Role Attributes — Edge Routers
+# ---------------------------------------------------------------------------
+ziti_edge_router_role_attributes:
+  - router: "eroc"
+    role_attributes: ["zion-lan"]
+  - router: "heimdall"
+    role_attributes: ["public"]
+
+# ---------------------------------------------------------------------------
+# Role Attributes — Identities
+#
+# Interim mechanism: identity-level device/user classification lives here
+# until a dedicated system (MDM / asset management / IdP) owns this
+# properly. Reconciled the same way as Edge Router attributes above —
+# also serves as the validated source of every identity_roles value used
+# in the policies below.
+# ---------------------------------------------------------------------------
+ziti_identity_role_attributes:
+  - identity: "pixel9a"
+    role_attributes: ["phone"]
+
+# ---------------------------------------------------------------------------
+# Edge Router Policies
+# ---------------------------------------------------------------------------
+ziti_edge_router_policies:
+  - name: "phone.routers"
+    identity_roles: ["#phone"]
+    edge_router_roles: ["#zion-lan", "#public"]
+
+# ---------------------------------------------------------------------------
+# Service Policies — Dial
+# ---------------------------------------------------------------------------
+ziti_service_dial_policies: []
+
+# ---------------------------------------------------------------------------
+# Service Policies — Bind
+# ---------------------------------------------------------------------------
+ziti_service_bind_policies: []
+
+# ---------------------------------------------------------------------------
+# Service Edge Router Policies
+# ---------------------------------------------------------------------------
+ziti_service_edge_router_policies: []

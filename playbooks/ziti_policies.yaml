@@ -1,0 +1,17 @@
+---
+# OpenZiti Policy Reconciliation
+# Reconciles Role Attributes, Edge Router Policies, Service Dial/Bind
+# Policies, and Service Edge Router Policies declared in
+# group_vars/site_zion/ziti_policies.yaml against the controller.
+#
+# Must be run with -l eroc — the only host with the ziti CLI installed.
+#
+# Usage:
+#   ansible-playbook -i inventory/prod playbooks/ziti_policies.yaml -l eroc
+
+- name: Reconcile OpenZiti Policies
+  hosts: all
+  gather_facts: false
+  become: false
+  roles:
+    - ziti_policies

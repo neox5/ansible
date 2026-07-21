@@ -1,0 +1,42 @@
+---
+# Reconcile a single declared Service Bind Policy via compare-and-replace
+# (included once per item in ziti_service_bind_policies)
+
+- name: Fetch current state of service-policy {{ item.name }}
+  ansible.builtin.command:
+    cmd: >
+      ziti edge list service-policies 'name="{{ item.name }}"' --output-json
+  register: _ziti_current
+  changed_when: false
+
+- name: Extract live state for service-policy {{ item.name }}
+  ansible.builtin.set_fact:
+    _ziti_live: "{{ (_ziti_current.stdout | from_json).data | first | default({}) }}"
+
+- name: Determine whether service-policy {{ item.name }} needs replacing
+  ansible.builtin.set_fact:
+    _ziti_changed: >-
+      {{
+        (_ziti_live | length == 0) or
+        ((_ziti_live.serviceRoles | default([]) | sort) != (item.service_roles | sort)) or
+        ((_ziti_live.identityRoles | default([]) | sort) != (item.bind_roles | sort)) or
+        ((_ziti_live.semantic | default('AnyOf')) != (item.semantic | default('AnyOf'))) or
+        ((_ziti_live.tags | default({})) != (item.tags | default({})))
+      }}
+
+- name: Delete existing service-policy {{ item.name }} (replacing)
+  ansible.builtin.command:
+    cmd: ziti edge delete service-policy "{{ item.name }}"
+  when: (_ziti_live | length > 0) and _ziti_changed
+  changed_when: true
+
+- name: Create service-policy {{ item.name }} (Bind)
+  ansible.builtin.command:
+    cmd: >
+      ziti edge create service-policy "{{ item.name }}" Bind
+      {% for role in item.service_roles %}--service-roles "{{ role }}" {% endfor %}
+      {% for role in item.bind_roles %}--identity-roles "{{ role }}" {% endfor %}
+      {% if item.semantic is defined %}--semantic {{ item.semantic }} {% endif %}
+      {% if item.tags is defined %}--tags {% for k in item.tags %}{{ k }}={{ item.tags[k] }}{% if not loop.last %},{% endif %}{% endfor %}{% endif %}
+  when: _ziti_changed
+  changed_when: true

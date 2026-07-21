@@ -1,0 +1,104 @@
+---
+# ziti_policies role - Main task orchestration
+# Controller-side reconciliation only - run with -l eroc (the only host with
+# the ziti CLI installed), no other target host involved.
+#
+# ziti_policies.yaml is treated as the full desired state (policy as code):
+# every policy is compared against live controller state and replaced if
+# different, and every apply prunes controller-side policies no longer
+# declared. The file is trusted as-is; the API is the validation layer.
+
+- name: Assert controller address is configured
+  ansible.builtin.assert:
+    quiet: true
+    that: ziti_ctrl_advertised_address | default('') | length > 0
+    fail_msg: "ziti_ctrl_advertised_address must be set in inventory"
+
+- name: Assert edge-router role attribute entries have unique router names
+  ansible.builtin.assert:
+    quiet: true
+    that: >-
+      (ziti_edge_router_role_attributes | map(attribute='router') | list | unique | length)
+      == (ziti_edge_router_role_attributes | length)
+    fail_msg: "ziti_edge_router_role_attributes contains duplicate router names"
+
+- name: Assert identity role attribute entries have unique identity names
+  ansible.builtin.assert:
+    quiet: true
+    that: >-
+      (ziti_identity_role_attributes | map(attribute='identity') | list | unique | length)
+      == (ziti_identity_role_attributes | length)
+    fail_msg: "ziti_identity_role_attributes contains duplicate identity names"
+
+- name: Assert policy names are unique within each policy list
+  ansible.builtin.assert:
+    quiet: true
+    that: (item | map(attribute='name') | list | unique | length) == (item | length)
+    fail_msg: "A ziti_policies policy list contains duplicate names"
+  loop:
+    - "{{ ziti_edge_router_policies }}"
+    - "{{ ziti_service_dial_policies }}"
+    - "{{ ziti_service_bind_policies }}"
+    - "{{ ziti_service_edge_router_policies }}"
+  loop_control:
+    extended: true
+    label: "policy list #{{ ansible_loop.index }}"
+
+- name: Login to controller
+  ansible.builtin.command:
+    cmd: >
+      ziti edge login
+      https://{{ ziti_ctrl_advertised_address }}:{{ ziti_ctrl_advertised_port }}
+      -u admin
+      -p {{ ziti_admin_password }}
+      -y
+  no_log: true
+  changed_when: true
+
+- name: Reconcile edge-router role attributes
+  ansible.builtin.include_tasks: router_attribute.yaml
+  loop: "{{ ziti_edge_router_role_attributes }}"
+  loop_control:
+    label: "{{ item.router }}"
+
+- name: Reconcile identity role attributes
+  ansible.builtin.include_tasks: identity_attribute.yaml
+  loop: "{{ ziti_identity_role_attributes }}"
+  loop_control:
+    label: "{{ item.identity }}"
+
+- name: Reconcile edge-router policies
+  ansible.builtin.include_tasks: edge_router_policy.yaml
+  loop: "{{ ziti_edge_router_policies }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Reconcile service dial policies
+  ansible.builtin.include_tasks: service_dial_policy.yaml
+  loop: "{{ ziti_service_dial_policies }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Reconcile service bind policies
+  ansible.builtin.include_tasks: service_bind_policy.yaml
+  loop: "{{ ziti_service_bind_policies }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Reconcile service edge-router policies
+  ansible.builtin.include_tasks: service_edge_router_policy.yaml
+  loop: "{{ ziti_service_edge_router_policies }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Include pruning tasks
+  ansible.builtin.import_tasks: prune.yaml
+
+- name: Display reconciliation summary
+  ansible.builtin.debug:
+    msg:
+      - "ziti_policies reconciliation complete"
+      - "Edge Router Policies: {{ ziti_edge_router_policies | map(attribute='name') | list }}"
+      - "Service Dial Policies: {{ ziti_service_dial_policies | map(attribute='name') | list }}"
+      - "Service Bind Policies: {{ ziti_service_bind_policies | map(attribute='name') | list }}"
+      - "Service Edge Router Policies: {{ ziti_service_edge_router_policies | map(attribute='name') | list }}"

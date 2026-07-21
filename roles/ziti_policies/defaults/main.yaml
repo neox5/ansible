@@ -1,0 +1,22 @@
+---
+# ziti_policies Role - Configuration Defaults
+
+# Role Attributes reconciled onto Edge Routers
+# Each entry: router (name), role_attributes (list), tags (optional map)
+ziti_edge_router_role_attributes: []
+
+# Role Attributes reconciled onto Identities
+# Each entry: identity (name), role_attributes (list), tags (optional map)
+ziti_identity_role_attributes: []
+
+# Edge Router Policies
+ziti_edge_router_policies: []
+
+# Service Policies - Dial
+ziti_service_dial_policies: []
+
+# Service Policies - Bind
+ziti_service_bind_policies: []
+
+# Service Edge Router Policies
+ziti_service_edge_router_policies: []

@@ -1,0 +1,73 @@
+---
+# Pruning tasks - remove controller-side policy objects not present in
+# ziti_policies.yaml declarations. Role Attributes are never pruned (removing
+# an attribute assignment isn't a delete operation on the entity itself).
+# System-managed policies (isSystem = true) are excluded from consideration
+# entirely - not ours to create, compare, or delete.
+
+- name: List current edge-router-policies on controller
+  ansible.builtin.command:
+    cmd: ziti edge list edge-router-policies 'isSystem = false' --output-json
+  register: _ziti_current_erps
+  changed_when: false
+
+- name: List current service-policies on controller
+  ansible.builtin.command:
+    cmd: ziti edge list service-policies 'isSystem = false' --output-json
+  register: _ziti_current_service_policies
+  changed_when: false
+
+- name: List current service-edge-router-policies on controller
+  ansible.builtin.command:
+    cmd: ziti edge list service-edge-router-policies 'isSystem = false' --output-json
+  register: _ziti_current_serps
+  changed_when: false
+
+- name: Determine orphaned edge-router-policies
+  ansible.builtin.set_fact:
+    _ziti_orphan_erps: >-
+      {{ (_ziti_current_erps.stdout | from_json).data
+         | map(attribute='name') | list
+         | difference(ziti_edge_router_policies | map(attribute='name') | list) }}
+
+- name: Determine orphaned service dial/bind policies
+  ansible.builtin.set_fact:
+    _ziti_orphan_service_policies: >-
+      {{ (_ziti_current_service_policies.stdout | from_json).data
+         | map(attribute='name') | list
+         | difference(
+             (ziti_service_dial_policies | map(attribute='name') | list)
+             + (ziti_service_bind_policies | map(attribute='name') | list)
+           ) }}
+
+- name: Determine orphaned service-edge-router-policies
+  ansible.builtin.set_fact:
+    _ziti_orphan_serps: >-
+      {{ (_ziti_current_serps.stdout | from_json).data
+         | map(attribute='name') | list
+         | difference(ziti_service_edge_router_policies | map(attribute='name') | list) }}
+
+- name: Remove orphaned edge-router-policies
+  ansible.builtin.command:
+    cmd: ziti edge delete edge-router-policy "{{ item }}"
+  loop: "{{ _ziti_orphan_erps }}"
+  changed_when: true
+
+- name: Remove orphaned service-policies
+  ansible.builtin.command:
+    cmd: ziti edge delete service-policy "{{ item }}"
+  loop: "{{ _ziti_orphan_service_policies }}"
+  changed_when: true
+
+- name: Remove orphaned service-edge-router-policies
+  ansible.builtin.command:
+    cmd: ziti edge delete service-edge-router-policy "{{ item }}"
+  loop: "{{ _ziti_orphan_serps }}"
+  changed_when: true
+
+- name: Display pruning summary
+  ansible.builtin.debug:
+    msg:
+      - "Pruned edge-router-policies: {{ _ziti_orphan_erps }}"
+      - "Pruned service-policies: {{ _ziti_orphan_service_policies }}"
+      - "Pruned service-edge-router-policies: {{ _ziti_orphan_serps }}"
