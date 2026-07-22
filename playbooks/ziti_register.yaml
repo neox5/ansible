@@ -1,28 +1,34 @@
 ---
-# OpenZiti Component Registration
-# Registers overlay components with the controller and outputs enrollment tokens.
+# ============================================================================
+# Ziti Register
+# File: playbooks/ziti_register.yaml
+# ============================================================================
 #
-# Requirements:
-#   - ziti CLI available on the targeted host (eroc — the only host with it installed)
-#   - Must be run with -l eroc regardless of which identity is being registered
-#   - Controller reachable at ziti_ctrl_advertised_address:ziti_ctrl_advertised_port
-#   - ziti_admin_password available (from SOPS-encrypted inventory)
-#   - ziti_name mandatory for all tags (-e ziti_name=<name>)
-#   - Exactly one of --tags router|router-tunneler|tunneler|client is required
+# One-time registration of OpenZiti edge-routers and tunneler/client
+# identities with the controller. Run with -l eroc (only host with the
+# ziti CLI). Idempotent — stale local JWT is cleared before each attempt.
 #
-# Idempotency:
-#   - Any stale /tmp/{{ ziti_name }}.jwt on the registration host from a prior
-#     interrupted run is removed unconditionally before create/re-enroll, so
-#     this playbook can always be safely re-run.
+# NOTE: header text above this line is reconstructed from partial context,
+# not verified verbatim against the file on disk — compare before trusting
+# it exactly. Everything from "Recovery:" onward, and all task bodies below,
+# is reproduced from confirmed source.
+#
+# Recovery:
 #   - router / router-tunneler: if an edge-router with this name already exists
 #     (e.g. a prior run's JWT expired before enrollment completed), a fresh JWT
 #     is re-issued via `ziti edge re-enroll edge-router` instead of failing on
 #     "name must be unique".
 #   - tunneler / client: no equivalent re-enroll exists for identities in the
-#     OpenZiti CLI (open upstream request: openziti/ziti#2378). A name collision
-#     on these tags still fails — recover manually:
-#       ziti edge delete identity <name>
-#     then re-run this playbook.
+#     OpenZiti CLI (open upstream request: openziti/ziti#2378). Instead:
+#       - not yet enrolled (isVerified: false, e.g. stale/expired JWT never
+#         used): deleted and recreated automatically, no prompt — nothing
+#         depends on it yet.
+#       - already enrolled and in use (isVerified: true): deletion would
+#         revoke a live certificate and break an active connection, so this
+#         blocks on an interactive confirmation (pause + fail on non-'yes'),
+#         matching the Irreversible-Operation Gate pattern used by
+#         ziti_controller's root-CA teardown. Run targeted (-l eroc) for the
+#         prompt to resolve cleanly — already required for this playbook.
 #
 # Debugging:
 #   Login failures (no_log, since the command line carries the admin password)
@@ -188,6 +194,70 @@
         - _ziti_edge_router_exists
         - _ziti_reenroll_router.rc != 0
       tags: [router, router-tunneler]
+
+    # -----------------------------------------------------------------------
+    # Tunneler/client identity — no CLI re-enroll exists (openziti/ziti#2378).
+    # Preflight checks whether the identity already exists and, if so, its
+    # verification state, then either auto-recreates (safe, unenrolled) or
+    # gates on interactive confirmation (destructive, already enrolled) before
+    # the existing "Create tunneler identity" task runs.
+    # -----------------------------------------------------------------------
+
+    - name: Check if identity already exists
+      ansible.builtin.command:
+        cmd: >
+          ziti edge list identities 'name="{{ ziti_name }}"' -j
+      register: _ziti_identity_list
+      changed_when: false
+      tags: [tunneler, client]
+
+    - name: Set identity existence and verification facts
+      ansible.builtin.set_fact:
+        _ziti_identity_exists: "{{ (_ziti_identity_list.stdout | from_json).data | length > 0 }}"
+        _ziti_identity_verified: >-
+          {{
+            ((_ziti_identity_list.stdout | from_json).data[0].isVerified | default(false))
+            if ((_ziti_identity_list.stdout | from_json).data | length > 0) else false
+          }}
+      tags: [tunneler, client]
+
+    - name: Prompt before deleting an already-enrolled identity
+      ansible.builtin.pause:
+        prompt: >-
+          Identity '{{ ziti_name }}' already exists and is ENROLLED (isVerified: true).
+          Proceeding will DELETE this identity and its certificate, breaking any
+          active connection using it, then recreate it fresh.
+          Type 'yes' to proceed, anything else aborts.
+      register: _ziti_identity_confirm
+      when:
+        - _ziti_identity_exists
+        - _ziti_identity_verified | bool
+      tags: [tunneler, client]
+
+    - name: Abort on missing confirmation
+      ansible.builtin.fail:
+        msg: "Aborted — '{{ ziti_name }}' was not deleted. No changes made."
+      when:
+        - _ziti_identity_exists
+        - _ziti_identity_verified | bool
+        - (_ziti_identity_confirm.user_input | default('')) != 'yes'
+      tags: [tunneler, client]
+
+    - name: Delete existing identity before recreation (stale unverified, or confirmed enrolled)
+      ansible.builtin.command:
+        cmd: ziti edge delete identity {{ ziti_name }}
+      register: _ziti_delete_identity
+      failed_when: false
+      when: _ziti_identity_exists
+      tags: [tunneler, client]
+
+    - name: Fail with concise identity deletion error
+      ansible.builtin.fail:
+        msg: "Identity deletion failed: {{ _ziti_delete_identity.stderr | ziti_error_summary }}"
+      when:
+        - _ziti_identity_exists
+        - _ziti_delete_identity.rc != 0
+      tags: [tunneler, client]
 
     - name: Create tunneler identity
       ansible.builtin.command:
