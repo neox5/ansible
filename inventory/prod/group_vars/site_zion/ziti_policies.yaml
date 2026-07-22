@@ -43,8 +43,12 @@ ziti_edge_router_role_attributes:
 # in the policies below.
 # ---------------------------------------------------------------------------
 ziti_identity_role_attributes:
+  - identity: "eroc"
+    role_attributes: ["zion-lan"]
   - identity: "pixel9a"
     role_attributes: ["phone"]
+  - identity: "frwk"
+    role_attributes: ["workstation"]
 
 # ---------------------------------------------------------------------------
 # Edge Router Policies
@@ -52,6 +56,9 @@ ziti_identity_role_attributes:
 ziti_edge_router_policies:
   - name: "phone.routers"
     identity_roles: ["#phone"]
+    edge_router_roles: ["#zion-lan", "#public"]
+  - name: "workstation.routers"
+    identity_roles: ["#workstation"]
     edge_router_roles: ["#zion-lan", "#public"]
 
 # ---------------------------------------------------------------------------
