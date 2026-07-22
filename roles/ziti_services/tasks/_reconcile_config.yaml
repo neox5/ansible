@@ -1,0 +1,74 @@
+---
+# Private helper, included per-config with vars: ziti_config_name,
+# ziti_config_type, ziti_config_data, ziti_config_tags (optional, default {}).
+# Reused by reconcile_shared_configs.yaml and reconcile_services.yaml (inline
+# intercept/host blocks) so create/update-in-place logic exists in exactly
+# one place.
+#
+# Not part of the originally agreed 7-task-file design — added during
+# implementation to avoid duplicating this logic in two call sites.
+#
+# Field shape confirmed against a live 'list configs --output-json' payload
+# (ssh-host, 2026-07-22): type name is nested at configType.name, not a
+# top-level field. id/tags/data/name are top-level, as assumed.
+
+- name: "Fetch existing config: {{ ziti_config_name }}"
+  ansible.builtin.command:
+    cmd: >-
+      ziti edge list configs 'name="{{ ziti_config_name }}"' --output-json
+  changed_when: false
+  register: ziti_config_lookup
+  failed_when: ziti_config_lookup.rc != 0
+
+- name: "Parse lookup result: {{ ziti_config_name }}"
+  ansible.builtin.set_fact:
+    ziti_config_lookup_data: "{{ (ziti_config_lookup.stdout | from_json).data }}"
+
+- name: "Fail if declared type differs from live type: {{ ziti_config_name }}"
+  ansible.builtin.assert:
+    that:
+      - ziti_config_lookup_data[0].configType.name == ziti_config_type
+    fail_msg: >-
+      Config '{{ ziti_config_name }}' type changed on the controller
+      ({{ ziti_config_lookup_data[0].configType.name }} -> {{ ziti_config_type }}).
+      Config Type is immutable post-creation; delete+recreate is required
+      and is not automated by this role. Resolve manually, then re-run.
+  when: ziti_config_lookup_data | length > 0
+
+- name: "Create config: {{ ziti_config_name }}"
+  ansible.builtin.command:
+    cmd: >-
+      ziti edge create config {{ ziti_config_name }} {{ ziti_config_type }}
+      '{{ ziti_config_data | to_json }}'
+      --tags-json '{{ (ziti_config_tags | default({})) | to_json }}'
+  changed_when: true
+  when: ziti_config_lookup_data | length == 0
+
+- name: "Update config in place if data or tags differ: {{ ziti_config_name }}"
+  ansible.builtin.command:
+    cmd: >-
+      ziti edge update config {{ ziti_config_name }}
+      -d '{{ ziti_config_data | to_json }}'
+      --tags-json '{{ (ziti_config_tags | default({})) | to_json }}'
+  changed_when: true
+  when:
+    - ziti_config_lookup_data | length > 0
+    - >-
+      (ziti_config_lookup_data[0].data != ziti_config_data)
+      or (ziti_config_lookup_data[0].tags != (ziti_config_tags | default({})))
+
+- name: "Fetch resolved config (post create/update): {{ ziti_config_name }}"
+  ansible.builtin.command:
+    cmd: >-
+      ziti edge list configs 'name="{{ ziti_config_name }}"' --output-json
+  changed_when: false
+  register: ziti_config_resolved_lookup
+
+- name: "Record resolved id: {{ ziti_config_name }}"
+  ansible.builtin.set_fact:
+    ziti_config_ids: >-
+      {{
+        (ziti_config_ids | default({})) | combine({
+          ziti_config_name: (ziti_config_resolved_lookup.stdout | from_json).data[0].id
+        })
+      }}

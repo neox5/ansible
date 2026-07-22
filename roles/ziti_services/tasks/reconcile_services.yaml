@@ -1,0 +1,70 @@
+---
+- name: Reconcile inline intercept configs (name+data form; refs resolved via ziti_shared_configs)
+  ansible.builtin.include_tasks: _reconcile_config.yaml
+  loop: "{{ ziti_services | selectattr('intercept', 'defined') | selectattr('intercept.name', 'defined') | list }}"
+  loop_control:
+    label: "{{ item.name }}"
+  vars:
+    ziti_config_name: "{{ item.intercept.name }}"
+    ziti_config_type: intercept.v1
+    ziti_config_data: "{{ item.intercept.data }}"
+    ziti_config_tags: "{{ item.intercept.tags | default({}) }}"
+
+- name: Reconcile inline host configs (name+data form; refs resolved via ziti_shared_configs)
+  ansible.builtin.include_tasks: _reconcile_config.yaml
+  loop: "{{ ziti_services | selectattr('host', 'defined') | selectattr('host.name', 'defined') | list }}"
+  loop_control:
+    label: "{{ item.name }}"
+  vars:
+    ziti_config_name: "{{ item.host.name }}"
+    # Inline host always maps to host.v1 in the current schema. host.v2
+    # (multi-endpoint) is not wired into this role — no declared dependency
+    # requires it yet; revisit if a multi-terminator case is scoped later.
+    ziti_config_type: host.v1
+    ziti_config_data: "{{ item.host.data }}"
+    ziti_config_tags: "{{ item.host.tags | default({}) }}"
+
+- name: Fetch existing service state
+  ansible.builtin.command:
+    cmd: >-
+      ziti edge list services 'name="{{ item.name }}"' --output-json
+  changed_when: false
+  register: ziti_service_lookup
+  loop: "{{ ziti_services }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Create or update each service (full-replace configs/role-attributes/encryption/tags)
+  ansible.builtin.command:
+    cmd: >-
+      {{ 'ziti edge create service' if (ziti_svc_lookup_data | length == 0) else 'ziti edge update service' }}
+      {{ item.name }}
+      {{ ('-c ' + (ziti_svc_resolved_configs | join(','))) if ziti_svc_resolved_configs | length > 0 else '' }}
+      -a {{ (item.role_attributes | default([])) | join(',') }}
+      -e {{ 'ON' if (item.encryption | default(true)) else 'OFF' }}
+      --tags-json '{{ (item.tags | default({})) | to_json }}'
+  vars:
+    ziti_svc_lookup_data: >-
+      {{ ((ziti_service_lookup.results | selectattr('item.name', 'equalto', item.name) | first).stdout | from_json).data }}
+    ziti_svc_resolved_names: >-
+      {{
+        ([item.intercept.ref | default(item.intercept.name | default(''), true)] if item.intercept is defined else [])
+        + ([item.host.ref | default(item.host.name | default(''), true)] if item.host is defined else [])
+      }}
+    ziti_svc_resolved_configs: "{{ ziti_svc_resolved_names | select('!=', '') | list }}"
+    ziti_svc_resolved_ids: "{{ ziti_svc_resolved_configs | map('extract', ziti_config_ids) | list | sort }}"
+    ziti_svc_live_ids: "{{ (ziti_svc_lookup_data[0].configs | default([])) | list | sort }}"
+    ziti_svc_apply_needed: >-
+      {{
+        (ziti_svc_lookup_data | length == 0)
+        or (ziti_svc_live_ids != ziti_svc_resolved_ids)
+        or ((ziti_svc_lookup_data[0].roleAttributes | default([]) | sort) != (item.role_attributes | default([]) | sort))
+        or ((ziti_svc_lookup_data[0].encryptionRequired | default(true)) != (item.encryption | default(true)))
+        or ((ziti_svc_lookup_data[0].tags | default({})) != (item.tags | default({})))
+      }}
+  when: ziti_svc_apply_needed
+  changed_when: true
+  register: ziti_service_apply_result
+  loop: "{{ ziti_services }}"
+  loop_control:
+    label: "{{ item.name }}"

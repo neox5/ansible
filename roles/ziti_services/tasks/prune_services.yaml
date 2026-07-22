@@ -1,0 +1,23 @@
+---
+# No isSystem filter — confirmed no controller-auto-created default
+# services exist (unlike edge-router-policies), so all live services not
+# in ziti_services.yaml are candidates for removal.
+
+- name: List all live services
+  ansible.builtin.command:
+    cmd: "ziti edge list services --output-json"
+  changed_when: false
+  register: ziti_all_services_lookup
+
+- name: Delete services not present in ziti_services.yaml
+  ansible.builtin.command:
+    cmd: "ziti edge delete service {{ item.id }}"
+  loop: >-
+    {{
+      (ziti_all_services_lookup.stdout | from_json).data
+      | rejectattr('name', 'in', (ziti_services | map(attribute='name') | list))
+      | list
+    }}
+  loop_control:
+    label: "{{ item.name }}"
+  changed_when: true

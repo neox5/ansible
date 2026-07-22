@@ -1,0 +1,11 @@
+---
+- name: Reconcile each shared config (create or update-in-place)
+  ansible.builtin.include_tasks: _reconcile_config.yaml
+  loop: "{{ ziti_shared_configs }}"
+  loop_control:
+    label: "{{ item.name }}"
+  vars:
+    ziti_config_name: "{{ item.name }}"
+    ziti_config_type: "{{ item.type }}"
+    ziti_config_data: "{{ item.data }}"
+    ziti_config_tags: "{{ item.tags | default({}) }}"

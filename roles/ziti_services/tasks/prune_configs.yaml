@@ -1,0 +1,24 @@
+---
+# Runs last in the phase order. By this point reconcile_services.yaml has
+# already full-replaced every service's configs list, so any config not in
+# ziti_declared_config_names is guaranteed unattached — no live service
+# still references it. No isSystem filter, same reasoning as prune_services.
+
+- name: List all live configs
+  ansible.builtin.command:
+    cmd: "ziti edge list configs --output-json"
+  changed_when: false
+  register: ziti_all_configs_lookup
+
+- name: Delete configs not present in ziti_declared_config_names
+  ansible.builtin.command:
+    cmd: "ziti edge delete config {{ item.id }}"
+  loop: >-
+    {{
+      (ziti_all_configs_lookup.stdout | from_json).data
+      | rejectattr('name', 'in', ziti_declared_config_names)
+      | list
+    }}
+  loop_control:
+    label: "{{ item.name }}"
+  changed_when: true

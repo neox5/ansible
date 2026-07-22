@@ -57,14 +57,23 @@ ziti_edge_router_policies:
 # ---------------------------------------------------------------------------
 # Service Policies — Dial
 # ---------------------------------------------------------------------------
-ziti_service_dial_policies: []
+ziti_service_dial_policies:
+  - name: "ssh-eroc.dial"
+    service_roles: ["@ssh-eroc"]
+    dial_roles: ["#workstation"]
 
 # ---------------------------------------------------------------------------
 # Service Policies — Bind
 # ---------------------------------------------------------------------------
-ziti_service_bind_policies: []
+ziti_service_bind_policies:
+  - name: "ssh-eroc.bind"
+    service_roles: ["@ssh-eroc"]
+    bind_roles: ["#zion-lan"]
 
 # ---------------------------------------------------------------------------
 # Service Edge Router Policies
 # ---------------------------------------------------------------------------
-ziti_service_edge_router_policies: []
+ziti_service_edge_router_policies:
+  - name: "ssh-eroc.routers"
+    service_roles: ["@ssh-eroc"]
+    edge_router_roles: ["#zion-lan"]

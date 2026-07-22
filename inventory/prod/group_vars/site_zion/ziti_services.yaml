@@ -1,0 +1,42 @@
+---
+# ============================================================================
+# Ziti Services
+# File: group_vars/site_zion/ziti_services.yaml
+# Role: ziti_services
+# ============================================================================
+#
+# Usage
+# -----
+# Each ziti_services entry: name, role_attributes, encryption, tags (all
+# optional except name), plus intercept/host — each optional, at least one
+# required per entry. Each present block is exactly one of:
+#   {name, data}   inline — creates/updates a Config directly
+#   {ref}          reference — resolves against ziti_shared_configs only
+#
+# ziti_shared_configs is the sole target for ref; no cross-referencing
+# between service entries.
+#
+# Both lists are treated as complete desired state — entries absent on a
+# given apply are pruned, including Configs orphaned by an inline-to-ref
+# (or renamed) change.
+
+ziti_shared_configs:
+  - name: ssh-host
+    type: host.v1
+    data:
+      protocol: tcp
+      address: 127.0.0.1
+      port: 22
+
+ziti_services:
+  - name: ssh-eroc
+    role_attributes:
+      - ssh
+    intercept:
+      name: ssh-eroc-intercept.v1
+      data:
+        protocols: [tcp]
+        addresses: ["ssh-eroc.zion"]
+        portRanges: [{ low: 22, high: 22 }]
+    host:
+      ref: ssh-host

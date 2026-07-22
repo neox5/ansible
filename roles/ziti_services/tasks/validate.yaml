@@ -1,0 +1,78 @@
+---
+# Whole-file precondition, no API calls. A single failure here blocks the
+# entire apply — no partial reconciliation, matching "complete desired
+# state" (P08).
+
+- name: Assert every service declares at least one of intercept or host
+  ansible.builtin.assert:
+    that:
+      - (item.intercept is defined) or (item.host is defined)
+    fail_msg: "ziti_services entry '{{ item.name }}' has neither intercept nor host defined"
+  loop: "{{ ziti_services }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Assert intercept block is exactly inline (name+data) or reference (ref)
+  ansible.builtin.assert:
+    that:
+      - >-
+        (('name' in item.intercept) and ('data' in item.intercept) and ('ref' not in item.intercept))
+        or (('ref' in item.intercept) and ('name' not in item.intercept) and ('data' not in item.intercept))
+    fail_msg: >-
+      ziti_services entry '{{ item.name }}'.intercept must be either
+      {name, data} (inline) or {ref} (reference), not both or neither
+  loop: "{{ ziti_services }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.intercept is defined
+
+- name: Assert host block is exactly inline (name+data) or reference (ref)
+  ansible.builtin.assert:
+    that:
+      - >-
+        (('name' in item.host) and ('data' in item.host) and ('ref' not in item.host))
+        or (('ref' in item.host) and ('name' not in item.host) and ('data' not in item.host))
+    fail_msg: >-
+      ziti_services entry '{{ item.name }}'.host must be either
+      {name, data} (inline) or {ref} (reference), not both or neither
+  loop: "{{ ziti_services }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: item.host is defined
+
+- name: Build the set of declared config names (shared + inline intercept/host)
+  ansible.builtin.set_fact:
+    ziti_declared_config_names: >-
+      {{
+        (ziti_shared_configs | map(attribute='name') | list)
+        + (ziti_services | selectattr('intercept', 'defined')
+                          | selectattr('intercept.name', 'defined')
+                          | map(attribute='intercept.name') | list)
+        + (ziti_services | selectattr('host', 'defined')
+                          | selectattr('host.name', 'defined')
+                          | map(attribute='host.name') | list)
+      }}
+
+- name: Assert every intercept ref resolves to a declared shared config
+  ansible.builtin.assert:
+    that:
+      - item.intercept.ref in (ziti_shared_configs | map(attribute='name') | list)
+    fail_msg: >-
+      ziti_services entry '{{ item.name }}'.intercept.ref '{{ item.intercept.ref | default('') }}'
+      not found in ziti_shared_configs
+  loop: "{{ ziti_services }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: (item.intercept is defined) and ('ref' in item.intercept)
+
+- name: Assert every host ref resolves to a declared shared config
+  ansible.builtin.assert:
+    that:
+      - item.host.ref in (ziti_shared_configs | map(attribute='name') | list)
+    fail_msg: >-
+      ziti_services entry '{{ item.name }}'.host.ref '{{ item.host.ref | default('') }}'
+      not found in ziti_shared_configs
+  loop: "{{ ziti_services }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: (item.host is defined) and ('ref' in item.host)

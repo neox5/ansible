@@ -1,0 +1,28 @@
+---
+# Phase order is load-bearing:
+# validate (no API calls) -> reconcile shared configs -> reconcile services
+# (resolves + repoints) -> prune services -> prune configs (last, so nothing
+# still attached to a live service is ever deleted).
+
+- name: Log in to Ziti Edge Controller
+  ansible.builtin.command:
+    cmd: >-
+      ziti edge login {{ ziti_ctrl_advertised_address }}:{{ ziti_ctrl_advertised_port }}
+      -u admin -p {{ hostvars['eroc']['ziti_admin_password'] }} -y
+  no_log: true
+  changed_when: false
+
+- name: Validate declared ziti_services.yaml before any mutation
+  ansible.builtin.import_tasks: validate.yaml
+
+- name: Reconcile shared configs
+  ansible.builtin.import_tasks: reconcile_shared_configs.yaml
+
+- name: Reconcile services (create/update, resolve configs, repoint)
+  ansible.builtin.import_tasks: reconcile_services.yaml
+
+- name: Prune services no longer declared
+  ansible.builtin.import_tasks: prune_services.yaml
+
+- name: Prune configs no longer declared
+  ansible.builtin.import_tasks: prune_configs.yaml

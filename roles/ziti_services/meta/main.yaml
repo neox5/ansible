@@ -1,0 +1,15 @@
+---
+galaxy_info:
+  role_name: ziti_services
+  description: >-
+    Declarative reconciliation of OpenZiti Config (intercept.v1/host.v1) and
+    Service objects from ziti_services.yaml. Controller-side only.
+  author: private repository
+  license: private
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+
+dependencies: []

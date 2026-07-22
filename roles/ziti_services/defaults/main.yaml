@@ -1,0 +1,15 @@
+---
+# ziti_services role defaults.
+#
+# Declarative source of truth lives in inventory
+# (e.g. inventory/prod/group_vars/site_zion/ziti_services.yaml).
+# Empty lists here make the role safe to include even when no
+# service/config declarations are present for a given run.
+
+ziti_shared_configs: []
+ziti_services: []
+
+# Single source of truth for the controller address, per the established
+# pattern used by ziti_router/ziti_tunneler — never duplicated per role.
+ziti_ctrl_advertised_address: "{{ hostvars['eroc']['ziti_ctrl_advertised_address'] }}"
+ziti_ctrl_advertised_port: "{{ hostvars['eroc']['ziti_ctrl_advertised_port'] }}"

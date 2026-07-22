@@ -1,0 +1,7 @@
+---
+# Controller-side only. -l-driven, always effectively targets eroc — same
+# convention as ziti_policies.yaml (hosts: all, legitimately single-CLI-host).
+- hosts: all
+  gather_facts: false
+  roles:
+    - ziti_services
