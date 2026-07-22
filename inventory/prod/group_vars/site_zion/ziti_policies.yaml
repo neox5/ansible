@@ -83,4 +83,4 @@ ziti_service_bind_policies:
 ziti_service_edge_router_policies:
   - name: "ssh-eroc.routers"
     service_roles: ["@ssh-eroc"]
-    edge_router_roles: ["#zion-lan"]
+    edge_router_roles: ["#zion-lan", "#public"]

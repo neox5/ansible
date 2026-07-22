@@ -1,0 +1,13 @@
+---
+# Two reachability paths to the same host. Default is LAN — no behavior
+# change for existing playbook runs. Override use_ziti at runtime to route
+# Ansible's connection through the Ziti overlay instead, e.g. when managing
+# this host from off the home network. use_ziti is a generic switch, not
+# eroc-specific — the same pattern (lan_address/overlay_address pair +
+# use_ziti) can be reused in any other host's host_vars once that host has
+# its own ssh-<name> Service defined.
+
+lan_address: "10.30.0.2"
+overlay_address: "ssh-eroc.zion"
+
+ansible_host: "{{ overlay_address if (use_ziti | default(false) | bool) else lan_address }}"
