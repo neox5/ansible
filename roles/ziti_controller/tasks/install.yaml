@@ -41,11 +41,3 @@
     update_cache: true
   environment:
     DEBIAN_FRONTEND: noninteractive
-
-- name: Disable package bootstrap script
-  ansible.builtin.lineinfile:
-    path: "{{ ziti_controller_service_env }}"
-    regexp: '^(#\s*)?ZITI_BOOTSTRAP='
-    line: "ZITI_BOOTSTRAP=false"
-    state: present
-    create: false

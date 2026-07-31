@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  role_name: ziti_instance_registry
+  author: neox5
+  description: >-
+    Shared instance-marker mechanism for roles that run multiple instances
+    on one host sharing a single package-created system account. Prevents
+    removing that account while a sibling instance still depends on it.
+    Not PKI-related despite living alongside ziti_* roles - shared purely
+    because every current consumer happens to be one.
+  license: MIT
+  min_ansible_version: "2.15"
+
+  platforms:
+    - name: Debian
+      versions:
+        - trixie
+
+  galaxy_tags:
+    - lifecycle
+
+dependencies: []

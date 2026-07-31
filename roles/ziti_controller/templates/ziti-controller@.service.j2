@@ -1,0 +1,29 @@
+# {{ ansible_managed }}
+# Role-owned instantiated unit for ziti_controller - replaces reliance on
+# the vendor's fixed ziti-controller.service, so multiple controller
+# instances can run on one host. Diff against the vendor unit is limited to
+# WorkingDirectory/StateDirectory/EnvironmentFile (%i-scoped) - ExecStart is
+# unchanged, since config.yml is resolved relative to WorkingDirectory.
+#
+# Started as: systemctl start ziti-controller@<instance-id>
+
+[Unit]
+Description=OpenZiti Controller (%i)
+After=network-online.target
+
+[Service]
+Type=simple
+User=ziti-controller
+Group=ziti-controller
+EnvironmentFile=/opt/openziti/etc/controller/service-%i.env
+StateDirectory=ziti-controller-%i
+WorkingDirectory=/var/lib/ziti-controller-%i
+ReadOnlyPaths=-/opt/openziti/share/console
+ExecStart=/usr/bin/ziti controller run config.yml $ZITI_ARGS
+Restart=always
+RestartSec=3
+LimitNOFILE=65535
+UMask=0007
+
+[Install]
+WantedBy=multi-user.target

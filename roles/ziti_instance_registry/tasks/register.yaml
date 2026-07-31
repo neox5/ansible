@@ -1,0 +1,20 @@
+---
+# Touch this instance's marker. Required vars: ziti_instance_role, ziti_instance_id
+
+- name: "Ensure instance registry directory exists: {{ ziti_instance_role }}"
+  ansible.builtin.file:
+    path: "/etc/ziti/.instances/{{ ziti_instance_role }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: "Touch instance marker: {{ ziti_instance_role }}/{{ ziti_instance_id }}"
+  ansible.builtin.file:
+    path: "/etc/ziti/.instances/{{ ziti_instance_role }}/{{ ziti_instance_id }}"
+    state: touch
+    owner: root
+    group: root
+    mode: "0644"
+    access_time: preserve
+    modification_time: preserve

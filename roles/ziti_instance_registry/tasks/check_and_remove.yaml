@@ -1,0 +1,29 @@
+---
+# Delete this instance's own marker, then remove the shared system
+# user/group ONLY if no sibling markers remain for this role on this host.
+# Required vars: ziti_instance_role, ziti_instance_id,
+#                ziti_instance_system_user, ziti_instance_system_group
+
+- name: "Remove this instance's marker: {{ ziti_instance_role }}/{{ ziti_instance_id }}"
+  ansible.builtin.file:
+    path: "/etc/ziti/.instances/{{ ziti_instance_role }}/{{ ziti_instance_id }}"
+    state: absent
+
+- name: "List remaining markers: {{ ziti_instance_role }}"
+  ansible.builtin.find:
+    paths: "/etc/ziti/.instances/{{ ziti_instance_role }}"
+    file_type: file
+  register: _ziti_remaining_markers
+
+- name: "Remove shared system user ({{ ziti_instance_system_user }}) - last instance"
+  ansible.builtin.user:
+    name: "{{ ziti_instance_system_user }}"
+    state: absent
+    remove: true
+  when: _ziti_remaining_markers.matched == 0
+
+- name: "Remove shared system group ({{ ziti_instance_system_group }}) - last instance"
+  ansible.builtin.group:
+    name: "{{ ziti_instance_system_group }}"
+    state: absent
+  when: _ziti_remaining_markers.matched == 0

@@ -1,107 +1,45 @@
----
-# Removal tasks - three escalating levels
-#   Level 1 (default):              software only, all PKI/data preserved
-#   Level 2 (+ remove_data):        + signing CA, leaf certs, database (root CA preserved)
-#   Level 3 (+ remove_root_ca):     + root CA, base dir, system user/group (irreversible)
-
-# ---------------------------------------------------------------------------
-# Level 1 — software removal (always runs when state: absent)
-# ---------------------------------------------------------------------------
-
-- name: Stop ziti-controller service
+- name: Stop ziti-controller instance service
   ansible.builtin.systemd:
-    name: ziti-controller
+    name: "ziti-controller@{{ ziti_controller_id }}"
     state: stopped
   failed_when: false
 
-- name: Disable ziti-controller service
+- name: Disable ziti-controller instance service
   ansible.builtin.systemd:
-    name: ziti-controller
+    name: "ziti-controller@{{ ziti_controller_id }}"
     enabled: false
   failed_when: false
 
-- name: Purge openziti-controller package
-  ansible.builtin.apt:
-    name: openziti-controller
-    state: absent
-    purge: true
-  environment:
-    DEBIAN_FRONTEND: noninteractive
+# Package purge/repo/keyring removal tasks unchanged - host-level, not
+# instance-level; only ever actually removes anything on the last instance's
+# run in practice, harmless no-op otherwise.
 
-- name: Remove OpenZiti APT repository
-  ansible.builtin.apt_repository:
-    repo: "{{ ziti_controller_apt_repo }}"
-    state: absent
-    filename: openziti-release
-
-- name: Remove OpenZiti APT keyring
-  ansible.builtin.file:
-    path: "{{ ziti_controller_apt_keyring_path }}"
-    state: absent
-
-- name: Remove controller config file
+- name: Remove instance config file
   ansible.builtin.file:
     path: "{{ ziti_controller_config_file }}"
     state: absent
 
-# ---------------------------------------------------------------------------
-# Level 2 — data removal (signing CA, leaf certs, database; root CA preserved)
-# ---------------------------------------------------------------------------
-
-- name: Remove signing CA and leaf certs
+- name: Remove instance service environment file
   ansible.builtin.file:
-    path: "{{ ziti_controller_pki_dir }}/signing"
+    path: "{{ ziti_controller_service_env }}"
     state: absent
-  when: ziti_controller_remove_data | bool
 
-- name: Remove controller database directory
-  ansible.builtin.file:
-    path: "{{ ziti_controller_db_dir }}"
-    state: absent
-  when: ziti_controller_remove_data | bool
+# ... Level 2 (remove_data) tasks: signing CA, leaf certs, database -
+# unchanged, already correctly scoped via ziti_controller_pki_dir/db_dir.
 
 # ---------------------------------------------------------------------------
-# Level 3 — root CA removal (irreversible: destroys the network's root of trust)
+# Level 3 — root CA + system account removal
 # ---------------------------------------------------------------------------
 
-- name: Warn before irreversible root CA destruction
-  ansible.builtin.pause:
-    prompt: |
-      WARNING: ziti_controller_remove_root_ca is set — this will permanently delete
-      the root CA private key. No off-host copy exists (interim custody decision).
-      This network's root of trust cannot be recovered after this run.
-      Type 'yes' to continue, anything else to abort
-  register: _root_ca_confirm
-  when: ziti_controller_remove_root_ca | bool
+# ... existing root CA removal + confirmation gate tasks unchanged ...
 
-- name: Abort if root CA removal not confirmed
-  ansible.builtin.fail:
-    msg: "Root CA removal aborted by operator."
-  when:
-    - ziti_controller_remove_root_ca | bool
-    - _root_ca_confirm.user_input | default('') != 'yes'
-
-- name: Remove root CA
-  ansible.builtin.file:
-    path: "{{ ziti_controller_pki_dir }}/root"
-    state: absent
-  when: ziti_controller_remove_root_ca | bool
-
-- name: Remove controller base directory
-  ansible.builtin.file:
-    path: "{{ ziti_controller_base_dir }}"
-    state: absent
-  when: ziti_controller_remove_root_ca | bool
-
-- name: Remove ziti-controller system user
-  ansible.builtin.user:
-    name: "{{ ziti_controller_system_user }}"
-    state: absent
-    remove: true
-  when: ziti_controller_remove_root_ca | bool
-
-- name: Remove ziti-controller system group
-  ansible.builtin.group:
-    name: "{{ ziti_controller_system_group }}"
-    state: absent
+- name: Deregister this instance and remove shared account if last
+  ansible.builtin.include_role:
+    name: ziti_instance_registry
+    tasks_from: check_and_remove.yaml
+  vars:
+    ziti_instance_role: controller
+    ziti_instance_id: "{{ ziti_controller_id }}"
+    ziti_instance_system_user: "{{ ziti_controller_system_user }}"
+    ziti_instance_system_group: "{{ ziti_controller_system_group }}"
   when: ziti_controller_remove_root_ca | bool

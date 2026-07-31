@@ -1,15 +1,24 @@
 ---
 # ============================================================================
-# ziti_controller: eroc instance identity
+# ziti_controller: eroc instances
 # File: host_vars/eroc/ziti_controller.yaml
 # ============================================================================
 #
-# Locked identity values (see P06 Roadmap) - permanent once the controller
-# is bootstrapped. Changing either requires full PKI regeneration and
+# Locked identity values (see P06 Roadmap) - permanent once a controller
+# instance is bootstrapped. Changing any requires full PKI regeneration and
 # re-enrollment of every identity in the overlay.
+#
+# Clean-slate HA build - not a migration from the prior single-instance setup.
 
-ziti_ctrl_advertised_address: "zctrl1.neox5.com"
-ziti_ctrl_advertised_port: 1280
-ziti_controller_id: "zctrl1"
+ziti_controller_instances:
+  - ziti_controller_id: "zctrl1"
+    ziti_ctrl_advertised_address: "zctrl1.neox5.com"
+    ziti_ctrl_advertised_port: 1280
+    ziti_controller_pki_mode: external
+
+  - ziti_controller_id: "zctrl3"
+    ziti_ctrl_advertised_address: "zctrl3.neox5.com"
+    ziti_ctrl_advertised_port: 1281
+    ziti_controller_pki_mode: external
 
 ziti_admin_password: "{{ ziti_admin_password_secret }}"

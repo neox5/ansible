@@ -1,5 +1,28 @@
 ---
-# Configuration tasks - render config.yml from template
+# Configuration tasks - render systemd unit, env file, and config.yml
+
+- name: Deploy role-owned instantiated systemd unit
+  ansible.builtin.template:
+    src: ziti-controller@.service.j2
+    dest: /etc/systemd/system/ziti-controller@.service
+    owner: root
+    group: root
+    mode: "0644"
+  register: _ziti_controller_unit
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: _ziti_controller_unit is changed
+
+- name: Deploy per-instance service environment file
+  ansible.builtin.template:
+    src: service.env.j2
+    dest: "{{ ziti_controller_service_env }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: "restart ziti-controller-{{ ziti_controller_id }}"
 
 - name: Ensure database directory exists
   ansible.builtin.file:
@@ -16,4 +39,12 @@
     owner: "{{ ziti_controller_system_user }}"
     group: "{{ ziti_controller_system_group }}"
     mode: "0600"
-  notify: restart ziti-controller
+  notify: "restart ziti-controller-{{ ziti_controller_id }}"
+
+- name: Register this instance
+  ansible.builtin.include_role:
+    name: ziti_instance_registry
+    tasks_from: register.yaml
+  vars:
+    ziti_instance_role: controller
+    ziti_instance_id: "{{ ziti_controller_id }}"

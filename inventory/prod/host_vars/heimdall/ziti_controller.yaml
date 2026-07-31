@@ -1,0 +1,11 @@
+---
+# ============================================================================
+# ziti_controller: heimdall instance
+# File: host_vars/heimdall/ziti_controller.yaml
+# ============================================================================
+
+ziti_controller_instances:
+  - ziti_controller_id: "zctrl2"
+    ziti_ctrl_advertised_address: "zctrl2.neox5.com"
+    ziti_ctrl_advertised_port: 1280
+    ziti_controller_pki_mode: external

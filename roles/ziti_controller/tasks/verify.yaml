@@ -16,7 +16,8 @@
   ansible.builtin.debug:
     msg:
       - "ziti_controller deployment complete"
+      - "Instance: {{ ziti_controller_id }}"
       - "Address: {{ ziti_ctrl_advertised_address }}:{{ ziti_ctrl_advertised_port }}"
       - "Trust domain: {{ ziti_trust_domain }}"
-      - "PKI curve: {{ ziti_curve }}"
+      - "PKI mode: {{ ziti_controller_pki_mode }}"
       - "Health: passing"
