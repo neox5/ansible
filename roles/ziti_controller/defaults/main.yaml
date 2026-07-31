@@ -18,6 +18,14 @@ ziti_root_ca_validity_days: 3650
 ziti_signing_ca_validity_days: 3650
 ziti_leaf_validity_days: 365
 
+# PKI mode: native (self-signed root+intermediate on this host, existing
+# behavior, default - preserves eroc's current controller unchanged) or
+# external (intermediate CSR round-trip against an air-gapped root, root
+# key never touches this host - see pki_external.yaml)
+ziti_controller_pki_mode: native
+ziti_controller_external_curve: "P-384"
+ziti_controller_csr_fetch_dir: "/tmp"
+
 # PKI renewal
 ziti_renew_signing_ca: false
 
@@ -37,7 +45,3 @@ ziti_controller_system_group: "ziti-controller"
 
 # Controller listen port (used for CLI login; matches ziti_ctrl_advertised_port)
 ziti_controller_port: "{{ ziti_ctrl_advertised_port }}"
-
-# Service state
-ziti_controller_service_state: started
-ziti_controller_service_enabled: true

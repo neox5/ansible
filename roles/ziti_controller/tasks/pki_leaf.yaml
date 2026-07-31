@@ -1,0 +1,64 @@
+---
+# Shared leaf cert tasks - identical for both PKI modes.
+# Only needs the signing CA cert+key already present at the conventional
+# path (produced by pki_native.yaml or pki_external.yaml) - doesn't know or
+# care which mode produced them.
+#
+# Name/CN must equal ziti_controller_id - the controller CLIENT cert's CN must
+# exactly match the SPIFFE ID's controller-id segment, or `edge init` panics.
+# Server cert kept consistent with the same bare id for the same reason.
+
+- name: Check if controller server cert exists
+  ansible.builtin.stat:
+    path: "{{ ziti_controller_pki_dir }}/signing/certs/controller-server.chain.pem"
+  register: _ziti_server_cert
+  changed_when: false
+  check_mode: false
+
+- name: Generate controller server cert
+  ansible.builtin.command:
+    cmd: >
+      ziti pki create server
+      --pki-root {{ ziti_controller_pki_dir }}
+      --ca-name signing
+      --server-file controller-server
+      --server-name "{{ ziti_controller_id }}"
+      --dns "localhost,{{ ziti_ctrl_advertised_address }}"
+      --ip "127.0.0.1,::1"
+      --spiffe-id "controller/{{ ziti_controller_id }}"
+      --curve {{ ziti_curve }}
+  when: not _ziti_server_cert.stat.exists
+
+- name: Check if controller client cert exists
+  ansible.builtin.stat:
+    path: "{{ ziti_controller_pki_dir }}/signing/certs/controller-client.chain.pem"
+  register: _ziti_client_cert
+  changed_when: false
+  check_mode: false
+
+- name: Generate controller client cert
+  ansible.builtin.command:
+    cmd: >
+      ziti pki create client
+      --pki-root {{ ziti_controller_pki_dir }}
+      --ca-name signing
+      --client-file controller-client
+      --client-name "{{ ziti_controller_id }}"
+      --spiffe-id "controller/{{ ziti_controller_id }}"
+      --curve {{ ziti_curve }}
+  when: not _ziti_client_cert.stat.exists
+
+# ---------------------------------------------------------------------------
+# Signing CA directory ownership
+# Signing CA cert/key and controller server/client certs are read by the
+# running controller service (ziti-controller:ziti-controller), regardless
+# of which PKI mode produced them.
+# ---------------------------------------------------------------------------
+
+- name: Set ownership of signing CA directory for controller service
+  ansible.builtin.file:
+    path: "{{ ziti_controller_pki_dir }}/signing"
+    state: directory
+    owner: "{{ ziti_controller_system_user }}"
+    group: "{{ ziti_controller_system_group }}"
+    recurse: true

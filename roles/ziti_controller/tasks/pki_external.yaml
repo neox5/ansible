@@ -1,0 +1,123 @@
+---
+# External PKI mode - intermediate CSR generated on this host (key never
+# leaves), signed offline against an external air-gapped root, signed cert
+# returned via sneakernet. Root CA private key never touches this host, not
+# even transiently. Mirrors roles/stepca/tasks/bootstrap.yaml's proven
+# pattern.
+#
+# Gated on file existence - safe to re-run. Halts cleanly (Role-Scoped Skip)
+# if the signed intermediate hasn't been returned yet - re-run once it has.
+
+- name: Ensure PKI root directory exists
+  ansible.builtin.file:
+    path: "{{ ziti_controller_pki_dir }}"
+    state: directory
+    owner: root
+    group: "{{ ziti_controller_system_group }}"
+    mode: "0750"
+
+- name: Ensure signing CA directories exist
+  ansible.builtin.file:
+    path: "{{ ziti_controller_pki_dir }}/signing/{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  loop:
+    - certs
+    - keys
+
+# ---------------------------------------------------------------------------
+# Root CA trust anchor (external mode: public cert only, placed by the certs
+# role's ca_certs mechanism before this role runs - see role README)
+# ---------------------------------------------------------------------------
+
+- name: Check if root CA trust anchor is present
+  ansible.builtin.stat:
+    path: "{{ ziti_controller_pki_dir }}/root/certs/root.cert"
+  register: _ziti_root_cert
+  changed_when: false
+  check_mode: false
+
+- name: Assert root CA trust anchor is present
+  ansible.builtin.assert:
+    quiet: true
+    that: _ziti_root_cert.stat.exists
+    fail_msg: >
+      {{ ziti_controller_pki_dir }}/root/certs/root.cert not found.
+      External mode requires the root CA's public certificate to be staged
+      here before this role runs (e.g. via the certs role's ca_certs list) -
+      this role never generates or receives the root private key.
+
+# ---------------------------------------------------------------------------
+# Signing CA / edge enrollment signer (intermediate, CSR round-trip)
+# ---------------------------------------------------------------------------
+
+- name: Check if signing CA certificate exists
+  ansible.builtin.stat:
+    path: "{{ ziti_controller_pki_dir }}/signing/certs/signing.cert"
+  register: _ziti_signing_cert
+  changed_when: false
+  check_mode: false
+
+- name: Check if signing CA private key exists
+  ansible.builtin.stat:
+    path: "{{ ziti_controller_pki_dir }}/signing/keys/signing.key"
+  register: _ziti_signing_key
+  changed_when: false
+  check_mode: false
+
+- name: Generate signing CA private key (EC {{ ziti_controller_external_curve }}, on-host, never leaves)
+  ansible.builtin.command:
+    cmd: >
+      openssl ecparam
+      -name {{ ziti_controller_external_curve }}
+      -genkey -noout
+      -out {{ ziti_controller_pki_dir }}/signing/keys/signing.key
+  when: not _ziti_signing_key.stat.exists
+
+- name: Enforce signing CA private key permissions
+  ansible.builtin.file:
+    path: "{{ ziti_controller_pki_dir }}/signing/keys/signing.key"
+    owner: root
+    group: root
+    mode: "0600"
+  when: not _ziti_signing_cert.stat.exists
+
+- name: Generate signing CA CSR
+  ansible.builtin.command:
+    cmd: >
+      openssl req -new
+      -key {{ ziti_controller_pki_dir }}/signing/keys/signing.key
+      -out {{ ziti_controller_pki_dir }}/signing/signing.csr
+      -subj "/CN={{ ziti_trust_domain }} Signing CA {{ ziti_controller_id }}"
+      -addext "basicConstraints=critical,CA:true,pathlen:0"
+      -addext "keyUsage=critical,keyCertSign,cRLSign"
+  when: not _ziti_signing_cert.stat.exists
+
+- name: Fetch CSR to control node for air-gapped signing
+  ansible.builtin.fetch:
+    src: "{{ ziti_controller_pki_dir }}/signing/signing.csr"
+    dest: "{{ ziti_controller_csr_fetch_dir }}/{{ ziti_controller_id }}_signing.csr"
+    flat: true
+  when: not _ziti_signing_cert.stat.exists
+
+- name: Display sneakernet instructions
+  ansible.builtin.debug:
+    msg:
+      - "CSR fetched to: {{ ziti_controller_csr_fetch_dir }}/{{ ziti_controller_id }}_signing.csr"
+      - ""
+      - "Sign against the air-gapped root using an intermediate CA profile"
+      - "(CA:true, pathlen:0, keyCertSign, cRLSign), then:"
+      - "  1. Place the signed certificate at {{ ziti_controller_pki_dir }}/signing/certs/signing.cert on this host"
+      - "  2. Re-run this playbook to continue"
+  when: not _ziti_signing_cert.stat.exists
+
+- name: Set PKI pending fact (Role-Scoped Skip - remaining phases wait for signed intermediate)
+  ansible.builtin.set_fact:
+    ziti_controller_pki_pending: true
+  when: not _ziti_signing_cert.stat.exists
+
+- name: End play - awaiting sneakernet
+  ansible.builtin.meta: end_host
+  when: not _ziti_signing_cert.stat.exists

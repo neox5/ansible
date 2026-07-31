@@ -9,25 +9,47 @@
   ansible.builtin.import_tasks: install.yaml
   when: ziti_controller_state == 'present'
 
-- name: Include PKI tasks
-  ansible.builtin.import_tasks: pki.yaml
-  when: ziti_controller_state == 'present'
+- name: Include native PKI tasks (self-signed root, generated on this host)
+  ansible.builtin.include_tasks: pki_native.yaml
+  when:
+    - ziti_controller_state == 'present'
+    - ziti_controller_pki_mode == 'native'
+
+- name: Include external PKI tasks (root signed offline, intermediate CSR round-trip)
+  ansible.builtin.include_tasks: pki_external.yaml
+  when:
+    - ziti_controller_state == 'present'
+    - ziti_controller_pki_mode == 'external'
+
+- name: Include shared leaf cert tasks
+  ansible.builtin.include_tasks: pki_leaf.yaml
+  when:
+    - ziti_controller_state == 'present'
+    - not (ziti_controller_pki_pending | default(false))
 
 - name: Include configuration tasks
   ansible.builtin.import_tasks: configure.yaml
-  when: ziti_controller_state == 'present'
+  when:
+    - ziti_controller_state == 'present'
+    - not (ziti_controller_pki_pending | default(false))
 
 - name: Include database init tasks
   ansible.builtin.import_tasks: init.yaml
-  when: ziti_controller_state == 'present'
+  when:
+    - ziti_controller_state == 'present'
+    - not (ziti_controller_pki_pending | default(false))
 
 - name: Include start tasks
   ansible.builtin.import_tasks: start.yaml
-  when: ziti_controller_state == 'present'
+  when:
+    - ziti_controller_state == 'present'
+    - not (ziti_controller_pki_pending | default(false))
 
 - name: Include verification tasks
   ansible.builtin.import_tasks: verify.yaml
-  when: ziti_controller_state == 'present'
+  when:
+    - ziti_controller_state == 'present'
+    - not (ziti_controller_pki_pending | default(false))
 
 - name: Include removal tasks
   ansible.builtin.import_tasks: remove.yaml

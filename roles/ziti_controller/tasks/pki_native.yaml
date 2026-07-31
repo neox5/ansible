@@ -1,0 +1,78 @@
+---
+# Native PKI mode - self-signed root + intermediate, generated on this host
+# All ziti pki create calls use --curve {{ ziti_curve }} (default P-256)
+# Gated on file existence - safe to re-run
+#
+# Custody model: root CA private key remains on this host permanently. Use
+# ziti_controller_pki_mode: external instead for production-grade custody
+# (root signed offline, key never touches this host).
+
+- name: Ensure PKI root directory exists
+  ansible.builtin.file:
+    path: "{{ ziti_controller_pki_dir }}"
+    state: directory
+    owner: root
+    group: "{{ ziti_controller_system_group }}"
+    mode: "0750"
+
+# ---------------------------------------------------------------------------
+# Root CA (native mode: self-signed, stays on this host permanently)
+# ---------------------------------------------------------------------------
+
+- name: Check if root CA certificate exists
+  ansible.builtin.stat:
+    path: "{{ ziti_controller_pki_dir }}/root/certs/root.cert"
+  register: _ziti_root_cert
+  changed_when: false
+  check_mode: false
+
+- name: Generate root CA
+  ansible.builtin.command:
+    cmd: >
+      ziti pki create ca
+      --pki-root {{ ziti_controller_pki_dir }}
+      --ca-file root
+      --ca-name "{{ ziti_trust_domain }} Root CA"
+      --trust-domain {{ ziti_trust_domain }}
+      --curve {{ ziti_curve }}
+      --max-path-len 1
+  when: not _ziti_root_cert.stat.exists
+
+- name: Enforce root CA private key permissions
+  ansible.builtin.file:
+    path: "{{ ziti_controller_pki_dir }}/root/keys/root.key"
+    owner: root
+    group: root
+    mode: "0600"
+
+# ---------------------------------------------------------------------------
+# Signing CA / edge enrollment signer (intermediate, self-signed, stays on host)
+# ---------------------------------------------------------------------------
+
+- name: Check if signing CA certificate exists
+  ansible.builtin.stat:
+    path: "{{ ziti_controller_pki_dir }}/signing/certs/signing.cert"
+  register: _ziti_signing_cert
+  changed_when: false
+  check_mode: false
+
+- name: Generate signing CA (intermediate)
+  ansible.builtin.command:
+    cmd: >
+      ziti pki create intermediate
+      --pki-root {{ ziti_controller_pki_dir }}
+      --ca-name root
+      --intermediate-file signing
+      --intermediate-name "{{ ziti_trust_domain }} Signing CA"
+      --curve {{ ziti_curve }}
+      --max-path-len 0
+  when: not _ziti_signing_cert.stat.exists or ziti_renew_signing_ca | bool
+
+- name: Notify operator of root CA key custody status
+  ansible.builtin.debug:
+    msg:
+      - "NOTE: Root CA private key remains on this host (native mode):"
+      - "  {{ ziti_controller_pki_dir }}/root/keys/root.key"
+      - ""
+      - "For production-grade custody (root key never touches this host), set"
+      - "ziti_controller_pki_mode: external instead."
