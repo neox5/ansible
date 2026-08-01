@@ -2,12 +2,21 @@
 # Edge Stack Deployment
 # Deploys complete edge stack in dependency order.
 #
-# Scoped to the 'edge' group — safe to run without -l.
+# ziti_controller.yaml and ziti_router.yaml are hosts: all, -l-driven
+# playbooks (see their own headers) - imported here rather than included as
+# roles, matching the n150.yaml precedent. -l edge is now REQUIRED at
+# invocation - no longer safe to run without it, since the imported
+# playbooks would otherwise target the full inventory.
+#
+# ziti_controller import is new this pass - heimdall now hosts a controller
+# instance (zctrl2) as part of the HA cluster (see P06 Roadmap), unlike the
+# prior single-controller-on-eroc-only setup where edge.yaml never touched
+# ziti_controller at all.
 #
 # Usage:
-#   ansible-playbook -i inventory/prod playbooks/edge.yaml
+#   ansible-playbook -i inventory/prod playbooks/edge.yaml -l edge
 
-- name: Deploy edge
+- name: Deploy edge baseline
   hosts: edge
   become: true
   tasks:
@@ -26,6 +35,6 @@
       ansible.builtin.import_role:
         name: journald
 
-    - name: Deploy OpenZiti Router
-      ansible.builtin.import_role:
-        name: ziti_router
+- import_playbook: ziti_controller.yaml
+
+- import_playbook: ziti_router.yaml

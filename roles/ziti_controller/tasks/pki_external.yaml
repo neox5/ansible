@@ -5,8 +5,12 @@
 # even transiently. Mirrors roles/stepca/tasks/bootstrap.yaml's proven
 # pattern.
 #
-# Gated on file existence - safe to re-run. Halts cleanly (Role-Scoped Skip)
-# if the signed intermediate hasn't been returned yet - re-run once it has.
+# Gated on file existence - safe to re-run. Sets ziti_controller_pki_pending
+# if the signed intermediate hasn't been returned yet - main.yaml's
+# per-instance when-gates (not meta: end_host, which is host-scoped and would
+# wrongly abort every remaining instance in a multi-instance loop) skip only
+# this instance's remaining phases; resumes automatically once the signed
+# cert is in place.
 
 - name: Ensure PKI root directory exists
   ansible.builtin.file:
@@ -113,11 +117,7 @@
       - "  2. Re-run this playbook to continue"
   when: not _ziti_signing_cert.stat.exists
 
-- name: Set PKI pending fact (Role-Scoped Skip - remaining phases wait for signed intermediate)
+- name: Set PKI pending fact (Role-Scoped Skip - remaining phases for this instance wait for signed intermediate)
   ansible.builtin.set_fact:
     ziti_controller_pki_pending: true
-  when: not _ziti_signing_cert.stat.exists
-
-- name: End play - awaiting sneakernet
-  ansible.builtin.meta: end_host
   when: not _ziti_signing_cert.stat.exists

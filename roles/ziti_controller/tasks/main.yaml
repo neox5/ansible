@@ -2,6 +2,10 @@
 # ziti_controller role - Main task orchestration
 # Debian 13 Trixie only
 
+- name: Reset PKI pending fact (per-instance, prevents leaking across loop iterations)
+  ansible.builtin.set_fact:
+    ziti_controller_pki_pending: false
+
 - name: Include preflight checks
   ansible.builtin.import_tasks: preflight.yaml
 
@@ -28,25 +32,25 @@
     - not (ziti_controller_pki_pending | default(false))
 
 - name: Include configuration tasks
-  ansible.builtin.import_tasks: configure.yaml
+  ansible.builtin.include_tasks: configure.yaml
   when:
     - ziti_controller_state == 'present'
     - not (ziti_controller_pki_pending | default(false))
 
 - name: Include database init tasks
-  ansible.builtin.import_tasks: init.yaml
+  ansible.builtin.include_tasks: init.yaml
   when:
     - ziti_controller_state == 'present'
     - not (ziti_controller_pki_pending | default(false))
 
 - name: Include start tasks
-  ansible.builtin.import_tasks: start.yaml
+  ansible.builtin.include_tasks: start.yaml
   when:
     - ziti_controller_state == 'present'
     - not (ziti_controller_pki_pending | default(false))
 
 - name: Include verification tasks
-  ansible.builtin.import_tasks: verify.yaml
+  ansible.builtin.include_tasks: verify.yaml
   when:
     - ziti_controller_state == 'present'
     - not (ziti_controller_pki_pending | default(false))

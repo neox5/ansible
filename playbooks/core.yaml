@@ -4,12 +4,16 @@
 # apt_repositories -> update -> security -> journald -> ziti_controller -> ziti_router
 # Excludes stepca, postgresql, and the rest of the legacy full stack (deferred).
 #
-# Scoped to the 'core' group — safe to run without -l.
+# ziti_controller.yaml and ziti_router.yaml are hosts: all, -l-driven
+# playbooks (see their own headers) - imported here rather than included as
+# roles, matching the n150.yaml precedent. -l core is now REQUIRED at
+# invocation - no longer safe to run without it, since the imported
+# playbooks would otherwise target the full inventory.
 #
 # Usage:
-#   ansible-playbook -i inventory/prod playbooks/core.yaml
+#   ansible-playbook -i inventory/prod playbooks/core.yaml -l core
 
-- name: Deploy core
+- name: Deploy core baseline
   hosts: core
   become: true
   tasks:
@@ -28,10 +32,6 @@
       ansible.builtin.import_role:
         name: journald
 
-    - name: Deploy OpenZiti Controller
-      ansible.builtin.import_role:
-        name: ziti_controller
+- import_playbook: ziti_controller.yaml
 
-    - name: Deploy OpenZiti Router
-      ansible.builtin.import_role:
-        name: ziti_router
+- import_playbook: ziti_router.yaml
