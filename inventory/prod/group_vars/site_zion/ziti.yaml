@@ -1,6 +1,18 @@
 ---
 # Site-wide OpenZiti overlay identity - shared by every host at this site
 # regardless of role (controller, router, tunneler). Second site would get
-# its own site_<name> group with its own trust domain - never shared here.
+# its own site_<n> group with its own trust domain - never shared here.
 
 ziti_trust_domain: "zion"
+
+# HA controller cluster members - a router should be connected to all of
+# them, not just one (see roles/ziti_router/README.md and OpenZiti's HA
+# routers docs). This is the bootstrap seed only; routers auto-maintain
+# their own endpoint list after first connecting.
+ziti_ctrl_endpoints:
+  - address: "zctrl1.neox5.com"
+    port: 1280
+  - address: "zctrl3.neox5.com"
+    port: 1281
+  - address: "zctrl2.neox5.com"
+    port: 1280

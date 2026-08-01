@@ -32,12 +32,6 @@
     quiet: true
     that: not ziti_tunneler_remove_data or ziti_tunneler_state == 'absent'
     fail_msg: "ziti_tunneler_remove_data: true requires ziti_tunneler_state: absent"
-- name: Assert controller address is configured
-  ansible.builtin.assert:
-    quiet: true
-    that: ziti_ctrl_advertised_address | default('') | length > 0
-    fail_msg: "ziti_ctrl_advertised_address must be set in inventory"
-  when: ziti_tunneler_state == 'present'
 - name: Display role information
   ansible.builtin.debug:
     msg: >-

@@ -8,11 +8,11 @@
 # different, and every apply prunes controller-side policies no longer
 # declared. The file is trusted as-is; the API is the validation layer.
 
-- name: Assert controller address is configured
+- name: Assert controller login endpoint is configured
   ansible.builtin.assert:
     quiet: true
-    that: ziti_ctrl_advertised_address | default('') | length > 0
-    fail_msg: "ziti_ctrl_advertised_address must be set in inventory"
+    that: ziti_ctrl_login_address | default('') | length > 0
+    fail_msg: "ziti_ctrl_login_address must be set in inventory"
 
 - name: Assert edge-router role attribute entries have unique router names
   ansible.builtin.assert:
@@ -48,7 +48,7 @@
   ansible.builtin.command:
     cmd: >
       ziti edge login
-      https://{{ ziti_ctrl_advertised_address }}:{{ ziti_ctrl_advertised_port }}
+      https://{{ ziti_ctrl_login_address }}:{{ ziti_ctrl_login_port }}
       -u admin
       -p {{ ziti_admin_password }}
       -y

@@ -22,7 +22,7 @@
 
 - name: Ensure signing CA directories exist
   ansible.builtin.file:
-    path: "{{ ziti_controller_pki_dir }}/signing/{{ item }}"
+    path: "{{ ziti_controller_pki_dir }}/signing/{{ _ziti_signing_subdir }}"
     state: directory
     owner: root
     group: root
@@ -30,28 +30,8 @@
   loop:
     - certs
     - keys
-
-# ---------------------------------------------------------------------------
-# Root CA trust anchor (external mode: public cert only, placed by the certs
-# role's ca_certs mechanism before this role runs - see role README)
-# ---------------------------------------------------------------------------
-
-- name: Check if root CA trust anchor is present
-  ansible.builtin.stat:
-    path: "{{ ziti_controller_pki_dir }}/root/certs/root.cert"
-  register: _ziti_root_cert
-  changed_when: false
-  check_mode: false
-
-- name: Assert root CA trust anchor is present
-  ansible.builtin.assert:
-    quiet: true
-    that: _ziti_root_cert.stat.exists
-    fail_msg: >
-      {{ ziti_controller_pki_dir }}/root/certs/root.cert not found.
-      External mode requires the root CA's public certificate to be staged
-      here before this role runs (e.g. via the certs role's ca_certs list) -
-      this role never generates or receives the root private key.
+  loop_control:
+    loop_var: _ziti_signing_subdir
 
 # ---------------------------------------------------------------------------
 # Signing CA / edge enrollment signer (intermediate, CSR round-trip)
@@ -121,3 +101,28 @@
   ansible.builtin.set_fact:
     ziti_controller_pki_pending: true
   when: not _ziti_signing_cert.stat.exists
+
+# ---------------------------------------------------------------------------
+# Root CA trust anchor (needed by config.yml's identity.ca, not by CSR
+# generation above - checked here, after signing confirmed, so this doesn't
+# block CSR/sneakernet before it's actually relevant)
+# ---------------------------------------------------------------------------
+
+- name: Check if root CA trust anchor is present
+  ansible.builtin.stat:
+    path: "{{ ziti_controller_pki_dir }}/root/certs/root.cert"
+  register: _ziti_root_cert
+  changed_when: false
+  check_mode: false
+  when: _ziti_signing_cert.stat.exists
+
+- name: Assert root CA trust anchor is present
+  ansible.builtin.assert:
+    quiet: true
+    that: _ziti_root_cert.stat.exists
+    fail_msg: >
+      {{ ziti_controller_pki_dir }}/root/certs/root.cert not found.
+      Stage the root CA's public certificate here before this instance can
+      complete configuration (e.g. via the certs role's ca_certs list) -
+      this role never generates or receives the root private key.
+  when: _ziti_signing_cert.stat.exists

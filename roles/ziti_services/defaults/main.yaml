@@ -9,7 +9,9 @@
 ziti_shared_configs: []
 ziti_services: []
 
-# Single source of truth for the controller address, per the established
-# pattern used by ziti_router/ziti_tunneler — never duplicated per role.
-ziti_ctrl_advertised_address: "{{ hostvars['eroc']['ziti_ctrl_advertised_address'] }}"
-ziti_ctrl_advertised_port: "{{ hostvars['eroc']['ziti_ctrl_advertised_port'] }}"
+# CLI login target - any one controller is sufficient (non-leader members
+# forward writes to the leader automatically). Host-specific, set in
+# host_vars/eroc/ziti_controller.yaml - not shared at site level like
+# ziti_ctrl_endpoints, since only eroc runs the ziti CLI.
+ziti_ctrl_login_address: ""
+ziti_ctrl_login_port: 1280

@@ -13,7 +13,9 @@ host the play executes on.
 
 - `ziti` CLI installed on the execution host (run with `-l <host>` —
   this repo uses `eroc`, the only host with the CLI installed)
-- Controller reachable at `ziti_ctrl_advertised_address:ziti_ctrl_advertised_port`
+- Controller reachable at `ziti_ctrl_login_address:ziti_ctrl_login_port`
+  (any one HA cluster member — non-leader members forward writes to the
+  leader automatically)
 - `ziti_admin_password` available (SOPS-encrypted inventory)
 - Edge Routers and Identities referenced in `ziti_edge_router_role_attributes`
   / `ziti_identity_role_attributes` must already exist on the controller

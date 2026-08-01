@@ -15,9 +15,15 @@ identity:
 
 # ---------------------------------------------------------------------------
 # Control plane
+# endpoints (not endpoint) - this is only the bootstrap seed for the very
+# first connection; once connected, the router maintains its own endpoints
+# file, auto-updated as cluster membership changes (see ha/routers docs).
 # ---------------------------------------------------------------------------
 ctrl:
-  endpoint: tls:{{ ziti_ctrl_advertised_address }}:{{ ziti_ctrl_advertised_port }}
+  endpoints:
+{% for ep in ziti_ctrl_endpoints %}
+    - tls:{{ ep.address }}:{{ ep.port }}
+{% endfor %}
 
 # ---------------------------------------------------------------------------
 # Fabric mesh links

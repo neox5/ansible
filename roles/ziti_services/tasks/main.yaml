@@ -7,7 +7,7 @@
 - name: Log in to Ziti Edge Controller
   ansible.builtin.command:
     cmd: >-
-      ziti edge login {{ ziti_ctrl_advertised_address }}:{{ ziti_ctrl_advertised_port }}
+      ziti edge login {{ ziti_ctrl_login_address }}:{{ ziti_ctrl_login_port }}
       -u admin -p {{ hostvars['eroc']['ziti_admin_password'] }} -y
   no_log: true
   changed_when: false

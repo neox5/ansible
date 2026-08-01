@@ -33,11 +33,11 @@
     that: not ziti_router_remove_data or ziti_router_state == 'absent'
     fail_msg: "ziti_router_remove_data: true requires ziti_router_state: absent"
 
-- name: Assert controller address is configured
+- name: Assert controller endpoints are configured
   ansible.builtin.assert:
     quiet: true
-    that: ziti_ctrl_advertised_address | default('') | length > 0
-    fail_msg: "ziti_ctrl_advertised_address must be set in inventory"
+    that: ziti_ctrl_endpoints | length > 0
+    fail_msg: "ziti_ctrl_endpoints must be set in inventory (see group_vars/site_zion/ziti.yaml)"
   when: ziti_router_state == 'present'
 
 - name: Assert router advertised address is configured

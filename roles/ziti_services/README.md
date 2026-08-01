@@ -19,8 +19,10 @@ from declarative inventory. Controller-side only.
   and `ziti_register`).
 - Controller reachable, admin credentials in
   `hostvars['eroc']['ziti_admin_password']` (SOPS-encrypted).
-- `ziti_ctrl_advertised_address`/`_port` sourced from `hostvars['eroc']`
-  — not duplicated in this role's own vars.
+- `ziti_ctrl_login_address`/`_port` — any one HA cluster member is
+  sufficient (non-leader members forward writes to the leader
+  automatically); set in `host_vars/eroc/ziti_controller.yaml`, not
+  duplicated in this role's own vars.
 
 ## Variables
 

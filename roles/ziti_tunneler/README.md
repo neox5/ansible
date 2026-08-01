@@ -13,7 +13,6 @@ host-mode (bind only) or client-mode (bind + dial/intercept).
 
 - Debian 13 Trixie
 - systemd
-- `ziti_ctrl_advertised_address` set in inventory
 - Identity JWT at `ziti_jwt_path` on control node (produced by `ziti_register.yaml`)
 - Client mode: kernel TPROXY support (present by default on Debian 13)
 
@@ -26,8 +25,6 @@ host-mode (bind only) or client-mode (bind + dial/intercept).
 | `ziti_tunneler_remove_data`     | `false`                        | Remove identity dir on absence |
 | `ziti_name`                     | `{{ inventory_hostname }}`     | Identity name in controller    |
 | `ziti_jwt_path`                 | `/tmp/{{ ziti_name }}.jwt`     | JWT path on control node       |
-| `ziti_ctrl_advertised_address`  | `""`                           | Controller address (mandatory) |
-| `ziti_ctrl_advertised_port`     | `1280`                         | Controller port                |
 | `ziti_tunneler_identity_dir`    | `/opt/openziti/etc/identities` | Identity file directory        |
 | `ziti_tunneler_service_state`   | `started`                      | Target service state           |
 | `ziti_tunneler_service_enabled` | `true`                         | Enable on boot                 |
@@ -60,7 +57,9 @@ ansible-playbook -i inventory/prod playbooks/ziti_tunneler.yaml -l <host>
 ```
 
 Copies JWT to host, runs `ziti-edge-tunnel enroll`, removes JWT.
-Enrollment is gated on identity file existence — safe to re-run.
+Enrollment is gated on identity file existence — safe to re-run. The
+JWT itself carries the full controller cluster list — no separate
+controller address configuration needed by this role.
 
 ## Mode Selection
 
